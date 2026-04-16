@@ -1,0 +1,18 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using Redis.ConformanceTests.Support;
+using VectorData.ConformanceTests.ModelTests;
+using VectorData.ConformanceTests.Support;
+using Xunit;
+
+namespace Redis.ConformanceTests.ModelTests;
+
+public class RedisHashSetMultiVectorModelTests(RedisHashSetMultiVectorModelTests.Fixture fixture)
+    : MultiVectorModelTests<string>(fixture), IClassFixture<RedisHashSetMultiVectorModelTests.Fixture>
+{
+    public new class Fixture : MultiVectorModelTests<string>.Fixture
+    {
+        public override TestStore TestStore => RedisTestStore.HashSetInstance;
+    }
+}

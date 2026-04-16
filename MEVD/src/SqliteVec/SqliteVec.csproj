@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Version>1.0.0-preview.1</Version>
+    <AssemblyName>CommunityToolkit.VectorData.SqliteVec</AssemblyName>
+    <RootNamespace>$(AssemblyName)</RootNamespace>
+    <TargetFrameworks>net10.0;net8.0;netstandard2.0;net462</TargetFrameworks>
+    <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</IsAotCompatible>
+
+    <Title>SQLite provider for Microsoft.Extensions.VectorData</Title>
+    <Description>SQLite (sqlitevec) provider for Microsoft.Extensions.VectorData by Semantic Kernel</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Linq.AsyncEnumerable" />
+    <PackageReference Include="System.Numerics.Tensors" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" />
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="sqlite-vec" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CommunityToolkit.VectorData.SqliteVec.UnitTests" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+  </ItemGroup>
+
+</Project>

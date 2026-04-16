@@ -1,0 +1,39 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using InMemory.ConformanceTests.Support;
+using VectorData.ConformanceTests.Support;
+using VectorData.ConformanceTests.TypeTests;
+using Xunit;
+
+namespace InMemory.ConformanceTests.TypeTests;
+
+public class InMemoryKeyTypeTests(InMemoryKeyTypeTests.Fixture fixture)
+    : KeyTypeTests(fixture), IClassFixture<InMemoryKeyTypeTests.Fixture>
+{
+    // The InMemory provider supports all .NET types as keys; below are just a few basic tests.
+
+    [Fact]
+    public virtual Task Int() => this.Test<int>(8, 9);
+
+    [Fact]
+    public virtual Task Long() => this.Test<long>(8L, 9L);
+
+    [Fact]
+    public virtual Task String() => this.Test<string>("foo", "bar");
+
+    protected override async Task Test<TKey>(TKey key1, TKey key2, bool supportsAutoGeneration = false)
+    {
+        await base.Test(key1, key2, supportsAutoGeneration);
+
+        // For InMemory, delete the collection, otherwise the next test that runs will fail because the collection
+        // already exists but with the previous key type.
+        using var collection = fixture.CreateCollection<TKey>(supportsAutoGeneration);
+        await collection.EnsureCollectionDeletedAsync();
+    }
+
+    public new class Fixture : KeyTypeTests.Fixture
+    {
+        public override TestStore TestStore => InMemoryTestStore.Instance;
+    }
+}

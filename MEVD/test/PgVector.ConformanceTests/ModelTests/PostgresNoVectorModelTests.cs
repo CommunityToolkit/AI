@@ -1,0 +1,18 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using PgVector.ConformanceTests.Support;
+using VectorData.ConformanceTests.ModelTests;
+using VectorData.ConformanceTests.Support;
+using Xunit;
+
+namespace PgVector.ConformanceTests.ModelTests;
+
+public class PostgresNoVectorModelTests(PostgresNoVectorModelTests.Fixture fixture)
+    : NoVectorModelTests<string>(fixture), IClassFixture<PostgresNoVectorModelTests.Fixture>
+{
+    public new class Fixture : NoVectorModelTests<string>.Fixture
+    {
+        public override TestStore TestStore => PostgresTestStore.Instance;
+    }
+}
