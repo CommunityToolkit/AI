@@ -1,0 +1,32 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using Microsoft.Extensions.VectorData;
+using Redis.ConformanceTests.Support;
+using VectorData.ConformanceTests.Support;
+using VectorData.ConformanceTests.TypeTests;
+using Xunit;
+
+namespace Redis.ConformanceTests.TypeTests;
+
+public class RedisHashSetKeyTypeTests(RedisHashSetKeyTypeTests.Fixture fixture)
+    : KeyTypeTests(fixture), IClassFixture<RedisHashSetKeyTypeTests.Fixture>
+{
+    [Fact]
+    public virtual Task String() => this.Test<string>("foo", "bar");
+
+    public new class Fixture : KeyTypeTests.Fixture
+    {
+        private int _collectionCounter;
+
+        public override TestStore TestStore => RedisTestStore.HashSetInstance;
+
+        // Redis doesn't seem to reliably delete the collection: when running multiple tests that delete and recreate the collection with different key types,
+        // we seem to get key values from the previous collection despite having deleted and recreated it. So we uniquify the collection name instead.
+        public override VectorStoreCollection<TKey, Record<TKey>> CreateCollection<TKey>(bool? withAutoGeneration)
+            => this.TestStore.DefaultVectorStore.GetCollection<TKey, Record<TKey>>(this.CollectionName + (++this._collectionCounter), this.CreateRecordDefinition<TKey>(withAutoGeneration));
+
+        public override VectorStoreCollection<object, Dictionary<string, object?>> CreateDynamicCollection<TKey>(bool withAutoGeneration)
+            => this.TestStore.DefaultVectorStore.GetDynamicCollection(this.CollectionName + (++this._collectionCounter), this.CreateRecordDefinition<TKey>(withAutoGeneration));
+    }
+}

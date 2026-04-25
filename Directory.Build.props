@@ -9,4 +9,6 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
 
+  <Import Project="$(MSBuildThisFileDirectory)eng/LegacySupport.props" />
+
 </Project>

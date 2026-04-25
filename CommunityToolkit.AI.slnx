@@ -1,0 +1,41 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="README.md" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Folder Name="/MEVD/src/">
+    <File Path="MEVD/src/Directory.Build.props" />
+    <Project Path="MEVD/src/AzureAISearch/AzureAISearch.csproj" />
+    <Project Path="MEVD/src/CosmosMongoDB/CosmosMongoDB.csproj" />
+    <Project Path="MEVD/src/InMemory/InMemory.csproj" />
+    <Project Path="MEVD/src/PgVector/PgVector.csproj" />
+    <Project Path="MEVD/src/Pinecone/Pinecone.csproj" />
+    <Project Path="MEVD/src/Qdrant/Qdrant.csproj" />
+    <Project Path="MEVD/src/Redis/Redis.csproj" />
+    <Project Path="MEVD/src/SqliteVec/SqliteVec.csproj" />
+    <Project Path="MEVD/src/Weaviate/Weaviate.csproj" />
+  </Folder>
+  <Folder Name="/MEVD/test/">
+    <Project Path="MEVD/test/AzureAISearch.UnitTests/AzureAISearch.UnitTests.csproj" />
+    <Project Path="MEVD/test/AzureAISearch.ConformanceTests/AzureAISearch.ConformanceTests.csproj" />
+    <Project Path="MEVD/test/CosmosMongoDB.UnitTests/CosmosMongoDB.UnitTests.csproj" />
+    <Project Path="MEVD/test/CosmosMongoDB.ConformanceTests/CosmosMongoDB.ConformanceTests.csproj" />
+    <Project Path="MEVD/test/InMemory.UnitTests/InMemory.UnitTests.csproj" />
+    <Project Path="MEVD/test/InMemory.ConformanceTests/InMemory.ConformanceTests.csproj" />
+    <Project Path="MEVD/test/PgVector.UnitTests/PgVector.UnitTests.csproj" />
+    <Project Path="MEVD/test/PgVector.ConformanceTests/PgVector.ConformanceTests.csproj" />
+    <Project Path="MEVD/test/Pinecone.UnitTests/Pinecone.UnitTests.csproj" />
+    <Project Path="MEVD/test/Pinecone.ConformanceTests/Pinecone.ConformanceTests.csproj" />
+    <Project Path="MEVD/test/Qdrant.UnitTests/Qdrant.UnitTests.csproj" />
+    <Project Path="MEVD/test/Qdrant.ConformanceTests/Qdrant.ConformanceTests.csproj" />
+    <Project Path="MEVD/test/Redis.UnitTests/Redis.UnitTests.csproj" />
+    <Project Path="MEVD/test/Redis.ConformanceTests/Redis.ConformanceTests.csproj" />
+    <Project Path="MEVD/test/SqliteVec.UnitTests/SqliteVec.UnitTests.csproj" />
+    <Project Path="MEVD/test/SqliteVec.ConformanceTests/SqliteVec.ConformanceTests.csproj" />
+    <Project Path="MEVD/test/Weaviate.UnitTests/Weaviate.UnitTests.csproj" />
+    <Project Path="MEVD/test/Weaviate.ConformanceTests/Weaviate.ConformanceTests.csproj" />
+  </Folder>
+</Solution>

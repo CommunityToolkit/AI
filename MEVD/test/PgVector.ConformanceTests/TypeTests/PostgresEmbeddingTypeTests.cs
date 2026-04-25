@@ -1,0 +1,67 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Collections;
+using Microsoft.Extensions.AI;
+using Microsoft.Extensions.VectorData;
+using Pgvector;
+using PgVector.ConformanceTests.Support;
+using VectorData.ConformanceTests.Support;
+using VectorData.ConformanceTests.TypeTests;
+using Xunit;
+
+#pragma warning disable CA2000 // Dispose objects before losing scope
+
+namespace PgVector.ConformanceTests.TypeTests;
+
+public class PostgresEmbeddingTypeTests(PostgresEmbeddingTypeTests.Fixture fixture)
+    : EmbeddingTypeTests<int>(fixture), IClassFixture<PostgresEmbeddingTypeTests.Fixture>
+{
+#if NET
+    [Fact]
+    public virtual Task ReadOnlyMemory_of_Half()
+        => this.Test<ReadOnlyMemory<Half>>(
+            new ReadOnlyMemory<Half>([(byte)1, (byte)2, (byte)3]),
+            new ReadOnlyMemoryEmbeddingGenerator<Half>([(byte)1, (byte)2, (byte)3]),
+            vectorEqualityAsserter: (e, a) => Assert.Equal(e.Span.ToArray(), a.Span.ToArray()));
+
+    [Fact]
+    public virtual Task Embedding_of_Half()
+        => this.Test<Embedding<Half>>(
+            new Embedding<Half>(new ReadOnlyMemory<Half>([(byte)1, (byte)2, (byte)3])),
+            new ReadOnlyMemoryEmbeddingGenerator<Half>([(byte)1, (byte)2, (byte)3]),
+            vectorEqualityAsserter: (e, a) => Assert.Equal(e.Vector.Span.ToArray(), a.Vector.Span.ToArray()));
+
+    [Fact]
+    public virtual Task Array_of_Half()
+        => this.Test<Half[]>(
+            [(byte)1, (byte)2, (byte)3],
+            new ReadOnlyMemoryEmbeddingGenerator<Half>([(byte)1, (byte)2, (byte)3]));
+#endif
+
+    [Fact]
+    public virtual Task BitArray()
+        => this.Test<BitArray>(
+            new BitArray([true, false, true]),
+            new BinaryEmbeddingGenerator(new BitArray([true, false, true])),
+            distanceFunction: DistanceFunction.HammingDistance);
+
+    [Fact]
+    public virtual Task BinaryEmbedding()
+        => this.Test<BinaryEmbedding>(
+            new BinaryEmbedding(new([true, false, true])),
+            new BinaryEmbeddingGenerator(new BitArray([true, false, true])),
+            distanceFunction: DistanceFunction.HammingDistance,
+            vectorEqualityAsserter: (e, a) => Assert.Equal(e.Vector, a.Vector));
+
+    [Fact]
+    public virtual Task SparseVector()
+        => this.Test<SparseVector>(new SparseVector(new ReadOnlyMemory<float>([1, 2, 3])), embeddingGenerator: null);
+
+    // TODO: Figure out the embedding generation story for sparsevec - need an Embedding wrapper
+
+    public new class Fixture : EmbeddingTypeTests<int>.Fixture
+    {
+        public override TestStore TestStore => PostgresTestStore.Instance;
+    }
+}

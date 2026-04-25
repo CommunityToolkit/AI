@@ -1,0 +1,102 @@
+name: MEVD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MEVD/**'
+      - 'Shared/**'
+      - 'eng/**'
+      - 'Directory.Build.props'
+      - 'Directory.Packages.props'
+      - 'global.json'
+      - '.github/workflows/mevd.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MEVD/**'
+      - 'Shared/**'
+      - 'eng/**'
+      - 'Directory.Build.props'
+      - 'Directory.Packages.props'
+      - 'global.json'
+      - '.github/workflows/mevd.yml'
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Build
+        run: dotnet build MEVD/MEVD.slnf
+
+  unit-tests:
+    name: 'Unit: ${{ matrix.provider }} (${{ matrix.os }})'
+    needs: build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        provider:
+          - InMemory
+          - AzureAISearch
+          - CosmosMongoDB
+          - PgVector
+          - Pinecone
+          - Qdrant
+          - Redis
+          - SqliteVec
+          - Weaviate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Test
+        run: dotnet test MEVD/test/${{ matrix.provider }}.UnitTests
+
+  # Conformance tests run on Ubuntu only: most providers use Testcontainers with Linux Docker
+  # images, which aren't available on Windows GitHub-hosted runners.
+  conformance-tests:
+    name: 'Conformance: ${{ matrix.provider }}'
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        provider:
+          # AzureAISearch and CosmosMongoDB require cloud instances and are not run in CI.
+          # - AzureAISearch
+          # - CosmosMongoDB
+          - InMemory
+          - PgVector
+          - Pinecone
+          - Qdrant
+          - Redis
+          - SqliteVec
+          - Weaviate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Test
+        run: dotnet test MEVD/test/${{ matrix.provider }}.ConformanceTests
