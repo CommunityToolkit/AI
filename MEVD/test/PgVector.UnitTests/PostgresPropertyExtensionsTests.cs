@@ -6,7 +6,7 @@ using Microsoft.Extensions.VectorData;
 using CommunityToolkit.VectorData.PgVector;
 using Xunit;
 
-namespace SemanticKernel.Connectors.PgVector.UnitTests;
+namespace PgVector.UnitTests;
 
 public sealed class PostgresPropertyExtensionsTests
 {

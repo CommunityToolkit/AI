@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.VectorData.Weaviate;
 using Xunit;
 
-namespace SemanticKernel.Connectors.Weaviate.UnitTests;
+namespace Weaviate.UnitTests;
 
 /// <summary>
 /// Unit tests for <see cref="WeaviateVectorStore"/> class.

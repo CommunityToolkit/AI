@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.VectorData;
 
-namespace SemanticKernel.Connectors.Weaviate.UnitTests;
+namespace Weaviate.UnitTests;
 
 #pragma warning disable CS8618
 

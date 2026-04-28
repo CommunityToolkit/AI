@@ -10,7 +10,7 @@ using CommunityToolkit.VectorData.Qdrant;
 using Qdrant.Client.Grpc;
 using Xunit;
 
-namespace SemanticKernel.Connectors.Qdrant.UnitTests;
+namespace Qdrant.UnitTests;
 
 /// <summary>
 /// Contains tests for the <see cref="QdrantMapper{TConsumerDataModel}"/> class.

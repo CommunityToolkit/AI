@@ -5,7 +5,7 @@ using System;
 using CommunityToolkit.VectorData.SqliteVec;
 using Xunit;
 
-namespace SemanticKernel.Connectors.SqliteVec.UnitTests;
+namespace SqliteVec.UnitTests;
 
 /// <summary>
 /// Unit tests for SQLite condition classes.

@@ -10,7 +10,7 @@ using Microsoft.Extensions.VectorData.ProviderServices;
 namespace CommunityToolkit.VectorData.Redis;
 
 /// <summary>
-/// A mapper that maps between the generic Semantic Kernel data model and the model that the data is stored under, within Redis when using JSON.
+/// A mapper that maps between the generic data model and the model that the data is stored under, within Redis when using JSON.
 /// </summary>
 internal class RedisJsonDynamicMapper(CollectionModel model, JsonSerializerOptions jsonSerializerOptions) : IRedisJsonMapper<Dictionary<string, object?>>
 {
