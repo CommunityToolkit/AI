@@ -3,6 +3,9 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
 
   <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
     <NoWarn>$(NoWarn);MEVD9000,MEVD9001</NoWarn> <!-- Experimental MEVD connector-facing APIs -->
     <InjectCallerAttributesOnLegacy>true</InjectCallerAttributesOnLegacy>
     <InjectTrimAttributesOnLegacy>true</InjectTrimAttributesOnLegacy>
