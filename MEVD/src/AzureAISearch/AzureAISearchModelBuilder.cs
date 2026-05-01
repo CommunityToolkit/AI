@@ -73,7 +73,7 @@ internal class AzureAISearchModelBuilder() : CollectionJsonModelBuilder(s_modelB
     {
         // Azure AI Search is adding support for more types than just float32, but these are not available for use via the
         // SDK yet. We will update this list as the SDK is updated.
-        // <see href="https://learn.microsoft.com/en-us/rest/api/searchservice/supported-data-types#edm-data-types-for-vector-fields"/>
+        // <see href="https://learn.microsoft.com/rest/api/searchservice/supported-data-types#edm-data-types-for-vector-fields"/>
         supportedTypes = SupportedVectorTypes;
 
         return type == typeof(ReadOnlyMemory<float>)

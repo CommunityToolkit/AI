@@ -9,7 +9,7 @@ using Microsoft.Extensions.VectorData.ProviderServices;
 using CommunityToolkit.VectorData.AzureAISearch;
 using Xunit;
 
-namespace SemanticKernel.Connectors.AzureAISearch.UnitTests;
+namespace AzureAISearch.UnitTests;
 
 /// <summary>
 /// Contains tests for the <see cref="AzureAISearchCollectionCreateMapping"/> class.

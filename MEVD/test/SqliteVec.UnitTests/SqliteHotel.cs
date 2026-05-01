@@ -4,7 +4,7 @@
 using System;
 using Microsoft.Extensions.VectorData;
 
-namespace SemanticKernel.Connectors.SqliteVec.UnitTests;
+namespace SqliteVec.UnitTests;
 
 public class SqliteHotel<TKey>()
 {

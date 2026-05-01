@@ -16,7 +16,7 @@ using CommunityToolkit.VectorData.Sqlite;
 using Moq;
 using Xunit;
 
-namespace SemanticKernel.Connectors.Sqlite.UnitTests;
+namespace SqliteVec.UnitTests;
 
 /// <summary>
 /// Unit tests for <see cref="SqliteCollection{TRecord}"/> class.

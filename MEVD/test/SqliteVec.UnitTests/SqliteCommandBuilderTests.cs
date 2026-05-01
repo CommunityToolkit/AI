@@ -9,7 +9,7 @@ using Microsoft.Extensions.VectorData.ProviderServices;
 using CommunityToolkit.VectorData.SqliteVec;
 using Xunit;
 
-namespace SemanticKernel.Connectors.SqliteVec.UnitTests;
+namespace SqliteVec.UnitTests;
 
 /// <summary>
 /// Unit tests for <see cref="SqliteCommandBuilder"/> class.

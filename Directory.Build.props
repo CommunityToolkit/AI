@@ -16,9 +16,18 @@
     <DebugType>embedded</DebugType>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(IsPackable)' == 'true'">
-    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers" />
-  </ItemGroup>
+  <PropertyGroup>
+    <Authors>Microsoft.Toolkit,dotnetfoundation,Community Toolkit</Authors>
+    <Company>.NET Foundation</Company>
+    <Copyright>(c) .NET Foundation and Contributors. All rights reserved.</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/CommunityToolkit/AI</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/CommunityToolkit/AI</RepositoryUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
 
   <Import Project="$(MSBuildThisFileDirectory)eng/LegacySupport.props" />
 

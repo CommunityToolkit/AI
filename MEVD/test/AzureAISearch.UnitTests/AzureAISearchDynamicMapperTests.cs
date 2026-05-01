@@ -10,7 +10,7 @@ using Microsoft.Extensions.VectorData.ProviderServices;
 using CommunityToolkit.VectorData.AzureAISearch;
 using Xunit;
 
-namespace SemanticKernel.Connectors.AzureAISearch.UnitTests;
+namespace AzureAISearch.UnitTests;
 
 /// <summary>
 /// Tests for the <see cref="AzureAISearchDynamicMapper"/> class.

@@ -19,7 +19,7 @@ using CommunityToolkit.VectorData.AzureAISearch;
 using Moq;
 using Xunit;
 
-namespace SemanticKernel.Connectors.AzureAISearch.UnitTests;
+namespace AzureAISearch.UnitTests;
 
 /// <summary>
 /// Contains tests for the <see cref="AzureAISearchCollection{TKey, TRecord}"/> class.

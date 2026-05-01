@@ -7,7 +7,7 @@ using Microsoft.Extensions.VectorData;
 using CommunityToolkit.VectorData.InMemory;
 using Xunit;
 
-namespace SemanticKernel.Connectors.InMemory.UnitTests;
+namespace InMemory.UnitTests;
 
 /// <summary>
 /// Contains tests for the <see cref="InMemoryVectorStore"/> class.

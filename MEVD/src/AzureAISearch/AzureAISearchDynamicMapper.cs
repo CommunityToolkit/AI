@@ -12,7 +12,7 @@ using Microsoft.Shared.Diagnostics;
 namespace CommunityToolkit.VectorData.AzureAISearch;
 
 /// <summary>
-/// A mapper that maps between the generic Semantic Kernel data model and the model that the data is stored under, within Azure AI Search.
+/// A mapper that maps between the generic data model and the model that the data is stored under, within Azure AI Search.
 /// </summary>
 internal sealed class AzureAISearchDynamicMapper(CollectionModel model, JsonSerializerOptions? jsonSerializerOptions) : IAzureAISearchMapper<Dictionary<string, object?>>
 {
