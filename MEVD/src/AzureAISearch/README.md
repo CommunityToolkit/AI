@@ -1,6 +1,6 @@
 # CommunityToolkit.VectorData.AzureAISearch
 
-Azure AI Search provider for [Microsoft.Extensions.VectorData](https://learn.microsoft.com/en-us/dotnet/ai/vector-stores/overview), by the .NET Community Toolkit.
+Azure AI Search provider for [Microsoft.Extensions.VectorData](https://learn.microsoft.com/dotnet/ai/vector-stores/overview), by the .NET Community Toolkit.
 
 [Azure AI Search](https://learn.microsoft.com/azure/search/search-what-is-azure-search) is a cloud search service that provides vector similarity search, full-text search, and hybrid search capabilities.
 
@@ -14,4 +14,4 @@ Azure AI Search provider for [Microsoft.Extensions.VectorData](https://learn.mic
 dotnet add package CommunityToolkit.VectorData.AzureAISearch
 ```
 
-For more information, see the [Microsoft.Extensions.VectorData documentation](https://learn.microsoft.com/en-us/dotnet/ai/vector-stores/overview).
+For more information, see the [Microsoft.Extensions.VectorData documentation](https://learn.microsoft.com/dotnet/ai/vector-stores/overview).

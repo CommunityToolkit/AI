@@ -12,7 +12,7 @@ Ways to get RediSearch:
 
 1. Set up the RediSearch on your self-managed Redis, please refer to its [documentation](https://redis.io/docs/latest/develop/interact/search-and-query/advanced-concepts/vectors/).
 
-1. Use the [Redis Enterprise](https://redis.io/docs/latest/operate/rs/), see [Azure Marketplace](https://azuremarketplace.microsoft.com/en-us/marketplace/apps/garantiadata.redis_enterprise_1sp_public_preview?tab=Overview), [AWS Marketplace](https://aws.amazon.com/marketplace/pp/prodview-e6y7ork67pjwg?sr=0-2&ref_=beagle&applicationId=AWSMPContessa), or [Google Marketplace](https://console.cloud.google.com/marketplace/details/redislabs-public/redis-enterprise?pli=1).
+1. Use the [Redis Enterprise](https://redis.io/docs/latest/operate/rs/), see [Azure Marketplace](https://azuremarketplace.microsoft.com/marketplace/apps/garantiadata.redis_enterprise_1sp_public_preview?tab=Overview), [AWS Marketplace](https://aws.amazon.com/marketplace/pp/prodview-e6y7ork67pjwg?sr=0-2&ref_=beagle&applicationId=AWSMPContessa), or [Google Marketplace](https://console.cloud.google.com/marketplace/details/redislabs-public/redis-enterprise?pli=1).
 
 ## Quick start
 
@@ -28,4 +28,4 @@ docker run -d --name redis-stack-server -p 6379:6379 redis/redis-stack-server:la
 dotnet add package CommunityToolkit.VectorData.Redis
 ```
 
-For more information, see the [Microsoft.Extensions.VectorData documentation](https://learn.microsoft.com/en-us/dotnet/ai/vector-stores/overview).
+For more information, see the [Microsoft.Extensions.VectorData documentation](https://learn.microsoft.com/dotnet/ai/vector-stores/overview).

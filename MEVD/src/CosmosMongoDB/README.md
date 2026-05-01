@@ -1,6 +1,6 @@
 # CommunityToolkit.VectorData.CosmosMongoDB
 
-Azure Cosmos DB for MongoDB (vCore) provider for [Microsoft.Extensions.VectorData](https://learn.microsoft.com/en-us/dotnet/ai/vector-stores/overview), by the .NET Community Toolkit.
+Azure Cosmos DB for MongoDB (vCore) provider for [Microsoft.Extensions.VectorData](https://learn.microsoft.com/dotnet/ai/vector-stores/overview), by the .NET Community Toolkit.
 
 [Azure Cosmos DB for MongoDB vCore](https://learn.microsoft.com/azure/cosmos-db/mongodb/vcore/) supports native vector search, enabling AI-powered applications with vector similarity search capabilities.
 
@@ -14,4 +14,4 @@ Azure Cosmos DB for MongoDB (vCore) provider for [Microsoft.Extensions.VectorDat
 dotnet add package CommunityToolkit.VectorData.CosmosMongoDB
 ```
 
-For more information, see the [Microsoft.Extensions.VectorData documentation](https://learn.microsoft.com/en-us/dotnet/ai/vector-stores/overview).
+For more information, see the [Microsoft.Extensions.VectorData documentation](https://learn.microsoft.com/dotnet/ai/vector-stores/overview).

@@ -10,8 +10,8 @@ How to install the pgvector extension, please refer to its [documentation](https
 
 This extension is also available for **Azure Database for PostgreSQL - Flexible Server** and **Azure Cosmos DB for PostgreSQL**.
 
-- [Azure Database for Postgres](https://learn.microsoft.com/en-us/azure/postgresql/flexible-server/how-to-use-pgvector)
-- [Azure Cosmos DB for PostgreSQL](https://learn.microsoft.com/en-us/azure/cosmos-db/postgresql/howto-use-pgvector)
+- [Azure Database for Postgres](https://learn.microsoft.com/azure/postgresql/flexible-server/how-to-use-pgvector)
+- [Azure Cosmos DB for PostgreSQL](https://learn.microsoft.com/azure/cosmos-db/postgresql/howto-use-pgvector)
 
 ## Quick start
 
@@ -35,4 +35,4 @@ sk_demo=# CREATE EXTENSION vector;
 
 
 
-For more information, see the [Microsoft.Extensions.VectorData documentation](https://learn.microsoft.com/en-us/dotnet/ai/vector-stores/overview).
+For more information, see the [Microsoft.Extensions.VectorData documentation](https://learn.microsoft.com/dotnet/ai/vector-stores/overview).

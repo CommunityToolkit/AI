@@ -66,7 +66,7 @@ public class AzureAISearchAllSupportedTypesTests(AzureAISearchFixture fixture) :
                 DoubleProperty = 43.75,
                 NullableDoubleProperty = null,
                 Embedding = ReadOnlyMemory<float>.Empty,
-                // From https://learn.microsoft.com/en-us/rest/api/searchservice/supported-data-types:
+                // From https://learn.microsoft.com/rest/api/searchservice/supported-data-types:
                 // "All of the above types are nullable, except for collections of primitive and complex types, for example, Collection(Edm.String)"
                 // So for collections, we can't use nulls.
                 StringArray = [],
