@@ -19,7 +19,7 @@ public class CosmosMongoDistanceFunctionTests(CosmosMongoDistanceFunctionTests.F
     public override Task ManhattanDistance() => Assert.ThrowsAsync<NotSupportedException>(base.ManhattanDistance);
 
     // CosmosMongo EuclideanDistance doesn't correctly filter by score threshold (returns all results).
-    // This is a pre-existing bug also present in the Semantic Kernel repo.
+    // See https://github.com/CommunityToolkit/AI/issues/6.
     protected override Task TestScoreThreshold(VectorStoreCollection<int, DistanceFunctionTests<int>.SearchRecord> collection)
         => Task.CompletedTask;
 

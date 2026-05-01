@@ -104,7 +104,7 @@ internal static class CosmosMongoCollectionCreateMapping
     }
 
     /// <summary>
-    /// More information about Azure CosmosDB for MongoDB index kinds here: <see href="https://learn.microsoft.com/en-us/azure/cosmos-db/mongodb/vcore/vector-search" />.
+    /// More information about Azure CosmosDB for MongoDB index kinds here: <see href="https://learn.microsoft.com/azure/cosmos-db/mongodb/vcore/vector-search" />.
     /// </summary>
     private static string GetIndexKind(string? indexKind, string vectorPropertyName)
         => CosmosMongoCollectionSearchMapping.GetVectorPropertyIndexKind(indexKind) switch
@@ -115,7 +115,7 @@ internal static class CosmosMongoCollectionCreateMapping
         };
 
     /// <summary>
-    /// More information about Azure CosmosDB for MongoDB distance functions here: <see href="https://learn.microsoft.com/en-us/azure/cosmos-db/mongodb/vcore/vector-search" />.
+    /// More information about Azure CosmosDB for MongoDB distance functions here: <see href="https://learn.microsoft.com/azure/cosmos-db/mongodb/vcore/vector-search" />.
     /// </summary>
     private static string GetDistanceFunction(string? distanceFunction, string vectorPropertyName)
         => CosmosMongoCollectionSearchMapping.GetVectorPropertyDistanceFunction(distanceFunction) switch

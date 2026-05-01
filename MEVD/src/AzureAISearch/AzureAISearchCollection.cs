@@ -404,7 +404,7 @@ public class AzureAISearchCollection<TKey, TRecord> : VectorStoreCollection<TKey
         {
             // Azure AI Search threshold filtering is in preview:
             // https://learn.microsoft.com/azure/search/vector-search-how-to-query#set-thresholds-to-exclude-low-scoring-results-preview
-            // See https://github.com/microsoft/semantic-kernel/issues/13500.
+            // See https://github.com/CommunityToolkit/AI/issues/5.
             // For now, perform post-filtering on the client-side.
             if (options.ScoreThreshold.HasValue && record.Score < options.ScoreThreshold.Value)
             {
