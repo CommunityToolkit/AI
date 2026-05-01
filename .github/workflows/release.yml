@@ -24,7 +24,7 @@ jobs:
       id-token: write
     steps:
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
 
@@ -80,7 +80,7 @@ jobs:
           name: signed-nuget-packages
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: ./*.nupkg
 
