@@ -25,7 +25,7 @@ public static class DataRetrievalServiceCollectionExtensions
     public static RetrievalPipelineBuilder AddRetrievalPipeline(
         this IServiceCollection services)
     {
-        var pipelineBuilder = new RetrievalPipelineBuilder();
+        var pipelineBuilder = new RetrievalPipelineBuilder { Services = services };
 
         services.AddSingleton(sp =>
         {
@@ -52,7 +52,7 @@ public static class DataRetrievalServiceCollectionExtensions
         this IServiceCollection services,
         Func<IServiceProvider, RetrievalPipeline> pipelineFactory)
     {
-        var pipelineBuilder = new RetrievalPipelineBuilder();
+        var pipelineBuilder = new RetrievalPipelineBuilder { Services = services };
 
         services.AddSingleton(sp =>
         {

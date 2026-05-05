@@ -1,6 +1,7 @@
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DataRetrieval;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.VectorData;
 
 namespace CommunityToolkit.DataRetrieval;
 
@@ -12,6 +13,7 @@ public class RetrievalPipelineBuilder
 {
     internal List<Func<IServiceProvider, RetrievalQueryProcessor>> QueryProcessorFactories { get; } = [];
     internal List<Func<IServiceProvider, RetrievalResultProcessor>> ResultProcessorFactories { get; } = [];
+    internal IServiceCollection? Services { get; set; }
 
     /// <summary>Adds a query processor resolved from DI via <see cref="ActivatorUtilities"/>.</summary>
     public RetrievalPipelineBuilder UseQueryProcessor<T>() where T : RetrievalQueryProcessor
@@ -104,6 +106,44 @@ public class RetrievalPipelineBuilder
             };
         });
         return this;
+    }
+
+    /// <summary>
+    /// Registers an <see cref="IRetriever"/> singleton that binds the configured pipeline
+    /// to a specific vector store collection. This is a terminal method — call it after
+    /// composing all processors.
+    /// </summary>
+    /// <typeparam name="TKey">The vector store key type.</typeparam>
+    /// <typeparam name="TRecord">The vector store record type.</typeparam>
+    /// <param name="collectionFactory">Factory to resolve the vector store collection from DI.</param>
+    /// <param name="contentSelector">Optional function to extract text content from a record.</param>
+    /// <example>
+    /// <code>
+    /// builder.Services.AddRetrievalPipeline()
+    ///     .UseLlmReranking()
+    ///     .AsRetriever&lt;string, Article&gt;(
+    ///         sp => sp.GetRequiredService&lt;VectorStoreCollection&lt;string, Article&gt;&gt;(),
+    ///         record => record.Content);
+    /// </code>
+    /// </example>
+    public void AsRetriever<TKey, TRecord>(
+        Func<IServiceProvider, VectorStoreCollection<TKey, TRecord>> collectionFactory,
+        Func<TRecord, string>? contentSelector = null)
+        where TKey : notnull
+        where TRecord : class
+    {
+        if (Services is null)
+        {
+            throw new InvalidOperationException(
+                "AsRetriever can only be called on a builder returned by AddRetrievalPipeline.");
+        }
+
+        Services.AddSingleton<IRetriever>(sp =>
+        {
+            var pipeline = sp.GetRequiredService<RetrievalPipeline>();
+            var collection = collectionFactory(sp);
+            return pipeline.AsRetriever(collection, contentSelector);
+        });
     }
 }
 
