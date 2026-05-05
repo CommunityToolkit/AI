@@ -25,8 +25,12 @@
   <ItemGroup Label="MEDI">
     <PackageVersion Include="Microsoft.Extensions.DataIngestion" Version="10.4.0-preview.1.26160.2" />
     <PackageVersion Include="Microsoft.Extensions.DataIngestion.Abstractions" Version="10.4.0-preview.1.26160.2" />
+    <PackageVersion Include="Microsoft.Extensions.DataRetrieval" Version="10.5.0-dev" />
+    <PackageVersion Include="Microsoft.Extensions.DataRetrieval.Abstractions" Version="10.5.0-dev" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.6" />
     <PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.6" />
     <PackageVersion Include="Microsoft.ML.OnnxRuntime.Managed" Version="1.22.0" />
+    <PackageVersion Include="Microsoft.ML.Tokenizers" Version="2.0.0" />
     <PackageVersion Include="SkiaSharp" Version="3.119.0" />
     <PackageVersion Include="UglyToad.PdfPig" Version="0.1.15" />
     <PackageVersion Include="UglyToad.PdfPig.Core" Version="0.1.15" />

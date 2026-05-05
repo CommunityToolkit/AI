@@ -5,6 +5,8 @@
     [
       "MEDI/src/PdfPig.OnnxLayoutAnalysis/PdfPig.OnnxLayoutAnalysis.csproj",
       "MEDI/src/PdfPig.DataIngestion/PdfPig.DataIngestion.csproj",
+      "MEDI/src/DataRetrieval/DataRetrieval.csproj",
+      "MEDI/src/DataRetrieval.OnnxReranker/DataRetrieval.OnnxReranker.csproj",
 
       "MEDI/test/PdfPig.OnnxLayoutAnalysis.UnitTests/PdfPig.OnnxLayoutAnalysis.UnitTests.csproj",
       "MEDI/test/PdfPig.DataIngestion.UnitTests/PdfPig.DataIngestion.UnitTests.csproj"

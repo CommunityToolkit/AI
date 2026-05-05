@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Version>1.0.0-preview.1</Version>
+    <AssemblyName>CommunityToolkit.DataRetrieval</AssemblyName>
+    <RootNamespace>$(AssemblyName)</RootNamespace>
+    <TargetFrameworks>net10.0;net8.0</TargetFrameworks>
+
+    <Title>Advanced retrieval processors for Microsoft.Extensions.DataRetrieval pipelines</Title>
+    <Description>LLM-powered retrieval pipeline processors including multi-query expansion, HyDE, adaptive routing, CRAG validation, LLM re-ranking, Self-RAG, and Speculative RAG for advanced RAG applications.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.DataRetrieval" />
+    <PackageReference Include="Microsoft.Extensions.DataRetrieval.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.VectorData.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CommunityToolkit.DataRetrieval.UnitTests" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+  </ItemGroup>
+</Project>
