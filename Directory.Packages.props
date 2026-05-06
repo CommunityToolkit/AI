@@ -3,13 +3,13 @@
     <PackageVersion Include="System.Linq.AsyncEnumerable" Version="10.0.6" />
     <PackageVersion Include="System.Numerics.Tensors" Version="10.0.6" />
     <PackageVersion Include="System.Text.Json" Version="10.0.6" />
-    <PackageVersion Include="Microsoft.Extensions.AI.Abstractions" Version="10.5.0" />
+    <PackageVersion Include="Microsoft.Extensions.AI.Abstractions" Version="10.5.2" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.6" />
   </ItemGroup>
 
   <ItemGroup Label="MEVD">
-    <PackageVersion Include="Microsoft.Extensions.VectorData.Abstractions" Version="10.5.0" />
-    <PackageVersion Include="Microsoft.Extensions.VectorData.ConformanceTests" Version="10.5.0" />
+    <PackageVersion Include="Microsoft.Extensions.VectorData.Abstractions" Version="10.5.2" />
+    <PackageVersion Include="Microsoft.Extensions.VectorData.ConformanceTests" Version="10.5.2" />
 
     <PackageVersion Include="Azure.Search.Documents" Version="11.7.0" />
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.6" />
