@@ -15,9 +15,7 @@
     <PackageReference Include="Microsoft.Extensions.Options" />
     <PackageReference Include="Microsoft.ML.OnnxRuntime.Managed" />
     <PackageReference Include="SkiaSharp" />
-    <PackageReference Include="UglyToad.PdfPig" />
-    <PackageReference Include="UglyToad.PdfPig.Core" />
-    <PackageReference Include="UglyToad.PdfPig.DocumentLayoutAnalysis" />
+    <PackageReference Include="PdfPig" />
   </ItemGroup>
 
   <ItemGroup>

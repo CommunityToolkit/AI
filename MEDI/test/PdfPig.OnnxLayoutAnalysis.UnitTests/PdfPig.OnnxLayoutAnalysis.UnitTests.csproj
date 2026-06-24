@@ -13,9 +13,7 @@
     <PackageReference Include="Microsoft.Extensions.Options" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Moq" />
-    <PackageReference Include="UglyToad.PdfPig" />
-    <PackageReference Include="UglyToad.PdfPig.Core" />
-    <PackageReference Include="UglyToad.PdfPig.DocumentLayoutAnalysis" />
+    <PackageReference Include="PdfPig" />
     <PackageReference Include="xunit" />
     <PackageReference Include="Xunit.SkippableFact" />
     <PackageReference Include="xunit.runner.visualstudio">

@@ -28,9 +28,7 @@
     <PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.6" />
     <PackageVersion Include="Microsoft.ML.OnnxRuntime.Managed" Version="1.22.0" />
     <PackageVersion Include="SkiaSharp" Version="3.119.0" />
-    <PackageVersion Include="UglyToad.PdfPig" Version="0.1.15" />
-    <PackageVersion Include="UglyToad.PdfPig.Core" Version="0.1.15" />
-    <PackageVersion Include="UglyToad.PdfPig.DocumentLayoutAnalysis" Version="0.1.15" />
+    <PackageVersion Include="PdfPig" Version="0.1.14" />
   </ItemGroup>
 
   <ItemGroup Label="Test">
