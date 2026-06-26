@@ -1,0 +1,64 @@
+name: MEDI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MEDI/**'
+      - 'Shared/**'
+      - 'eng/**'
+      - 'Directory.Build.props'
+      - 'Directory.Packages.props'
+      - 'global.json'
+      - '.github/workflows/medi.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MEDI/**'
+      - 'Shared/**'
+      - 'eng/**'
+      - 'Directory.Build.props'
+      - 'Directory.Packages.props'
+      - 'global.json'
+      - '.github/workflows/medi.yml'
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Build
+        run: dotnet build MEDI/MEDI.slnf
+
+  unit-tests:
+    name: 'Unit: ${{ matrix.package }} (${{ matrix.os }})'
+    needs: build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        package:
+          - PdfPig.OnnxLayoutAnalysis
+          - PdfPig.DataIngestion
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Test
+        run: dotnet test MEDI/test/${{ matrix.package }}.UnitTests

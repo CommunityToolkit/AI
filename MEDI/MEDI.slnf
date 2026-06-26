@@ -1,0 +1,13 @@
+{
+  "solution": {
+    "path": "../CommunityToolkit.AI.slnx",
+    "projects":
+    [
+      "MEDI/src/PdfPig.OnnxLayoutAnalysis/PdfPig.OnnxLayoutAnalysis.csproj",
+      "MEDI/src/PdfPig.DataIngestion/PdfPig.DataIngestion.csproj",
+
+      "MEDI/test/PdfPig.OnnxLayoutAnalysis.UnitTests/PdfPig.OnnxLayoutAnalysis.UnitTests.csproj",
+      "MEDI/test/PdfPig.DataIngestion.UnitTests/PdfPig.DataIngestion.UnitTests.csproj"
+    ]
+  }
+}
