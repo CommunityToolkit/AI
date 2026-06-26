@@ -8,7 +8,7 @@ using CommunityToolkit.VectorData.Redis;
 using CommunityToolkit.VectorData.Redis.UnitTests;
 using Xunit;
 
-namespace SemanticKernel.Connectors.Redis.UnitTests;
+namespace Redis.UnitTests;
 
 /// <summary>
 /// Contains tests for the <see cref="RedisHashSetMapper{TConsumerDataModel}"/> class.

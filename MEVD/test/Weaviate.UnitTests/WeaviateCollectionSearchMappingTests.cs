@@ -7,7 +7,7 @@ using System.Text.Json.Nodes;
 using CommunityToolkit.VectorData.Weaviate;
 using Xunit;
 
-namespace SemanticKernel.Connectors.Weaviate.UnitTests;
+namespace Weaviate.UnitTests;
 
 /// <summary>
 /// Unit tests for <see cref="WeaviateCollectionSearchMapping"/> class.

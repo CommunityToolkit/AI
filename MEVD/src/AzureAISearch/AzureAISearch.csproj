@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Version>1.0.0-preview.1</Version>
+    <Version>1.0.0-preview.3</Version>
     <AssemblyName>CommunityToolkit.VectorData.AzureAISearch</AssemblyName>
     <RootNamespace>$(AssemblyName)</RootNamespace>
     <TargetFrameworks>net10.0;net8.0;netstandard2.0;net462</TargetFrameworks>
 
     <Title>Azure AI Search provider for Microsoft.Extensions.VectorData</Title>
-    <Description>Azure AI Search provider for Microsoft.Extensions.VectorData by Semantic Kernel</Description>
+    <Description>Azure AI Search provider for Microsoft.Extensions.VectorData by the .NET Community Toolkit</Description>
   </PropertyGroup>
 
   <ItemGroup>

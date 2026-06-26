@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using Microsoft.Extensions.VectorData;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace SemanticKernel.Connectors.CosmosMongoDB.UnitTests;
+namespace CosmosMongoDB.UnitTests;
 
 public class CosmosMongoHotelModel(string hotelId)
 {

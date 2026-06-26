@@ -3,6 +3,9 @@ name: MEVD
 on:
   push:
     branches: [main]
+    tags:
+      - "mevd/v*"      # All providers: mevd/v1.0.0-preview.1
+      - "mevd/*/v*"    # Single provider: mevd/PgVector/v1.0.0-preview.1
     paths:
       - 'MEVD/**'
       - 'Shared/**'
@@ -27,45 +30,94 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
+  discover:
+    name: Discover providers
+    runs-on: ubuntu-latest
+    outputs:
+      all_providers: ${{ steps.scan.outputs.all_providers }}
+      # Release-specific outputs (only meaningful on tag pushes)
+      is_release: ${{ steps.tag.outputs.is_release }}
+      version: ${{ steps.tag.outputs.version }}
+      pack_target: ${{ steps.tag.outputs.pack_target }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: MEVD/src
+          sparse-checkout-cone-mode: false
+
+      - name: Scan provider directories
+        id: scan
+        run: |
+          # All providers from src (excluding Shared)
+          all=$(ls -d MEVD/src/*/ | xargs -I{} basename {} | grep -v '^Shared$' | jq -R . | jq -sc .)
+          echo "all_providers=$all" >> $GITHUB_OUTPUT
+
+      - name: Parse release tag
+        id: tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "is_release=true" >> $GITHUB_OUTPUT
+
+          tag="${GITHUB_REF_NAME}"
+          # Strip leading "mevd/" prefix
+          rest="${tag#mevd/}"
+
+          if [[ "$rest" == v* ]]; then
+            # All providers: mevd/v1.0.0-preview.1
+            version="${rest#v}"
+            echo "pack_target=MEVD/MEVD.slnf" >> $GITHUB_OUTPUT
+          else
+            # Single provider: mevd/PgVector/v1.0.0-preview.1
+            provider="${rest%%/v*}"
+            version="${rest#*/v}"
+            echo "pack_target=MEVD/src/$provider/$provider.csproj" >> $GITHUB_OUTPUT
+          fi
+
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "Parsed tag '$tag' → version='$version'"
+
   build:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
+
+      - uses: actions/cache@v5
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ hashFiles('Directory.Packages.props') }}
+          restore-keys: nuget-
 
       - name: Build
         run: dotnet build MEVD/MEVD.slnf
 
   unit-tests:
     name: 'Unit: ${{ matrix.provider }} (${{ matrix.os }})'
-    needs: build
+    needs: [discover, build]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        provider:
-          - InMemory
-          - AzureAISearch
-          - CosmosMongoDB
-          - PgVector
-          - Pinecone
-          - Qdrant
-          - Redis
-          - SqliteVec
-          - Weaviate
+        provider: ${{ fromJson(needs.discover.outputs.all_providers) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
+
+      - uses: actions/cache@v5
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ hashFiles('Directory.Packages.props') }}
+          restore-keys: nuget-
 
       - name: Test
         run: dotnet test MEVD/test/${{ matrix.provider }}.UnitTests
@@ -74,29 +126,84 @@ jobs:
   # images, which aren't available on Windows GitHub-hosted runners.
   conformance-tests:
     name: 'Conformance: ${{ matrix.provider }}'
-    needs: build
+    needs: [discover, build]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        provider:
-          # AzureAISearch and CosmosMongoDB require cloud instances and are not run in CI.
-          # - AzureAISearch
-          # - CosmosMongoDB
-          - InMemory
-          - PgVector
-          - Pinecone
-          - Qdrant
-          - Redis
-          - SqliteVec
-          - Weaviate
+        provider: ${{ fromJson(needs.discover.outputs.all_providers) }}
+        # AzureAISearch and CosmosMongoDB require cloud instances and can't run in CI.
+        exclude:
+          - provider: AzureAISearch
+          - provider: CosmosMongoDB
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
 
+      - uses: actions/cache@v5
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ hashFiles('Directory.Packages.props') }}
+          restore-keys: nuget-
+
       - name: Test
         run: dotnet test MEVD/test/${{ matrix.provider }}.ConformanceTests
+
+  # --- Release pipeline (only on tag pushes) ---
+
+  package:
+    name: Package
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [discover, unit-tests, conformance-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - uses: actions/cache@v5
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ hashFiles('Directory.Packages.props') }}
+          restore-keys: nuget-
+
+      - name: Pack NuGet packages
+        run: >
+          dotnet pack ${{ needs.discover.outputs.pack_target }}
+          -c Release
+          -o ./nuget
+          -p:PackageVersion=${{ needs.discover.outputs.version }}
+          -p:CI=true
+
+      - name: Upload NuGet packages as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          if-no-files-found: error
+          path: ./nuget
+
+      - name: List NuGet packages in step summary
+        run: |
+          echo "## NuGet packages:" >> $GITHUB_STEP_SUMMARY
+          find nuget -type f -name '*.nupkg' -exec basename {} \; >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload signing file list
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-list
+          if-no-files-found: error
+          path: ${{ github.workspace }}/.github/workflows/SignClientFileList.txt
+
+  release:
+    name: Release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: package
+    uses: ./.github/workflows/release.yml
+    secrets: inherit

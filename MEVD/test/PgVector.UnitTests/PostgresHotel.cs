@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.VectorData;
 
-namespace SemanticKernel.Connectors.PgVector.UnitTests;
+namespace PgVector.UnitTests;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 

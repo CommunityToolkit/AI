@@ -4,11 +4,10 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.VectorData;
-using Microsoft.SemanticKernel;
 using CommunityToolkit.VectorData.InMemory;
 using Xunit;
 
-namespace SemanticKernel.Connectors.InMemory.UnitTests;
+namespace InMemory.UnitTests;
 
 /// <summary>
 /// Contains tests for the <see cref="InMemoryServiceCollectionExtensions"/> class.

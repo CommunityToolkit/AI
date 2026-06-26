@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>1.0.0-preview.1</Version>
+    <Version>1.0.0-preview.3</Version>
     <AssemblyName>CommunityToolkit.VectorData.SqliteVec</AssemblyName>
     <RootNamespace>$(AssemblyName)</RootNamespace>
     <TargetFrameworks>net10.0;net8.0;netstandard2.0;net462</TargetFrameworks>
     <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</IsAotCompatible>
 
     <Title>SQLite provider for Microsoft.Extensions.VectorData</Title>
-    <Description>SQLite (sqlitevec) provider for Microsoft.Extensions.VectorData by Semantic Kernel</Description>
+    <Description>SQLite (sqlitevec) provider for Microsoft.Extensions.VectorData by the .NET Community Toolkit</Description>
   </PropertyGroup>
 
   <ItemGroup>

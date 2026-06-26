@@ -32,22 +32,10 @@ internal class MongoModelBuilder() : CollectionModelBuilder(s_validationOptions)
     {
         base.ProcessProperty(clrProperty!, definitionProperty!);
 
-        // TODO: Reenable this after https://github.com/dotnet/extensions/pull/7475
-        // if (clrProperty?.GetCustomAttribute<BsonElementAttribute>() is { } bsonElementAttribute
-        //    && this.PropertyMap.TryGetValue(clrProperty.Name, out var property))
-        // {
-        //    property.StorageName = bsonElementAttribute.ElementName;
-        // }
-
-        // TODO: Workaround for https://github.com/dotnet/extensions/pull/7475
-        // The BSON serializer determines field names from the CLR property name (or [BsonElement] if present).
-        // Since UsesExternalSerializer is true, the base CollectionModelBuilder is supposed to ignore StorageName
-        // from VectorStoreProperty attributes to stay in sync with the serializer. However, some versions of the
-        // base class don't do this correctly, causing StorageName to diverge from what the serializer uses.
-        // Override here to always keep StorageName in sync with the serializer's behavior.
-        if (clrProperty is not null && this.PropertyMap.TryGetValue(clrProperty.Name, out var property))
+        if (clrProperty?.GetCustomAttribute<BsonElementAttribute>() is { } bsonElementAttribute
+            && this.PropertyMap.TryGetValue(clrProperty.Name, out var property))
         {
-            property.StorageName = clrProperty.GetCustomAttribute<BsonElementAttribute>()?.ElementName ?? clrProperty.Name;
+            property.StorageName = bsonElementAttribute.ElementName;
         }
     }
 

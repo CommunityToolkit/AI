@@ -10,7 +10,7 @@ using NpgsqlTypes;
 using Pgvector;
 using Xunit;
 
-namespace SemanticKernel.Connectors.PgVector.UnitTests;
+namespace PgVector.UnitTests;
 
 /// <summary>
 /// Unit tests for <see cref="PostgresPropertyMapping"/> class.

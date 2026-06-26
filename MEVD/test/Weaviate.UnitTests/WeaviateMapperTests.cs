@@ -11,7 +11,7 @@ using Microsoft.Extensions.VectorData;
 using CommunityToolkit.VectorData.Weaviate;
 using Xunit;
 
-namespace SemanticKernel.Connectors.Weaviate.UnitTests;
+namespace Weaviate.UnitTests;
 
 /// <summary>
 /// Unit tests for <see cref="WeaviateMapper{TRecord}"/> class.

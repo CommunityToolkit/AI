@@ -11,7 +11,7 @@ using MongoDB.Driver;
 using Moq;
 using Xunit;
 
-namespace SemanticKernel.Connectors.CosmosMongoDB.UnitTests;
+namespace CosmosMongoDB.UnitTests;
 
 /// <summary>
 /// Unit tests for <see cref="CosmosMongoVectorStore"/> class.

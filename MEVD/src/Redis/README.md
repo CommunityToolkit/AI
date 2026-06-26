@@ -1,4 +1,4 @@
-﻿# Microsoft.SemanticKernel.Connectors.Redis
+﻿# CommunityToolkit.VectorData.Redis
 
 This connector uses Redis to implement Semantic Memory. It requires the [RediSearch](https://redis.io/docs/latest/develop/interact/search-and-query/advanced-concepts/vectors/) module to be enabled on Redis to implement vector similarity search.
 
@@ -12,7 +12,7 @@ Ways to get RediSearch:
 
 1. Set up the RediSearch on your self-managed Redis, please refer to its [documentation](https://redis.io/docs/latest/develop/interact/search-and-query/advanced-concepts/vectors/).
 
-1. Use the [Redis Enterprise](https://redis.io/docs/latest/operate/rs/), see [Azure Marketplace](https://azuremarketplace.microsoft.com/en-us/marketplace/apps/garantiadata.redis_enterprise_1sp_public_preview?tab=Overview), [AWS Marketplace](https://aws.amazon.com/marketplace/pp/prodview-e6y7ork67pjwg?sr=0-2&ref_=beagle&applicationId=AWSMPContessa), or [Google Marketplace](https://console.cloud.google.com/marketplace/details/redislabs-public/redis-enterprise?pli=1).
+1. Use the [Redis Enterprise](https://redis.io/docs/latest/operate/rs/), see [Azure Marketplace](https://azuremarketplace.microsoft.com/marketplace/apps/garantiadata.redis_enterprise_1sp_public_preview?tab=Overview), [AWS Marketplace](https://aws.amazon.com/marketplace/pp/prodview-e6y7ork67pjwg?sr=0-2&ref_=beagle&applicationId=AWSMPContessa), or [Google Marketplace](https://console.cloud.google.com/marketplace/details/redislabs-public/redis-enterprise?pli=1).
 
 ## Quick start
 
@@ -22,6 +22,10 @@ Ways to get RediSearch:
 docker run -d --name redis-stack-server -p 6379:6379 redis/redis-stack-server:latest
 ```
 
-2. Create a Redis Vector Store using instructions on the [Microsoft Learn site](https://learn.microsoft.com/semantic-kernel/concepts/vector-store-connectors/out-of-the-box-connectors/redis-connector).
+2. Install the NuGet package:
 
-3. Use the [getting started instructions](https://learn.microsoft.com/semantic-kernel/concepts/vector-store-connectors/?pivots=programming-language-csharp#getting-started-with-vector-store-connectors) on the Microsoft Leearn site to learn more about using the vector store.
+```bash
+dotnet add package CommunityToolkit.VectorData.Redis
+```
+
+For more information, see the [Microsoft.Extensions.VectorData documentation](https://learn.microsoft.com/dotnet/ai/vector-stores/overview).

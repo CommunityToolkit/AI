@@ -2,14 +2,14 @@
   
   <PropertyGroup>
     <!-- THIS PROPERTY GROUP MUST COME FIRST -->
-    <Version>1.0.0-preview.1</Version>
+    <Version>1.0.0-preview.3</Version>
     <AssemblyName>CommunityToolkit.VectorData.Weaviate</AssemblyName>
     <RootNamespace>$(AssemblyName)</RootNamespace>
     <TargetFrameworks>net10.0;net8.0;netstandard2.0;net462</TargetFrameworks>
     <!-- <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</IsAotCompatible> -->
 
     <Title>Weaviate provider for Microsoft.Extensions.VectorData</Title>
-    <Description>Weaviate provider for Microsoft.Extensions.VectorData by Semantic Kernel</Description>
+    <Description>Weaviate provider for Microsoft.Extensions.VectorData by the .NET Community Toolkit</Description>
   </PropertyGroup>
   
   <ItemGroup>

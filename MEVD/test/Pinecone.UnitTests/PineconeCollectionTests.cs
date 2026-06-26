@@ -7,7 +7,7 @@ using CommunityToolkit.VectorData.Pinecone;
 using Pinecone;
 using Xunit;
 
-namespace SemanticKernel.Connectors.Pinecone.UnitTests;
+namespace Pinecone.UnitTests;
 
 /// <summary>
 /// Contains tests for the <see cref="PineconeCollection{TKey, TRecord}"/> class.

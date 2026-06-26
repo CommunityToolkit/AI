@@ -1,0 +1,104 @@
+name: Sign and publish NuGet packages
+
+on:
+  workflow_call:
+    secrets:
+      SIGN_KEY_VAULT_URL:
+        required: true
+      SIGN_CLIENT_ID:
+        required: true
+      SIGN_CLIENT_SECRET:
+        required: true
+      SIGN_TENANT_ID:
+        required: true
+      SIGN_CERTIFICATE:
+        required: true
+      NUGET_PACKAGE_PUSH_TOKEN:
+        required: true
+
+jobs:
+  sign:
+    name: Sign
+    runs-on: windows-latest
+    permissions:
+      id-token: write
+    steps:
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: ${{ github.workspace }}/packages
+
+      - name: Download signing file list
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-list
+          path: ${{ github.workspace }}
+
+      - name: Install signing tool
+        run: dotnet tool install --tool-path ./tools sign --version 0.9.1-beta.23356.1
+
+      - name: Sign packages
+        run: >
+          ./tools/sign code azure-key-vault
+          **/*.nupkg
+          --base-directory "${{ github.workspace }}/packages"
+          --file-list "${{ github.workspace }}/SignClientFileList.txt"
+          --timestamp-url "http://timestamp.digicert.com"
+          --publisher-name ".NET Foundation"
+          --description "AI Community Toolkit"
+          --description-url "https://github.com/CommunityToolkit/AI"
+          --azure-key-vault-url "${{ secrets.SIGN_KEY_VAULT_URL }}"
+          --azure-key-vault-client-id ${{ secrets.SIGN_CLIENT_ID }}
+          --azure-key-vault-client-secret "${{ secrets.SIGN_CLIENT_SECRET }}"
+          --azure-key-vault-tenant-id ${{ secrets.SIGN_TENANT_ID }}
+          --azure-key-vault-certificate "${{ secrets.SIGN_CERTIFICATE }}"
+          --verbosity Information
+
+      - name: Upload signed packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-nuget-packages
+          if-no-files-found: error
+          path: ${{ github.workspace }}/packages/**/*.nupkg
+
+  release:
+    name: GitHub Release
+    needs: sign
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download signed packages
+        uses: actions/download-artifact@v4
+        with:
+          name: signed-nuget-packages
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: ./*.nupkg
+
+  publish-nuget:
+    name: Publish to NuGet
+    needs: sign
+    runs-on: ubuntu-latest
+    environment:
+      name: nuget-release-gate
+    steps:
+      - name: Download signed packages
+        uses: actions/download-artifact@v4
+        with:
+          name: signed-nuget-packages
+
+      - name: Push to NuGet.org
+        run: >
+          dotnet nuget push ./*.nupkg
+          --source "https://api.nuget.org/v3/index.json"
+          --api-key ${{ secrets.NUGET_PACKAGE_PUSH_TOKEN }}
+          --skip-duplicate

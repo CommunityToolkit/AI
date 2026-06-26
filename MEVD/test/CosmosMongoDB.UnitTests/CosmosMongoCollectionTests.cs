@@ -17,7 +17,7 @@ using Moq;
 using Xunit;
 using MEVD = Microsoft.Extensions.VectorData;
 
-namespace SemanticKernel.Connectors.CosmosMongoDB.UnitTests;
+namespace CosmosMongoDB.UnitTests;
 
 /// <summary>
 /// Unit tests for <see cref="CosmosMongoCollection{TKey, TRecord}"/> class.

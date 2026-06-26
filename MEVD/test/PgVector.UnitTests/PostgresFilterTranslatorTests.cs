@@ -9,7 +9,7 @@ using Microsoft.Extensions.VectorData.ProviderServices;
 using CommunityToolkit.VectorData.PgVector;
 using Xunit;
 
-namespace SemanticKernel.Connectors.PgVector.UnitTests;
+namespace PgVector.UnitTests;
 
 public sealed class PostgresFilterTranslatorTests
 {

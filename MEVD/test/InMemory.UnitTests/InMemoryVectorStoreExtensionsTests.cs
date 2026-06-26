@@ -12,7 +12,7 @@ using Microsoft.Extensions.VectorData;
 using CommunityToolkit.VectorData.InMemory;
 using Xunit;
 
-namespace SemanticKernel.Connectors.InMemory.UnitTests;
+namespace InMemory.UnitTests;
 
 public class InMemoryVectorStoreExtensionsTests
 {

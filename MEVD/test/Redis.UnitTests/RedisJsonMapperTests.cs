@@ -9,7 +9,7 @@ using Microsoft.Extensions.VectorData;
 using CommunityToolkit.VectorData.Redis;
 using Xunit;
 
-namespace SemanticKernel.Connectors.Redis.UnitTests;
+namespace Redis.UnitTests;
 
 /// <summary>
 /// Contains tests for the <see cref="RedisJsonMapper{TConsumerDataModel}"/> class.

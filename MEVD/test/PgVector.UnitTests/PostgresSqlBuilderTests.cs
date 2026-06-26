@@ -11,7 +11,7 @@ using Npgsql;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace SemanticKernel.Connectors.PgVector.UnitTests;
+namespace PgVector.UnitTests;
 
 public class PostgresSqlBuilderTests
 {
