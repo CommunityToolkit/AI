@@ -3,7 +3,7 @@
   <PropertyGroup>
     <AssemblyName>CommunityToolkit.DocumentProcessing.PdfPig.OnnxLayoutAnalysis.UnitTests</AssemblyName>
     <RootNamespace>CommunityToolkit.DocumentProcessing.PdfPig.OnnxLayoutAnalysis.UnitTests</RootNamespace>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net10.0;net8.0</TargetFrameworks>
     <IsTestProject>true</IsTestProject>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
