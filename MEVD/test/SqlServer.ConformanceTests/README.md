@@ -39,7 +39,7 @@ This file is git-ignored and safe for local development.
 #### Option 3: User Secrets
 
 ```bash
-cd test/VectorData/SqlServer.ConformanceTests
+cd MEVD/test/SqlServer.ConformanceTests
 dotnet user-secrets set "SqlServer:ConnectionString" "Server=myserver.database.windows.net;Database=mydb;User Id=myuser;Password=mypassword;"
 ```
 

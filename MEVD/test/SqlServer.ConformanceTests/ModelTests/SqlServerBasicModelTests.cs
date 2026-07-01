@@ -15,7 +15,7 @@ public class SqlServerBasicModelTests(SqlServerBasicModelTests.Fixture fixture)
     private const int SqlServerMaxParameters = 2_100;
 
     [Fact]
-    private async Task Split_batches_to_account_for_max_parameter_limit()
+    public async Task Split_batches_to_account_for_max_parameter_limit()
     {
         var collection = fixture.Collection;
         Record[] inserted = Enumerable.Range(0, SqlServerMaxParameters + 1).Select(i => new Record()
