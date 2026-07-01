@@ -12,6 +12,7 @@
     <PackageVersion Include="Microsoft.Extensions.VectorData.ConformanceTests" Version="10.5.2" />
 
     <PackageVersion Include="Azure.Search.Documents" Version="11.7.0" />
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="6.1.3" />
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.6" />
     <PackageVersion Include="MongoDB.Driver" Version="3.7.1" />
     <PackageVersion Include="Npgsql" Version="10.0.2" />
@@ -41,6 +42,7 @@
     <PackageVersion Include="Humanizer" Version="3.0.10" />
     <PackageVersion Include="Moq" Version="4.20.72" />
     <PackageVersion Include="Testcontainers" Version="4.11.0" />
+    <PackageVersion Include="Testcontainers.MsSql" Version="4.11.0" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.11.0" />
     <PackageVersion Include="Testcontainers.Qdrant" Version="4.11.0" />
     <PackageVersion Include="Testcontainers.Redis" Version="4.11.0" />
