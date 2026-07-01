@@ -23,8 +23,8 @@
   </ItemGroup>
 
   <ItemGroup Label="MEDI">
-    <PackageVersion Include="Microsoft.Extensions.DataIngestion" Version="10.4.0-preview.1.26160.2" />
-    <PackageVersion Include="Microsoft.Extensions.DataIngestion.Abstractions" Version="10.4.0-preview.1.26160.2" />
+    <PackageVersion Include="Microsoft.Extensions.DataIngestion" Version="10.5.0-preview.1.26213.4" />
+    <PackageVersion Include="Microsoft.Extensions.DataIngestion.Abstractions" Version="10.5.0-preview.1.26213.4" />
     <PackageVersion Include="Microsoft.Extensions.DataRetrieval" Version="10.5.0-dev" />
     <PackageVersion Include="Microsoft.Extensions.DataRetrieval.Abstractions" Version="10.5.0-dev" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.6" />

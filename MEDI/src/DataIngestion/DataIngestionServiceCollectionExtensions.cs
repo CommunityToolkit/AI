@@ -18,6 +18,7 @@ public static class DataIngestionServiceCollectionExtensions
     ///     .UseEntityExtraction()
     ///     .UseTopicClassification(o => o.Taxonomy = ["web", "data", "security"])
     ///     .UseHypotheticalQueries(o => o.QuestionsPerChunk = 5)
+    ///     .UseContextualChunkEnrichment()
     ///     .UseTreeIndex();
     /// </code>
     /// </example>

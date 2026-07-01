@@ -32,6 +32,9 @@ public static class MetadataKeys
     /// <summary>Pipe-delimited hypothetical questions generated for a chunk.</summary>
     public const string HypotheticalQuestions = "hypothetical_questions";
 
+    /// <summary>Contextual summary generated for a chunk.</summary>
+    public const string ContextualSummary = "contextual_summary";
+
     /// <summary>Tree hierarchy level (0 = leaf, 1 = branch, 2 = root).</summary>
     public const string Level = "level";
 

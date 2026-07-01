@@ -92,6 +92,15 @@ public class IngestionPipelineBuilder<T>
         return this;
     }
 
+    /// <summary>Adds contextual chunk enrichment for improved retrieval.</summary>
+    public IngestionPipelineBuilder<T> UseContextualChunkEnrichment()
+    {
+        ChunkProcessorFactories.Add(sp =>
+            (IngestionChunkProcessor<T>)(object)new ContextualChunkEnricher(
+                sp.GetRequiredService<IChatClient>()));
+        return this;
+    }
+
     /// <summary>Adds RAPTOR-style tree index generation (leaf → branch → root summaries).</summary>
     public IngestionPipelineBuilder<T> UseTreeIndex()
     {

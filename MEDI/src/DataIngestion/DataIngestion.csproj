@@ -6,7 +6,7 @@
     <TargetFrameworks>net10.0;net8.0</TargetFrameworks>
 
     <Title>LLM-powered chunk processors for Microsoft.Extensions.DataIngestion pipelines</Title>
-    <Description>LLM-powered ingestion chunk processors including entity extraction, topic classification, hypothetical query generation (reverse HyDE), and RAPTOR-style tree indexing for advanced RAG applications.</Description>
+    <Description>LLM-powered ingestion chunk processors including contextual chunk enrichment, entity extraction, topic classification, hypothetical query generation (reverse HyDE), and RAPTOR-style tree indexing for advanced RAG applications.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
