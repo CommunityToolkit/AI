@@ -19,7 +19,7 @@ namespace CommunityToolkit.DocumentProcessing.PdfPig.DataIngestion;
 /// the matching elements to the chunk. For keys with conflicting values across
 /// multiple matching elements, the value from the first match wins.
 /// </remarks>
-public sealed class MetadataAwareSectionChunker : IngestionChunker<string>
+internal sealed class MetadataAwareSectionChunker : IngestionChunker<string>
 {
     private readonly SectionChunker _inner;
 
