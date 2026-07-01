@@ -10,10 +10,12 @@
     <File Path="MEDI/src/Directory.Build.props" />
     <Project Path="MEDI/src/PdfPig.OnnxLayoutAnalysis/PdfPig.OnnxLayoutAnalysis.csproj" />
     <Project Path="MEDI/src/PdfPig.DataIngestion/PdfPig.DataIngestion.csproj" />
+    <Project Path="MEDI/src/DataIngestion.VisionLMOcr/DataIngestion.VisionLMOcr.csproj" />
   </Folder>
   <Folder Name="/MEDI/test/">
     <Project Path="MEDI/test/PdfPig.OnnxLayoutAnalysis.UnitTests/PdfPig.OnnxLayoutAnalysis.UnitTests.csproj" />
     <Project Path="MEDI/test/PdfPig.DataIngestion.UnitTests/PdfPig.DataIngestion.UnitTests.csproj" />
+    <Project Path="MEDI/test/DataIngestion.VisionLMOcr.UnitTests/DataIngestion.VisionLMOcr.UnitTests.csproj" />
   </Folder>
   <Folder Name="/MEVD/src/">
     <File Path="MEVD/src/Directory.Build.props" />
