@@ -6,7 +6,7 @@
     <TargetFrameworks>net10.0;net8.0</TargetFrameworks>
 
     <Title>PdfPig PDF reader for Microsoft.Extensions.DataIngestion pipelines</Title>
-    <Description>PDF document reader, vision LLM enrichers (OCR, table extraction, contextual chunking), and metadata-aware chunking for MEDI ingestion pipelines using PdfPig.</Description>
+    <Description>PDF document reader with provider-neutral OCR composition and metadata-aware chunking for MEDI ingestion pipelines using PdfPig.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 

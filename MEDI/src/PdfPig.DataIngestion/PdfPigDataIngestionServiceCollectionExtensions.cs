@@ -1,7 +1,6 @@
 using System;
 using CommunityToolkit.DocumentProcessing.PdfPig.DataIngestion;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -11,29 +10,28 @@ namespace Microsoft.Extensions.DependencyInjection;
 public static class PdfPigDataIngestionServiceCollectionExtensions
 {
     /// <summary>
-    /// Adds a <see cref="PdfPigReader"/> to the service collection.
+    /// Adds a <see cref="PdfPigOcrReader"/> to the service collection.
     /// </summary>
     /// <param name="services">The service collection.</param>
-    /// <param name="configure">Optional delegate to configure reader options.</param>
+    /// <param name="policy">Controls when the reader invokes OCR. Defaults to native text only.</param>
+    /// <param name="ocrClient">Optional OCR client instance to register for the reader.</param>
     /// <returns>The service collection for chaining.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
-    public static IServiceCollection AddPdfPigReader(
+    public static IServiceCollection AddPdfPigOcrReader(
         this IServiceCollection services,
-        Action<PdfPigReaderOptions>? configure = null)
+        OcrPolicy policy = OcrPolicy.Never,
+        IOcrClient? ocrClient = null)
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddOptions<PdfPigReaderOptions>();
-
-        if (configure is not null)
+        if (ocrClient is not null)
         {
-            services.Configure(configure);
+            services.AddSingleton(ocrClient);
         }
 
-        services.TryAddSingleton<PdfPigReader>();
-
-        services.TryAddEnumerable(
-            ServiceDescriptor.Singleton<IValidateOptions<PdfPigReaderOptions>, PdfPigReaderOptionsValidator>());
+        services.TryAddSingleton(sp => new PdfPigOcrReader(
+            sp.GetService<IOcrClient>(),
+            policy));
 
         return services;
     }
