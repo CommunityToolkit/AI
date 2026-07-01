@@ -28,7 +28,7 @@ public sealed class BlogPost
 }
 
 // Create the vector store and get a collection
-var vectorStore = new SqlServerVectorStore(connectionString);
+using SqlServerVectorStore vectorStore = new(connectionString);
 var collection = vectorStore.GetCollection<int, BlogPost>("BlogPosts");
 await collection.EnsureCollectionExistsAsync();
 
