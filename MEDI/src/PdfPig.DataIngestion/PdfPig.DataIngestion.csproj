@@ -15,7 +15,6 @@
     <PackageReference Include="Microsoft.Extensions.DataIngestion" />
     <PackageReference Include="Microsoft.Extensions.DataIngestion.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
-    <PackageReference Include="Microsoft.Extensions.Options" />
     <PackageReference Include="SkiaSharp" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
     <PackageReference Include="PdfPig" />
