@@ -1,4 +1,4 @@
-# Microsoft.SqlServer.VectorData
+# CommunityToolkit.VectorData.SqlServer
 
 SQL Server and Azure SQL provider for [Microsoft.Extensions.VectorData](https://learn.microsoft.com/en-us/dotnet/ai/vector-stores/overview).
 
@@ -6,7 +6,7 @@ SQL Server and Azure SQL provider for [Microsoft.Extensions.VectorData](https://
 
 ```csharp
 using Microsoft.Extensions.VectorData;
-using Microsoft.SqlServer.VectorData;
+using CommunityToolkit.VectorData.SqlServer;
 
 // Define your record model
 public sealed class BlogPost

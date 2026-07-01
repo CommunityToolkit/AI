@@ -1,9 +1,10 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace Microsoft.SqlServer.VectorData;
+namespace CommunityToolkit.VectorData.SqlServer;
 
 // For mapping string[] properties to SQL Server JSON columns
 [JsonSerializable(typeof(string[]))]

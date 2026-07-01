@@ -1,10 +1,11 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Microsoft.SqlServer.VectorData;
+namespace CommunityToolkit.VectorData.SqlServer;
 
 /// <summary>
 /// Represents a collection of vector store records in a SqlServer database, mapped to a dynamic <c>Dictionary&lt;string, object?&gt;</c>.

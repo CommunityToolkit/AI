@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <IsTestProject>true</IsTestProject>
     <IsPackable>false</IsPackable>
-    <AssemblyName>Microsoft.SqlServer.VectorData.ConformanceTests</AssemblyName>
+    <AssemblyName>CommunityToolkit.VectorData.SqlServer.ConformanceTests</AssemblyName>
     <RootNamespace>SqlServer.ConformanceTests</RootNamespace>
     <UserSecretsId>b7762d10-e29b-4bb1-8b74-b6d69a667dd4</UserSecretsId>
   </PropertyGroup>

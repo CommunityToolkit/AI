@@ -1,4 +1,5 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
@@ -17,7 +18,7 @@ using Microsoft.Extensions.VectorData;
 using Microsoft.Extensions.VectorData.ProviderServices;
 using Microsoft.Shared.Diagnostics;
 
-namespace Microsoft.SqlServer.VectorData;
+namespace CommunityToolkit.VectorData.SqlServer;
 
 /// <summary>
 /// An implementation of <see cref="VectorStoreCollection{TKey, TRecord}"/> backed by a SQL Server or Azure SQL database.

@@ -1,11 +1,12 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.SqlTypes;
 using Microsoft.Extensions.VectorData;
 using Microsoft.Extensions.VectorData.ProviderServices;
-using Microsoft.SqlServer.VectorData;
+using CommunityToolkit.VectorData.SqlServer;
 using Xunit;
 
 namespace SqlServer.ConformanceTests;
