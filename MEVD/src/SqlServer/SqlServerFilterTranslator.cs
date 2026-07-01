@@ -157,7 +157,7 @@ internal sealed class SqlServerFilterTranslator : SqlFilterTranslator
 
     protected override void TranslateQueryParameter(object? value)
     {
-        // For null values, simply inline rather than parameterize; parameterized NULLs require setting NpgsqlDbType which is a bit more complicated,
+        // For null values, simply inline rather than parameterize; parameterized NULLs require setting SqlDbType which is a bit more complicated,
         // plus in any case equality with NULL requires different SQL (x IS NULL rather than x = y)
         if (value is null)
         {
