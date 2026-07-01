@@ -36,6 +36,7 @@
     <Project Path="MEVD/test/Redis.ConformanceTests/Redis.ConformanceTests.csproj" />
     <Project Path="MEVD/test/SqliteVec.UnitTests/SqliteVec.UnitTests.csproj" />
     <Project Path="MEVD/test/SqliteVec.ConformanceTests/SqliteVec.ConformanceTests.csproj" />
+    <Project Path="MEVD/test/SqlServer.UnitTests/SqlServer.UnitTests.csproj" />
     <Project Path="MEVD/test/SqlServer.ConformanceTests/SqlServer.ConformanceTests.csproj" />
     <Project Path="MEVD/test/Weaviate.UnitTests/Weaviate.UnitTests.csproj" />
     <Project Path="MEVD/test/Weaviate.ConformanceTests/Weaviate.ConformanceTests.csproj" />

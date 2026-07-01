@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="CommunityToolkit.VectorData.SqlServer.UnitTests" />
     <InternalsVisibleTo Include="CommunityToolkit.VectorData.SqlServer.ConformanceTests" />
   </ItemGroup>
 

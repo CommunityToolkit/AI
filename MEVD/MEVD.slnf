@@ -30,6 +30,7 @@
       "MEVD/test/Redis.ConformanceTests/Redis.ConformanceTests.csproj",
       "MEVD/test/SqliteVec.UnitTests/SqliteVec.UnitTests.csproj",
       "MEVD/test/SqliteVec.ConformanceTests/SqliteVec.ConformanceTests.csproj",
+      "MEVD/test/SqlServer.UnitTests/SqlServer.UnitTests.csproj",
       "MEVD/test/SqlServer.ConformanceTests/SqlServer.ConformanceTests.csproj",
       "MEVD/test/Weaviate.UnitTests/Weaviate.UnitTests.csproj",
       "MEVD/test/Weaviate.ConformanceTests/Weaviate.ConformanceTests.csproj"

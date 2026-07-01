@@ -9,7 +9,7 @@ using Microsoft.Extensions.VectorData.ProviderServices;
 using CommunityToolkit.VectorData.SqlServer;
 using Xunit;
 
-namespace SqlServer.ConformanceTests;
+namespace SqlServer.UnitTests;
 
 public class SqlServerCommandBuilderTests
 {
