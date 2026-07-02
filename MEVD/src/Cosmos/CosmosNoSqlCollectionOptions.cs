@@ -16,7 +16,7 @@ public sealed class CosmosNoSqlCollectionOptions : VectorStoreCollectionOptions
     internal static readonly CosmosNoSqlCollectionOptions Default = new();
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="CosmosNoSqlVectorStoreOptions"/> class.
+    /// Initializes a new instance of the <see cref="CosmosNoSqlCollectionOptions"/> class.
     /// </summary>
     public CosmosNoSqlCollectionOptions()
     {

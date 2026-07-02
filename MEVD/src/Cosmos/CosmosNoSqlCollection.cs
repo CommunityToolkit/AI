@@ -137,7 +137,7 @@ public class CosmosNoSqlCollection<TKey, TRecord> : VectorStoreCollection<TKey, 
         Func<CosmosNoSqlCollectionOptions, CollectionModel> modelFactory,
         CosmosNoSqlCollectionOptions? options)
     {
-        // Validate TKey: must be string or Guid (partition key = document ID), CosmosNoSqlKey (other parittion key cases), or object (used by CosmosNoSqlDynamicCollection).
+        // Validate TKey: must be string or Guid (partition key = document ID), CosmosNoSqlKey (other partition key cases), or object (used by CosmosNoSqlDynamicCollection).
         if (typeof(TKey) != typeof(string) && typeof(TKey) != typeof(Guid) && typeof(TKey) != typeof(CosmosNoSqlKey) && typeof(TKey) != typeof(object))
         {
             throw new NotSupportedException($"The key type must be string, Guid, or CosmosNoSqlKey. Received: {typeof(TKey).Name}");
