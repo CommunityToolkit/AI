@@ -10,6 +10,7 @@ using Microsoft.Azure.Cosmos;
 using MEAI = Microsoft.Extensions.AI;
 using Microsoft.Extensions.VectorData;
 using Microsoft.Extensions.VectorData.ProviderServices;
+using Microsoft.Shared.Diagnostics;
 
 namespace CommunityToolkit.VectorData.Cosmos;
 
@@ -35,7 +36,7 @@ internal static class CosmosNoSqlCollectionQueryBuilder
         int skip,
         bool includeVectors)
     {
-        Verify.NotNull(vector);
+        Throw.IfNull(vector);
 
         const string VectorVariableName = "@vector";
         const string KeywordVariablePrefix = "@keyword";

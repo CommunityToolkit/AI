@@ -8,6 +8,7 @@ using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.VectorData;
 using CommunityToolkit.VectorData.Cosmos;
+using Microsoft.Shared.Diagnostics;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -49,7 +50,7 @@ public static class CosmosNoSqlServiceCollectionExtensions
         CosmosNoSqlVectorStoreOptions? options = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
-        Verify.NotNull(services);
+        Throw.IfNull(services);
 
         services.Add(new ServiceDescriptor(typeof(CosmosNoSqlVectorStore), serviceKey, (sp, _) =>
         {
@@ -101,9 +102,9 @@ public static class CosmosNoSqlServiceCollectionExtensions
         CosmosNoSqlVectorStoreOptions? options = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
-        Verify.NotNull(services);
-        Verify.NotNullOrWhiteSpace(connectionString);
-        Verify.NotNullOrWhiteSpace(databaseName);
+        Throw.IfNull(services);
+        Throw.IfNullOrWhitespace(connectionString);
+        Throw.IfNullOrWhitespace(databaseName);
 
         services.Add(new ServiceDescriptor(typeof(CosmosNoSqlVectorStore), serviceKey, (sp, _) =>
         {
@@ -158,8 +159,8 @@ public static class CosmosNoSqlServiceCollectionExtensions
         where TKey : notnull
         where TRecord : class
     {
-        Verify.NotNull(services);
-        Verify.NotNullOrWhiteSpace(name);
+        Throw.IfNull(services);
+        Throw.IfNullOrWhitespace(name);
 
         services.Add(new ServiceDescriptor(typeof(CosmosNoSqlCollection<TKey, TRecord>), serviceKey, (sp, _) =>
         {
@@ -219,8 +220,8 @@ public static class CosmosNoSqlServiceCollectionExtensions
         where TKey : notnull
         where TRecord : class
     {
-        Verify.NotNullOrWhiteSpace(connectionString);
-        Verify.NotNullOrWhiteSpace(databaseName);
+        Throw.IfNullOrWhitespace(connectionString);
+        Throw.IfNullOrWhitespace(databaseName);
 
         return AddKeyedCosmosNoSqlCollection<TKey, TRecord>(services, serviceKey, name, _ => connectionString, _ => databaseName, _ => options!, lifetime);
     }
@@ -270,10 +271,10 @@ public static class CosmosNoSqlServiceCollectionExtensions
         where TKey : notnull
         where TRecord : class
     {
-        Verify.NotNull(services);
-        Verify.NotNullOrWhiteSpace(name);
-        Verify.NotNull(connectionStringProvider);
-        Verify.NotNull(databaseNameProvider);
+        Throw.IfNull(services);
+        Throw.IfNullOrWhitespace(name);
+        Throw.IfNull(connectionStringProvider);
+        Throw.IfNull(databaseNameProvider);
 
         services.Add(new ServiceDescriptor(typeof(CosmosNoSqlCollection<TKey, TRecord>), serviceKey, (sp, _) =>
         {

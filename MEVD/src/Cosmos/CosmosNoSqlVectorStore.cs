@@ -12,6 +12,7 @@ using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.VectorData;
 using Microsoft.Extensions.VectorData.ProviderServices;
+using Microsoft.Shared.Diagnostics;
 
 namespace CommunityToolkit.VectorData.Cosmos;
 
@@ -47,7 +48,7 @@ public sealed class CosmosNoSqlVectorStore : VectorStore
     public CosmosNoSqlVectorStore(Database database, CosmosNoSqlVectorStoreOptions? options = null)
         : this(new(database.Client, ownsClient: false), _ => database, options)
     {
-        Verify.NotNull(database);
+        Throw.IfNull(database);
     }
 
     /// <summary>
@@ -61,8 +62,8 @@ public sealed class CosmosNoSqlVectorStore : VectorStore
         CosmosClientOptions? clientOptions = null, CosmosNoSqlVectorStoreOptions? storeOptions = null)
         : this(new ClientWrapper(new CosmosClient(connectionString, clientOptions), ownsClient: true), client => client.GetDatabase(databaseName), storeOptions)
     {
-        Verify.NotNullOrWhiteSpace(connectionString);
-        Verify.NotNullOrWhiteSpace(databaseName);
+        Throw.IfNullOrWhitespace(connectionString);
+        Throw.IfNullOrWhitespace(databaseName);
     }
 
     private CosmosNoSqlVectorStore(ClientWrapper clientWrapper,
@@ -181,7 +182,7 @@ public sealed class CosmosNoSqlVectorStore : VectorStore
     /// <inheritdoc />
     public override object? GetService(Type serviceType, object? serviceKey = null)
     {
-        Verify.NotNull(serviceType);
+        Throw.IfNull(serviceType);
 
         return
             serviceKey is not null ? null :

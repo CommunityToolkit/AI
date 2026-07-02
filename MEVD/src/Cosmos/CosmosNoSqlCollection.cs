@@ -22,6 +22,7 @@ using DistanceFunction = Microsoft.Azure.Cosmos.DistanceFunction;
 using IndexKind = Microsoft.Extensions.VectorData.IndexKind;
 using MEAI = Microsoft.Extensions.AI;
 using SKDistanceFunction = Microsoft.Extensions.VectorData.DistanceFunction;
+using Microsoft.Shared.Diagnostics;
 
 namespace CommunityToolkit.VectorData.Cosmos;
 
@@ -82,8 +83,8 @@ public class CosmosNoSqlCollection<TKey, TRecord> : VectorStoreCollection<TKey, 
     public CosmosNoSqlCollection(Database database, string name, CosmosNoSqlCollectionOptions? options = default)
         : this(new(database.Client, ownsClient: false), _ => database, name, options)
     {
-        Verify.NotNull(database);
-        Verify.NotNullOrWhiteSpace(name);
+        Throw.IfNull(database);
+        Throw.IfNullOrWhitespace(name);
     }
 
     /// <summary>
@@ -108,9 +109,9 @@ public class CosmosNoSqlCollection<TKey, TRecord> : VectorStoreCollection<TKey, 
             name,
             options)
     {
-        Verify.NotNullOrWhiteSpace(connectionString);
-        Verify.NotNullOrWhiteSpace(databaseName);
-        Verify.NotNullOrWhiteSpace(name);
+        Throw.IfNullOrWhitespace(connectionString);
+        Throw.IfNullOrWhitespace(databaseName);
+        Throw.IfNullOrWhitespace(name);
     }
 
     internal CosmosNoSqlCollection(
@@ -346,7 +347,7 @@ public class CosmosNoSqlCollection<TKey, TRecord> : VectorStoreCollection<TKey, 
     /// <inheritdoc />
     public override async Task<TRecord?> GetAsync(TKey key, RecordRetrievalOptions? options = null, CancellationToken cancellationToken = default)
     {
-        Verify.NotNull(key);
+        Throw.IfNull(key);
 
         const string OperationName = "ReadItem";
 
@@ -383,7 +384,7 @@ public class CosmosNoSqlCollection<TKey, TRecord> : VectorStoreCollection<TKey, 
         RecordRetrievalOptions? options = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        Verify.NotNull(keys);
+        Throw.IfNull(keys);
 
         const string OperationName = "ReadManyItems";
 
@@ -420,7 +421,7 @@ public class CosmosNoSqlCollection<TKey, TRecord> : VectorStoreCollection<TKey, 
     /// <inheritdoc />
     public override async Task UpsertAsync(TRecord record, CancellationToken cancellationToken = default)
     {
-        Verify.NotNull(record);
+        Throw.IfNull(record);
 
         (_, var generatedEmbeddings) = await ProcessEmbeddingsAsync(this._model, [record], cancellationToken).ConfigureAwait(false);
 
@@ -430,7 +431,7 @@ public class CosmosNoSqlCollection<TKey, TRecord> : VectorStoreCollection<TKey, 
     /// <inheritdoc />
     public override async Task UpsertAsync(IEnumerable<TRecord> records, CancellationToken cancellationToken = default)
     {
-        Verify.NotNull(records);
+        Throw.IfNull(records);
 
         (records, var generatedEmbeddings) = await ProcessEmbeddingsAsync(this._model, records, cancellationToken).ConfigureAwait(false);
 
@@ -527,8 +528,8 @@ public class CosmosNoSqlCollection<TKey, TRecord> : VectorStoreCollection<TKey, 
         VectorSearchOptions<TRecord>? options = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        Verify.NotNull(searchValue);
-        Verify.NotLessThan(top, 1);
+        Throw.IfNull(searchValue);
+        Throw.IfLessThan(top, 1);
 
         const string OperationName = "VectorizedSearch";
         const string ScorePropertyName = "SimilarityScore";
@@ -597,8 +598,8 @@ public class CosmosNoSqlCollection<TKey, TRecord> : VectorStoreCollection<TKey, 
     public override async IAsyncEnumerable<TRecord> GetAsync(Expression<Func<TRecord, bool>> filter, int top,
         FilteredRecordRetrievalOptions<TRecord>? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        Verify.NotNull(filter);
-        Verify.NotLessThan(top, 1);
+        Throw.IfNull(filter);
+        Throw.IfLessThan(top, 1);
 
         const string OperationName = "GetAsync";
 
@@ -636,7 +637,7 @@ public class CosmosNoSqlCollection<TKey, TRecord> : VectorStoreCollection<TKey, 
         const string ScorePropertyName = "SimilarityScore";
 
         this.VerifyVectorType(searchValue);
-        Verify.NotLessThan(top, 1);
+        Throw.IfLessThan(top, 1);
 
         options ??= s_defaultKeywordVectorizedHybridSearchOptions;
         var vectorProperty = this._model.GetVectorPropertyOrSingle<TRecord>(new() { VectorProperty = options.VectorProperty });
@@ -668,7 +669,7 @@ public class CosmosNoSqlCollection<TKey, TRecord> : VectorStoreCollection<TKey, 
     /// <inheritdoc />
     public override object? GetService(Type serviceType, object? serviceKey = null)
     {
-        Verify.NotNull(serviceType);
+        Throw.IfNull(serviceType);
 
         return
             serviceKey is not null ? null :
@@ -682,7 +683,7 @@ public class CosmosNoSqlCollection<TKey, TRecord> : VectorStoreCollection<TKey, 
 
     private void VerifyVectorType<TVector>(TVector? vector)
     {
-        Verify.NotNull(vector);
+        Throw.IfNull(vector);
 
         var vectorType = vector!.GetType();
 
@@ -714,7 +715,7 @@ public class CosmosNoSqlCollection<TKey, TRecord> : VectorStoreCollection<TKey, 
 
     /// <summary>
     /// Returns instance of <see cref="ContainerProperties"/> with applied indexing policy.
-    /// More information here: <see href="https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/how-to-manage-indexing-policy"/>.
+    /// More information here: <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/how-to-manage-indexing-policy"/>.
     /// </summary>
     private ContainerProperties GetContainerProperties()
     {
@@ -800,7 +801,7 @@ public class CosmosNoSqlCollection<TKey, TRecord> : VectorStoreCollection<TKey, 
     }
 
     /// <summary>
-    /// More information about Azure CosmosDB NoSQL index kinds here: <see href="https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/vector-search#vector-indexing-policies" />.
+    /// More information about Azure CosmosDB NoSQL index kinds here: <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/vector-search#vector-indexing-policies" />.
     /// </summary>
     private static VectorIndexType GetIndexKind(string? indexKind, string vectorPropertyName)
         => indexKind switch
@@ -812,7 +813,7 @@ public class CosmosNoSqlCollection<TKey, TRecord> : VectorStoreCollection<TKey, 
         };
 
     /// <summary>
-    /// More information about Azure CosmosDB NoSQL distance functions here: <see href="https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/vector-search#container-vector-policies" />.
+    /// More information about Azure CosmosDB NoSQL distance functions here: <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/vector-search#container-vector-policies" />.
     /// </summary>
     private static DistanceFunction GetDistanceFunction(string? distanceFunction, string vectorPropertyName)
         => distanceFunction switch

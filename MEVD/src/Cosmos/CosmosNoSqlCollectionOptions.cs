@@ -54,7 +54,7 @@ public sealed class CosmosNoSqlCollectionOptions : VectorStoreCollectionOptions
 
     /// <summary>
     /// Specifies the indexing mode in the Azure Cosmos DB service.
-    /// More information here: <see href="https://learn.microsoft.com/en-us/azure/cosmos-db/index-policy#indexing-mode"/>.
+    /// More information here: <see href="https://learn.microsoft.com/azure/cosmos-db/index-policy#indexing-mode"/>.
     /// </summary>
     /// <remarks>
     /// Default is <see cref="IndexingMode.Consistent" />.

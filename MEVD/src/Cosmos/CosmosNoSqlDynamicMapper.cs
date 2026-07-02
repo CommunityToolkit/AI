@@ -10,6 +10,7 @@ using System.Text.Json.Nodes;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.VectorData.ProviderServices;
 using MEAI = Microsoft.Extensions.AI;
+using Microsoft.Shared.Diagnostics;
 
 namespace CommunityToolkit.VectorData.Cosmos;
 
@@ -21,7 +22,7 @@ internal sealed class CosmosNoSqlDynamicMapper(CollectionModel model, JsonSerial
 {
     public JsonObject MapFromDataToStorageModel(Dictionary<string, object?> dataModel, int recordIndex, IReadOnlyList<MEAI.Embedding>?[]? generatedEmbeddings)
     {
-        Verify.NotNull(dataModel);
+        Throw.IfNull(dataModel);
 
         var jsonObject = new JsonObject
         {
@@ -113,7 +114,7 @@ internal sealed class CosmosNoSqlDynamicMapper(CollectionModel model, JsonSerial
 
     public Dictionary<string, object?> MapFromStorageToDataModel(JsonObject storageModel, bool includeVectors)
     {
-        Verify.NotNull(storageModel);
+        Throw.IfNull(storageModel);
 
         var result = new Dictionary<string, object?>();
 

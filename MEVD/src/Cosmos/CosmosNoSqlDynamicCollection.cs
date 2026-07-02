@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Microsoft.Azure.Cosmos;
+using Microsoft.Shared.Diagnostics;
 
 namespace CommunityToolkit.VectorData.Cosmos;
 
@@ -61,9 +62,9 @@ public sealed class CosmosNoSqlDynamicCollection : CosmosNoSqlCollection<object,
             collectionName,
             options)
     {
-        Verify.NotNullOrWhiteSpace(connectionString);
-        Verify.NotNullOrWhiteSpace(databaseName);
-        Verify.NotNullOrWhiteSpace(collectionName);
+        Throw.IfNullOrWhitespace(connectionString);
+        Throw.IfNullOrWhitespace(databaseName);
+        Throw.IfNullOrWhitespace(collectionName);
     }
 
     internal CosmosNoSqlDynamicCollection(
