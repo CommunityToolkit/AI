@@ -11,6 +11,7 @@
       "MEVD/src/Qdrant/Qdrant.csproj",
       "MEVD/src/Redis/Redis.csproj",
       "MEVD/src/SqliteVec/SqliteVec.csproj",
+      "MEVD/src/SqlServer/SqlServer.csproj",
       "MEVD/src/Weaviate/Weaviate.csproj",
 
       "MEVD/test/AzureAISearch.UnitTests/AzureAISearch.UnitTests.csproj",
@@ -29,6 +30,8 @@
       "MEVD/test/Redis.ConformanceTests/Redis.ConformanceTests.csproj",
       "MEVD/test/SqliteVec.UnitTests/SqliteVec.UnitTests.csproj",
       "MEVD/test/SqliteVec.ConformanceTests/SqliteVec.ConformanceTests.csproj",
+      "MEVD/test/SqlServer.UnitTests/SqlServer.UnitTests.csproj",
+      "MEVD/test/SqlServer.ConformanceTests/SqlServer.ConformanceTests.csproj",
       "MEVD/test/Weaviate.UnitTests/Weaviate.UnitTests.csproj",
       "MEVD/test/Weaviate.ConformanceTests/Weaviate.ConformanceTests.csproj"
     ]
