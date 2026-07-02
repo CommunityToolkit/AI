@@ -19,7 +19,12 @@ public class SqlServerIndexKindTests(SqlServerIndexKindTests.Fixture fixture)
     [Fact]
     public virtual async Task DiskAnn()
     {
-        await AzureSqlHelper.EnsureAzureSqlAsync();
+        // This test should be conditional (https://github.com/dotnet/extensions/issues/7605)
+        if (!await AzureSqlHelper.GetIsAzureSqlAsync())
+        {
+            return;
+        }
+
         const string CollectionName = "IndexKindTests_DiskAnn";
 
         // Step 1: Create the table using Flat index (no vector index) so we can insert data.
