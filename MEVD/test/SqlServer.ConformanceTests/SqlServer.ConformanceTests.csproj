@@ -12,6 +12,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The HybridSearch tests require running against Azure SQL -->
+    <Compile Remove="SqlServerHybridSearchTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
