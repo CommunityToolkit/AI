@@ -4,6 +4,7 @@
     "projects":
     [
       "MEVD/src/AzureAISearch/AzureAISearch.csproj",
+      "MEVD/src/Cosmos/Cosmos.csproj",
       "MEVD/src/CosmosMongoDB/CosmosMongoDB.csproj",
       "MEVD/src/InMemory/InMemory.csproj",
       "MEVD/src/Pinecone/Pinecone.csproj",
@@ -16,6 +17,8 @@
 
       "MEVD/test/AzureAISearch.UnitTests/AzureAISearch.UnitTests.csproj",
       "MEVD/test/AzureAISearch.ConformanceTests/AzureAISearch.ConformanceTests.csproj",
+      "MEVD/test/Cosmos.UnitTests/Cosmos.UnitTests.csproj",
+      "MEVD/test/Cosmos.ConformanceTests/Cosmos.ConformanceTests.csproj",
       "MEVD/test/CosmosMongoDB.UnitTests/CosmosMongoDB.UnitTests.csproj",
       "MEVD/test/CosmosMongoDB.ConformanceTests/CosmosMongoDB.ConformanceTests.csproj",
       "MEVD/test/InMemory.UnitTests/InMemory.UnitTests.csproj",
