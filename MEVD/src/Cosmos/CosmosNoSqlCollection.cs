@@ -12,6 +12,7 @@ using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos;
@@ -242,27 +243,31 @@ public class CosmosNoSqlCollection<TKey, TRecord> : VectorStoreCollection<TKey, 
     public override async Task<bool> CollectionExistsAsync(CancellationToken cancellationToken = default)
     {
         const string OperationName = "ListCollectionNamesAsync";
-        const string Query = "SELECT VALUE(c.id) FROM c WHERE c.id = @collectionName";
+        const string Query = "SELECT c.id FROM c WHERE c.id = @collectionName";
         var queryDefinition = new QueryDefinition(Query).WithParameter("@collectionName", this.Name);
 
-        using var feedIterator = VectorStoreErrorHandler.RunOperation<FeedIterator<string>, CosmosException>(
+        using var feedIterator = VectorStoreErrorHandler.RunOperation<FeedIterator<ContainerIdResult>, CosmosException>(
             this._collectionMetadata,
             OperationName,
-            () => this._database.GetContainerQueryIterator<string>(queryDefinition));
+            () => this._database.GetContainerQueryIterator<ContainerIdResult>(queryDefinition));
 
-        using var errorHandlingFeedIterator = new ErrorHandlingFeedIterator<string>(feedIterator, this._collectionMetadata, OperationName);
-
-        while (errorHandlingFeedIterator.HasMoreResults)
+        while (feedIterator.HasMoreResults)
         {
-            var next = await errorHandlingFeedIterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
+            var next = await feedIterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
 
-            foreach (var containerName in next.Resource)
+            foreach (var result in next.Resource)
             {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private sealed class ContainerIdResult
+    {
+        [JsonPropertyName("id")]
+        public string Id { get; set; } = string.Empty;
     }
 
     /// <inheritdoc />
@@ -786,7 +791,7 @@ public class CosmosNoSqlCollection<TKey, TRecord> : VectorStoreCollection<TKey, 
         }
 
         // Adding special mandatory indexing path.
-        indexingPolicy.IncludedPaths.Add(new IncludedPath { Path = "/" });
+        indexingPolicy.IncludedPaths.Add(new IncludedPath { Path = "/*" });
 
         // Exclude vector paths to ensure optimized performance.
         foreach (var vectorIndexPath in vectorIndexPaths)

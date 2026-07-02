@@ -23,13 +23,15 @@ namespace Cosmos.ConformanceTests;
 public sealed class CosmosNoSqlDependencyInjectionTests
     : DependencyInjectionTests<CosmosNoSqlVectorStore, CosmosNoSqlCollection<string, DependencyInjectionTests<string>.Record>, string, DependencyInjectionTests<string>.Record>
 {
+    private const string TestConnectionString = "AccountEndpoint=https://localhost:8081;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
+
     public override IEnumerable<Func<IServiceCollection, object?, ServiceLifetime, IServiceCollection>> StoreDelegates
     {
         get
         {
             yield return (services, serviceKey, lifetime) => serviceKey is null
-                ? services.AddCosmosNoSqlVectorStore(CosmosNoSqlTestStore.ConnectionString, CosmosNoSqlTestStore.DatabaseName, lifetime: lifetime)
-                : services.AddKeyedCosmosNoSqlVectorStore(serviceKey, CosmosNoSqlTestStore.ConnectionString, CosmosNoSqlTestStore.DatabaseName, lifetime: lifetime);
+                ? services.AddCosmosNoSqlVectorStore(TestConnectionString, CosmosNoSqlTestStore.DatabaseName, lifetime: lifetime)
+                : services.AddKeyedCosmosNoSqlVectorStore(serviceKey, TestConnectionString, CosmosNoSqlTestStore.DatabaseName, lifetime: lifetime);
         }
     }
 
@@ -38,8 +40,8 @@ public sealed class CosmosNoSqlDependencyInjectionTests
         get
         {
             yield return (services, serviceKey, name, lifetime) => serviceKey is null
-                ? services.AddCosmosNoSqlCollection<string, Record>(name, CosmosNoSqlTestStore.ConnectionString, CosmosNoSqlTestStore.DatabaseName, lifetime: lifetime)
-                : services.AddKeyedCosmosNoSqlCollection<string, Record>(serviceKey, name, CosmosNoSqlTestStore.ConnectionString, CosmosNoSqlTestStore.DatabaseName, lifetime: lifetime);
+                ? services.AddCosmosNoSqlCollection<string, Record>(name, TestConnectionString, CosmosNoSqlTestStore.DatabaseName, lifetime: lifetime)
+                : services.AddKeyedCosmosNoSqlCollection<string, Record>(serviceKey, name, TestConnectionString, CosmosNoSqlTestStore.DatabaseName, lifetime: lifetime);
         }
     }
 
@@ -72,7 +74,7 @@ public sealed class CosmosNoSqlEmbeddingGenerationTests(
 {
     public new sealed class StringVectorFixture : EmbeddingGenerationTests<string>.StringVectorFixture
     {
-        public override string DefaultIndexKind => "Flat";
+        public override string DefaultIndexKind => "DiskAnn";
 
         public override TestStore TestStore => CosmosNoSqlTestStore.Instance;
 
@@ -87,7 +89,7 @@ public sealed class CosmosNoSqlEmbeddingGenerationTests(
         public override Func<IServiceCollection, IServiceCollection>[] DependencyInjectionStoreRegistrationDelegates =>
         [
             services => services.AddCosmosNoSqlVectorStore(
-                CosmosNoSqlTestStore.ConnectionString,
+                CosmosNoSqlTestStore.Instance.ConnectionString,
                 CosmosNoSqlTestStore.DatabaseName,
                 new() { JsonSerializerOptions = CosmosNoSqlTestStore.SerializerOptions })
         ];
@@ -96,7 +98,7 @@ public sealed class CosmosNoSqlEmbeddingGenerationTests(
         [
             services => services.AddCosmosNoSqlCollection<string, RecordWithAttributes>(
                 CollectionName,
-                CosmosNoSqlTestStore.ConnectionString,
+                CosmosNoSqlTestStore.Instance.ConnectionString,
                 CosmosNoSqlTestStore.DatabaseName,
                 new() { JsonSerializerOptions = CosmosNoSqlTestStore.SerializerOptions })
         ];
@@ -104,7 +106,7 @@ public sealed class CosmosNoSqlEmbeddingGenerationTests(
 
     public new sealed class RomOfFloatVectorFixture : EmbeddingGenerationTests<string>.RomOfFloatVectorFixture
     {
-        public override string DefaultIndexKind => "Flat";
+        public override string DefaultIndexKind => "DiskAnn";
 
         public override TestStore TestStore => CosmosNoSqlTestStore.Instance;
 
@@ -119,7 +121,7 @@ public sealed class CosmosNoSqlEmbeddingGenerationTests(
         public override Func<IServiceCollection, IServiceCollection>[] DependencyInjectionStoreRegistrationDelegates =>
         [
             services => services.AddCosmosNoSqlVectorStore(
-                CosmosNoSqlTestStore.ConnectionString,
+                CosmosNoSqlTestStore.Instance.ConnectionString,
                 CosmosNoSqlTestStore.DatabaseName,
                 new() { JsonSerializerOptions = CosmosNoSqlTestStore.SerializerOptions })
         ];
@@ -128,7 +130,7 @@ public sealed class CosmosNoSqlEmbeddingGenerationTests(
         [
             services => services.AddCosmosNoSqlCollection<string, RecordWithAttributes>(
                 CollectionName,
-                CosmosNoSqlTestStore.ConnectionString,
+                CosmosNoSqlTestStore.Instance.ConnectionString,
                 CosmosNoSqlTestStore.DatabaseName,
                 new() { JsonSerializerOptions = CosmosNoSqlTestStore.SerializerOptions })
         ];
@@ -197,7 +199,7 @@ public sealed class CosmosNoSqlEmbeddingTypeTests(CosmosNoSqlEmbeddingTypeTests.
 {
     public new sealed class Fixture : EmbeddingTypeTests<string>.Fixture
     {
-        public override string DefaultIndexKind => "Flat";
+        public override string DefaultIndexKind => "DiskAnn";
 
         public override TestStore TestStore => CosmosNoSqlTestStore.Instance;
 
@@ -238,11 +240,8 @@ internal static class CosmosNoSqlConformanceTestHelpers
 public sealed class CosmosNoSqlBasicModelTests(CosmosNoSqlBasicModelTests.Fixture fixture)
     : BasicModelTests<string>(fixture), IClassFixture<CosmosNoSqlBasicModelTests.Fixture>
 {
-    public override async Task GetAsync_with_filter_and_multiple_OrderBys()
-    {
-        var exception = await Assert.ThrowsAsync<VectorStoreException>(base.GetAsync_with_filter_and_multiple_OrderBys);
-        Assert.IsType<CosmosException>(exception.InnerException);
-    }
+    // The vNext emulator's DiskANN index does not support OFFSET in vector search.
+    public override Task SearchAsync_with_Skip() => Task.CompletedTask;
 
     public new sealed class Fixture : BasicModelTests<string>.Fixture
     {
@@ -253,11 +252,8 @@ public sealed class CosmosNoSqlBasicModelTests(CosmosNoSqlBasicModelTests.Fixtur
 public sealed class CosmosNoSqlDynamicModelTests(CosmosNoSqlDynamicModelTests.Fixture fixture)
     : DynamicModelTests<string>(fixture), IClassFixture<CosmosNoSqlDynamicModelTests.Fixture>
 {
-    public override async Task GetAsync_with_filter_and_multiple_OrderBys()
-    {
-        var exception = await Assert.ThrowsAsync<VectorStoreException>(base.GetAsync_with_filter_and_multiple_OrderBys);
-        Assert.IsType<CosmosException>(exception.InnerException);
-    }
+    // The vNext emulator's DiskANN index does not support OFFSET in vector search.
+    public override Task SearchAsync_with_Skip() => Task.CompletedTask;
 
     public new sealed class Fixture : DynamicModelTests<string>.Fixture
     {

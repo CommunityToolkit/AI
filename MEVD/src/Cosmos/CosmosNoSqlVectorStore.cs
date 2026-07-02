@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos;
@@ -145,24 +146,29 @@ public sealed class CosmosNoSqlVectorStore : VectorStore
     /// <inheritdoc />
     public override async IAsyncEnumerable<string> ListCollectionNamesAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        const string Query = "SELECT VALUE(c.id) FROM c";
+        const string Query = "SELECT c.id FROM c";
 
         const string OperationName = "ListCollectionNamesAsync";
-        using var feedIterator = VectorStoreErrorHandler.RunOperation<FeedIterator<string>, CosmosException>(
+        using var feedIterator = VectorStoreErrorHandler.RunOperation<FeedIterator<ContainerIdResult>, CosmosException>(
             this._metadata,
             OperationName,
-            () => this._database.GetContainerQueryIterator<string>(Query));
-        using var errorHandlingFeedIterator = new ErrorHandlingFeedIterator<string>(feedIterator, this._metadata, OperationName);
+            () => this._database.GetContainerQueryIterator<ContainerIdResult>(Query));
 
         while (feedIterator.HasMoreResults)
         {
             var next = await feedIterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
 
-            foreach (var containerName in next.Resource)
+            foreach (var result in next.Resource)
             {
-                yield return containerName;
+                yield return result.Id;
             }
         }
+    }
+
+    private sealed class ContainerIdResult
+    {
+        [JsonPropertyName("id")]
+        public string Id { get; set; } = string.Empty;
     }
 
     /// <inheritdoc />
