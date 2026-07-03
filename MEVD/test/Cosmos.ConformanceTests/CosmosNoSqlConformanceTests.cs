@@ -88,19 +88,22 @@ public sealed class CosmosNoSqlEmbeddingGenerationTests(
 
         public override Func<IServiceCollection, IServiceCollection>[] DependencyInjectionStoreRegistrationDelegates =>
         [
-            services => services.AddCosmosNoSqlVectorStore(
-                CosmosNoSqlTestStore.Instance.ConnectionString,
-                CosmosNoSqlTestStore.DatabaseName,
-                new() { JsonSerializerOptions = CosmosNoSqlTestStore.SerializerOptions })
+            services => services
+                .AddSingleton(CosmosNoSqlTestStore.Instance.Database)
+                .AddCosmosNoSqlVectorStore(new()
+                {
+                    JsonSerializerOptions = CosmosNoSqlTestStore.SerializerOptions,
+                }),
         ];
 
         public override Func<IServiceCollection, IServiceCollection>[] DependencyInjectionCollectionRegistrationDelegates =>
         [
-            services => services.AddCosmosNoSqlCollection<string, RecordWithAttributes>(
-                CollectionName,
-                CosmosNoSqlTestStore.Instance.ConnectionString,
-                CosmosNoSqlTestStore.DatabaseName,
-                new() { JsonSerializerOptions = CosmosNoSqlTestStore.SerializerOptions })
+            services => services
+                .AddSingleton(CosmosNoSqlTestStore.Instance.Database)
+                .AddCosmosNoSqlCollection<string, RecordWithAttributes>(CollectionName, new()
+                {
+                    JsonSerializerOptions = CosmosNoSqlTestStore.SerializerOptions,
+                }),
         ];
     }
 
@@ -167,6 +170,19 @@ public sealed class CosmosNoSqlHybridSearchTests(
 public sealed class CosmosNoSqlIndexKindTests(CosmosNoSqlIndexKindTests.Fixture fixture)
     : IndexKindTests<string>(fixture), IClassFixture<CosmosNoSqlIndexKindTests.Fixture>
 {
+    [Fact]
+    public Task DiskAnn() => Test("DiskAnn");
+
+    public override Task Flat()
+    {
+        if (!CosmosNoSqlTestStore.Instance.UsesLocalEmulator)
+        {
+            return base.Flat();
+        }
+
+        return Task.CompletedTask;
+    }
+
     public new sealed class Fixture : IndexKindTests<string>.Fixture
     {
         public override TestStore TestStore => CosmosNoSqlTestStore.Instance;

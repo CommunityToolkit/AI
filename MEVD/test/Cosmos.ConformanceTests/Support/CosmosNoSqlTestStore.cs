@@ -16,29 +16,25 @@ internal sealed class CosmosNoSqlTestStore : TestStore
 {
     public const string DatabaseName = "VectorDataConformanceTests";
 
-    private static readonly CosmosDbContainer s_container = new CosmosDbBuilder("mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-latest")
-        .Build();
-
-    private static readonly SemaphoreSlim s_initLock = new(1, 1);
-    private static bool s_initialized;
-
+    private CosmosDbContainer? _container;
     private CosmosClient? _client;
     private Database? _database;
-    private bool _useExternalInstance;
     private string? _connectionString;
 
     public static CosmosNoSqlTestStore Instance { get; } = new();
 
+    public bool UsesLocalEmulator => _container is not null;
+
     public override string DefaultIndexKind => "DiskAnn";
 
-    public string ConnectionString => this._connectionString ?? throw new InvalidOperationException("Cosmos DB test store has not been started.");
+    public string ConnectionString => _connectionString ?? throw new InvalidOperationException("Cosmos DB test store has not been started.");
 
     public static JsonSerializerOptions SerializerOptions { get; } = new(JsonSerializerDefaults.Web)
     {
         PropertyNamingPolicy = new CosmosNoSqlTestJsonNamingPolicy()
     };
 
-    public Database Database => this._database ?? throw new InvalidOperationException("Cosmos DB test store has not been started.");
+    public Database Database => _database ?? throw new InvalidOperationException("Cosmos DB test store has not been started.");
 
     private CosmosNoSqlTestStore()
     {
@@ -48,7 +44,7 @@ internal sealed class CosmosNoSqlTestStore : TestStore
         string name,
         VectorStoreCollectionDefinition definition)
         => new CosmosNoSqlCollection<TKey, TRecord>(
-            this.Database,
+            Database,
             name,
             new()
             {
@@ -60,7 +56,7 @@ internal sealed class CosmosNoSqlTestStore : TestStore
         string name,
         VectorStoreCollectionDefinition definition)
         => new CosmosNoSqlDynamicCollection(
-            this.Database,
+            Database,
             name,
             new()
             {
@@ -70,59 +66,43 @@ internal sealed class CosmosNoSqlTestStore : TestStore
 
     protected override async Task StartAsync()
     {
-        if (s_initialized)
+        if (CosmosNoSqlTestEnvironment.IsConnectionStringDefined)
         {
-            return;
+            _connectionString = CosmosNoSqlTestEnvironment.ConnectionString!;
+        }
+        else
+        {
+            _container ??= new CosmosDbBuilder("mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-latest")
+                .WithEnvironment("QUERY_BUFFER_SIZE_KB", "65536")
+                .Build();
+
+            await _container.StartAsync();
+            _connectionString = _container.GetConnectionString();
         }
 
-        await s_initLock.WaitAsync();
-        try
+        CosmosClientOptions clientOptions = new()
         {
-            if (s_initialized)
-            {
-                return;
-            }
+            ConnectionMode = ConnectionMode.Gateway,
+            LimitToEndpoint = true,
+            RequestTimeout = TimeSpan.FromSeconds(10),
+            UseSystemTextJsonSerializerWithOptions = JsonSerializerOptions.Default,
+            HttpClientFactory = _container is not null
+                ? () => _container.HttpClient
+                : null,
+        };
 
-            if (CosmosNoSqlTestEnvironment.IsConnectionStringDefined)
-            {
-                this._connectionString = CosmosNoSqlTestEnvironment.ConnectionString!;
-                this._useExternalInstance = true;
-            }
-            else
-            {
-                await s_container.StartAsync();
-                this._connectionString = s_container.GetConnectionString();
-                this._useExternalInstance = false;
-            }
+        _client = new CosmosClient(_connectionString, clientOptions);
 
-            this._client = new CosmosClient(
-                this._connectionString,
-                new CosmosClientOptions
-                {
-                    ConnectionMode = ConnectionMode.Gateway,
-                    LimitToEndpoint = true,
-                    RequestTimeout = TimeSpan.FromSeconds(10),
-                    UseSystemTextJsonSerializerWithOptions = JsonSerializerOptions.Default,
-                    HttpClientFactory = !this._useExternalInstance
-                        ? () => s_container.HttpClient
-                        : null,
-                });
-
-            this._database = await this._client.CreateDatabaseIfNotExistsAsync(DatabaseName).ConfigureAwait(false);
-            this.DefaultVectorStore = new CosmosNoSqlVectorStore(this._database, new() { JsonSerializerOptions = SerializerOptions });
-            s_initialized = true;
-        }
-        finally
-        {
-            s_initLock.Release();
-        }
+        _database = await _client.CreateDatabaseIfNotExistsAsync(DatabaseName).ConfigureAwait(false);
+        DefaultVectorStore = new CosmosNoSqlVectorStore(_database, new() { JsonSerializerOptions = SerializerOptions });
     }
 
-    protected override Task StopAsync()
+    protected override async Task StopAsync()
     {
-        // Don't stop the container here - it's shared across multiple test fixtures.
-        // The Testcontainers resource reaper will clean it up when the test process exits.
-        return Task.CompletedTask;
+        if (_container is not null)
+        {
+            await _container.StopAsync();
+        }
     }
 
     private sealed class CosmosNoSqlTestJsonNamingPolicy : JsonNamingPolicy
