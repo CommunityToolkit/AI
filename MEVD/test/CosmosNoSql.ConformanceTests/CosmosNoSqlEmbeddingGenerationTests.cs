@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Cosmos.ConformanceTests.Support;
+using CosmosNoSql.ConformanceTests.Support;
 using CommunityToolkit.VectorData.CosmosNoSql;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,7 +10,7 @@ using VectorData.ConformanceTests;
 using VectorData.ConformanceTests.Support;
 using Xunit;
 
-namespace Cosmos.ConformanceTests;
+namespace CosmosNoSql.ConformanceTests;
 
 public sealed class CosmosNoSqlEmbeddingGenerationTests(
     CosmosNoSqlEmbeddingGenerationTests.StringVectorFixture stringVectorFixture,

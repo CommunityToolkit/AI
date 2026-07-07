@@ -4,7 +4,7 @@
 using VectorData.ConformanceTests;
 using VectorData.ConformanceTests.TypeTests;
 
-namespace Cosmos.ConformanceTests;
+namespace CosmosNoSql.ConformanceTests;
 
 public sealed class CosmosNoSqlTestSuiteImplementationTests : TestSuiteImplementationTests
 {

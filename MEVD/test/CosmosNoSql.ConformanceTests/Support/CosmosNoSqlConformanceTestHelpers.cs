@@ -3,7 +3,7 @@
 
 using Microsoft.Extensions.VectorData;
 
-namespace Cosmos.ConformanceTests.Support;
+namespace CosmosNoSql.ConformanceTests.Support;
 
 internal static class CosmosNoSqlConformanceTestHelpers
 {

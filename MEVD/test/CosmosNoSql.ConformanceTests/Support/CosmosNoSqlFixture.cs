@@ -3,7 +3,7 @@
 
 using VectorData.ConformanceTests.Support;
 
-namespace Cosmos.ConformanceTests.Support;
+namespace CosmosNoSql.ConformanceTests.Support;
 
 public sealed class CosmosNoSqlFixture : VectorStoreFixture
 {

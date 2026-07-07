@@ -8,7 +8,7 @@ using Microsoft.Extensions.VectorData;
 using Testcontainers.CosmosDb;
 using VectorData.ConformanceTests.Support;
 
-namespace Cosmos.ConformanceTests.Support;
+namespace CosmosNoSql.ConformanceTests.Support;
 
 #pragma warning disable CA1001 // Type owns disposable fields but is not disposable
 
@@ -96,6 +96,7 @@ internal sealed class CosmosNoSqlTestStore(string uniqueDatabaseName) : TestStor
         if (_container is not null)
         {
             await _container.StopAsync();
+            await _container.DisposeAsync();
         }
     }
 

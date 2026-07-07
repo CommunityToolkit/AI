@@ -10,15 +10,17 @@ using Microsoft.Extensions.VectorData;
 using CommunityToolkit.VectorData.CosmosNoSql;
 using Microsoft.Shared.Diagnostics;
 
+#pragma warning disable IDE0130 // Namespace does not match folder structure
 namespace Microsoft.Extensions.DependencyInjection;
+#pragma warning restore IDE0130 // Namespace does not match folder structure
 
 /// <summary>
 /// Extension methods to register Azure CosmosDB NoSQL <see cref="CosmosNoSqlVectorStore"/> instances on an <see cref="IServiceCollection"/>.
 /// </summary>
 public static class CosmosNoSqlServiceCollectionExtensions
 {
-    private const string DynamicCodeMessage = "The Cosmos NoSQL provider is currently incompatible with trimming.";
-    private const string UnreferencedCodeMessage = "The Cosmos NoSQL provider is currently incompatible with NativeAOT.";
+    private const string DynamicCodeMessage = "The Cosmos NoSQL provider is currently incompatible with NativeAOT.";
+    private const string UnreferencedCodeMessage = "The Cosmos NoSQL provider is currently incompatible with trimming.";
 
     /// <summary>
     /// Registers a <see cref="CosmosNoSqlVectorStore"/> as <see cref="VectorStore"/>

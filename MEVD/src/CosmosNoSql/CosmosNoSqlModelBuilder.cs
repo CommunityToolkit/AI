@@ -37,7 +37,7 @@ internal class CosmosNoSqlModelBuilder() : CollectionJsonModelBuilder(s_modelBui
         if (type != typeof(string) && type != typeof(Guid))
         {
             throw new NotSupportedException(
-                $"Property '{keyProperty.ModelName}' has unsupported type '{type.Name}'. Key properties must be one of the supported types: string, Guid, int, long.");
+                $"Property '{keyProperty.ModelName}' has unsupported type '{type.Name}'. Key properties must be one of the supported types: string or Guid.");
         }
     }
 

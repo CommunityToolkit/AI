@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Cosmos.ConformanceTests.Support;
+using CosmosNoSql.ConformanceTests.Support;
 using VectorData.ConformanceTests.Support;
 using VectorData.ConformanceTests.TypeTests;
 using Xunit;
 
-namespace Cosmos.ConformanceTests;
+namespace CosmosNoSql.ConformanceTests;
 
 // The type is internal to disable the tests due to emulator limitations
 internal sealed class CosmosNoSqlDataTypeTests(CosmosNoSqlDataTypeTests.Fixture fixture)

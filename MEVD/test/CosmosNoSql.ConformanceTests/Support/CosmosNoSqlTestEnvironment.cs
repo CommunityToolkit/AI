@@ -3,7 +3,7 @@
 
 using Microsoft.Extensions.Configuration;
 
-namespace Cosmos.ConformanceTests.Support;
+namespace CosmosNoSql.ConformanceTests.Support;
 
 #pragma warning disable CA1810 // Initialize all static fields when those fields are declared
 

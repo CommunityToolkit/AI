@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Cosmos.ConformanceTests.Support;
+using CosmosNoSql.ConformanceTests.Support;
 using VectorData.ConformanceTests.ModelTests;
 using VectorData.ConformanceTests.Support;
 using Xunit;
 
-namespace Cosmos.ConformanceTests;
+namespace CosmosNoSql.ConformanceTests;
 
 public sealed class CosmosNoSqlMultiVectorModelTests(CosmosNoSqlMultiVectorModelTests.Fixture fixture)
     : MultiVectorModelTests<string>(fixture), IClassFixture<CosmosNoSqlMultiVectorModelTests.Fixture>
@@ -15,6 +15,6 @@ public sealed class CosmosNoSqlMultiVectorModelTests(CosmosNoSqlMultiVectorModel
     {
         private readonly Lazy<CosmosNoSqlTestStore> _store = new(() => new CosmosNoSqlTestStore(nameof(CosmosNoSqlMultiVectorModelTests)));
         
-        public override TestStore TestStore => _store.Value ;
+        public override TestStore TestStore => _store.Value;
     }
 }
