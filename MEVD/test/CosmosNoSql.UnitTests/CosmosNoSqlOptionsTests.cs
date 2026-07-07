@@ -3,11 +3,11 @@
 
 using System.Collections.Generic;
 using System.Text.Json;
-using CommunityToolkit.VectorData.Cosmos;
+using CommunityToolkit.VectorData.CosmosNoSql;
 using Microsoft.Azure.Cosmos;
 using Xunit;
 
-namespace CommunityToolkit.VectorData.Cosmos.UnitTests;
+namespace CommunityToolkit.VectorData.CosmosNoSql.UnitTests;
 
 public sealed class CosmosNoSqlOptionsTests
 {

@@ -25,7 +25,7 @@ using MEAI = Microsoft.Extensions.AI;
 using SKDistanceFunction = Microsoft.Extensions.VectorData.DistanceFunction;
 using Microsoft.Shared.Diagnostics;
 
-namespace CommunityToolkit.VectorData.Cosmos;
+namespace CommunityToolkit.VectorData.CosmosNoSql;
 
 /// <summary>
 /// Service for storing and retrieving vector records, that uses Azure CosmosDB NoSQL as the underlying storage.

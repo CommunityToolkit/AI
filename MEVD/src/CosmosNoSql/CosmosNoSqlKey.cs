@@ -4,7 +4,7 @@
 using System;
 using Microsoft.Azure.Cosmos;
 
-namespace CommunityToolkit.VectorData.Cosmos;
+namespace CommunityToolkit.VectorData.CosmosNoSql;
 
 /// <summary>
 /// Represents a key for Azure CosmosDB NoSQL, containing both the record key (document ID) and the partition key.

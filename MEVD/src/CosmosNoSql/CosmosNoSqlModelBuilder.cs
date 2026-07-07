@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.VectorData.ProviderServices;
 
-namespace CommunityToolkit.VectorData.Cosmos;
+namespace CommunityToolkit.VectorData.CosmosNoSql;
 
 internal class CosmosNoSqlModelBuilder() : CollectionJsonModelBuilder(s_modelBuildingOptions)
 {

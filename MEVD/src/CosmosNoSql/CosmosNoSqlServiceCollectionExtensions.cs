@@ -7,7 +7,7 @@ using System.Text.Json;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.VectorData;
-using CommunityToolkit.VectorData.Cosmos;
+using CommunityToolkit.VectorData.CosmosNoSql;
 using Microsoft.Shared.Diagnostics;
 
 namespace Microsoft.Extensions.DependencyInjection;
@@ -338,7 +338,7 @@ public static class CosmosNoSqlServiceCollectionExtensions
 
     private static CosmosClientOptions CreateClientOptions(JsonSerializerOptions? jsonSerializerOptions) => new()
     {
-        ApplicationName = "CommunityToolkit.VectorData.Cosmos",
+        ApplicationName = "CommunityToolkit.VectorData.CosmosNoSql",
         UseSystemTextJsonSerializerWithOptions = jsonSerializerOptions ?? JsonSerializerOptions.Default,
     };
 }

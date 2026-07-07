@@ -12,7 +12,7 @@ using Microsoft.Extensions.VectorData.ProviderServices;
 using MEAI = Microsoft.Extensions.AI;
 using Microsoft.Shared.Diagnostics;
 
-namespace CommunityToolkit.VectorData.Cosmos;
+namespace CommunityToolkit.VectorData.CosmosNoSql;
 
 /// <summary>
 /// A mapper that maps between the generic Semantic Kernel data model and the model that the data is stored under, within Azure CosmosDB NoSQL.

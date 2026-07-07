@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.VectorData;
 
-namespace CommunityToolkit.VectorData.Cosmos;
+namespace CommunityToolkit.VectorData.CosmosNoSql;
 
 internal class ErrorHandlingFeedIterator<T> : FeedIterator<T>
 {

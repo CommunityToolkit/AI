@@ -8,7 +8,7 @@ using System.Text.Json;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Shared.Diagnostics;
 
-namespace CommunityToolkit.VectorData.Cosmos;
+namespace CommunityToolkit.VectorData.CosmosNoSql;
 
 /// <summary>
 /// Represents a collection of vector store records in a CosmosNoSql database, mapped to a dynamic <c>Dictionary&lt;string, object?&gt;</c>.

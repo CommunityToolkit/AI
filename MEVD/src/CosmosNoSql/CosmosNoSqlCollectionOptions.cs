@@ -6,7 +6,7 @@ using System.Text.Json;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.VectorData;
 
-namespace CommunityToolkit.VectorData.Cosmos;
+namespace CommunityToolkit.VectorData.CosmosNoSql;
 
 /// <summary>
 /// Options when creating a <see cref="CosmosNoSqlCollection{TKey, TRecord}"/>.

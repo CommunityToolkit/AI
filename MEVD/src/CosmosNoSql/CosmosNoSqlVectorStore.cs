@@ -15,7 +15,7 @@ using Microsoft.Extensions.VectorData;
 using Microsoft.Extensions.VectorData.ProviderServices;
 using Microsoft.Shared.Diagnostics;
 
-namespace CommunityToolkit.VectorData.Cosmos;
+namespace CommunityToolkit.VectorData.CosmosNoSql;
 
 /// <summary>
 /// Class for accessing the list of collections in a Azure CosmosDB NoSQL vector store.

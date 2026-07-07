@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Cosmos.ConformanceTests.Support;
-using CommunityToolkit.VectorData.Cosmos;
+using CommunityToolkit.VectorData.CosmosNoSql;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using VectorData.ConformanceTests;

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Text.Json.Nodes;
 using MEAI = Microsoft.Extensions.AI;
 
-namespace CommunityToolkit.VectorData.Cosmos;
+namespace CommunityToolkit.VectorData.CosmosNoSql;
 
 internal interface ICosmosNoSqlMapper<TRecord>
 {

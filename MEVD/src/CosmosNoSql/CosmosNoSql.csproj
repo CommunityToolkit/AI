@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Version>1.0.0-preview.1</Version>
-    <AssemblyName>CommunityToolkit.VectorData.Cosmos</AssemblyName>
+    <AssemblyName>CommunityToolkit.VectorData.CosmosNoSql</AssemblyName>
     <RootNamespace>$(AssemblyName)</RootNamespace>
     <TargetFrameworks>net10.0;net8.0;netstandard2.0;net462</TargetFrameworks>
 
@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="CommunityToolkit.VectorData.Cosmos.UnitTests" />
+    <InternalsVisibleTo Include="CommunityToolkit.VectorData.CosmosNoSql.UnitTests" />
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>
 

@@ -1,18 +1,18 @@
-# CommunityToolkit.VectorData.Cosmos
+# CommunityToolkit.VectorData.CosmosNoSql
 
-`CommunityToolkit.VectorData.Cosmos` is the Azure Cosmos DB for NoSQL provider for `Microsoft.Extensions.VectorData`.
+`CommunityToolkit.VectorData.CosmosNoSql` is the Azure Cosmos DB for NoSQL provider for `Microsoft.Extensions.VectorData`.
 
 ## Install
 
 ```xml
-<PackageReference Include="CommunityToolkit.VectorData.Cosmos" Version="1.0.0-preview.1" />
+<PackageReference Include="CommunityToolkit.VectorData.CosmosNoSql" Version="1.0.0-preview.1" />
 ```
 
 ## Get started
 
 ```csharp
 using Microsoft.Azure.Cosmos;
-using CommunityToolkit.VectorData.Cosmos;
+using CommunityToolkit.VectorData.CosmosNoSql;
 using Microsoft.Extensions.VectorData;
 
 CosmosClient client = new("<connection-string>");

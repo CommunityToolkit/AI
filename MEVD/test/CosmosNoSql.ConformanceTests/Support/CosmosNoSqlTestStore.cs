@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text.Json;
-using CommunityToolkit.VectorData.Cosmos;
+using CommunityToolkit.VectorData.CosmosNoSql;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.VectorData;
 using Testcontainers.CosmosDb;

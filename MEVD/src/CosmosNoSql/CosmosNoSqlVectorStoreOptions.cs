@@ -4,7 +4,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.AI;
 
-namespace CommunityToolkit.VectorData.Cosmos;
+namespace CommunityToolkit.VectorData.CosmosNoSql;
 
 /// <summary>
 /// Options when creating a <see cref="CosmosNoSqlVectorStore"/>.

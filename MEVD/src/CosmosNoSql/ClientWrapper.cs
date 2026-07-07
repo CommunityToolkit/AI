@@ -5,7 +5,7 @@ using System;
 using System.Threading;
 using Microsoft.Azure.Cosmos;
 
-namespace CommunityToolkit.VectorData.Cosmos;
+namespace CommunityToolkit.VectorData.CosmosNoSql;
 
 internal sealed class ClientWrapper : IDisposable
 {

@@ -11,7 +11,7 @@ using System.Text;
 using Microsoft.Extensions.VectorData.ProviderServices;
 using Microsoft.Extensions.VectorData.ProviderServices.Filter;
 
-namespace CommunityToolkit.VectorData.Cosmos;
+namespace CommunityToolkit.VectorData.CosmosNoSql;
 
 #pragma warning disable MEVD9001 // Experimental: filter translation base types
 

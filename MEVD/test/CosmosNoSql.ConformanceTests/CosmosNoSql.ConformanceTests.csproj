@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <IsTestProject>true</IsTestProject>
     <IsPackable>false</IsPackable>
-    <RootNamespace>Cosmos.ConformanceTests</RootNamespace>
+    <RootNamespace>CosmosNoSql.ConformanceTests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Cosmos\Cosmos.csproj" />
+    <ProjectReference Include="..\..\src\CosmosNoSql\CosmosNoSql.csproj" />
     <PackageReference Include="Microsoft.Extensions.VectorData.ConformanceTests" />
   </ItemGroup>
 
