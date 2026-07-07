@@ -19,8 +19,8 @@ public sealed class CosmosNoSqlDependencyInjectionTests
         get
         {
             yield return (services, serviceKey, lifetime) => serviceKey is null
-                ? services.AddCosmosNoSqlVectorStore(TestConnectionString, CosmosNoSqlTestStore.DatabaseName, lifetime: lifetime)
-                : services.AddKeyedCosmosNoSqlVectorStore(serviceKey, TestConnectionString, CosmosNoSqlTestStore.DatabaseName, lifetime: lifetime);
+                ? services.AddCosmosNoSqlVectorStore(TestConnectionString, nameof(CosmosNoSqlDependencyInjectionTests), lifetime: lifetime)
+                : services.AddKeyedCosmosNoSqlVectorStore(serviceKey, TestConnectionString, nameof(CosmosNoSqlDependencyInjectionTests), lifetime: lifetime);
         }
     }
 
@@ -29,8 +29,8 @@ public sealed class CosmosNoSqlDependencyInjectionTests
         get
         {
             yield return (services, serviceKey, name, lifetime) => serviceKey is null
-                ? services.AddCosmosNoSqlCollection<string, Record>(name, TestConnectionString, CosmosNoSqlTestStore.DatabaseName, lifetime: lifetime)
-                : services.AddKeyedCosmosNoSqlCollection<string, Record>(serviceKey, name, TestConnectionString, CosmosNoSqlTestStore.DatabaseName, lifetime: lifetime);
+                ? services.AddCosmosNoSqlCollection<string, Record>(name, TestConnectionString, nameof(CosmosNoSqlDependencyInjectionTests), lifetime: lifetime)
+                : services.AddKeyedCosmosNoSqlCollection<string, Record>(serviceKey, name, TestConnectionString, nameof(CosmosNoSqlDependencyInjectionTests), lifetime: lifetime);
         }
     }
 

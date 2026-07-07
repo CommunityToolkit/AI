@@ -14,7 +14,7 @@ public sealed class CosmosNoSqlBasicModelTests(CosmosNoSqlBasicModelTests.Fixtur
     public override Task SearchAsync_with_Skip()
     {
         // The vNext emulator's DiskANN index does not support OFFSET in vector search.
-        if (!CosmosNoSqlTestStore.Instance.UsesLocalEmulator)
+        if (!((CosmosNoSqlTestStore)fixture.TestStore).UsesLocalEmulator)
         {
             return base.SearchAsync_with_Skip();
         }
@@ -24,6 +24,8 @@ public sealed class CosmosNoSqlBasicModelTests(CosmosNoSqlBasicModelTests.Fixtur
 
     public new sealed class Fixture : BasicModelTests<string>.Fixture
     {
-        public override TestStore TestStore => CosmosNoSqlTestStore.Instance;
+        private readonly Lazy<CosmosNoSqlTestStore> _store = new(() => new CosmosNoSqlTestStore(nameof(CosmosNoSqlBasicModelTests)));
+
+        public override TestStore TestStore => _store.Value;
     }
 }

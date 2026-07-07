@@ -14,6 +14,8 @@ internal sealed class CosmosNoSqlFilterTests(CosmosNoSqlFilterTests.Fixture fixt
 {
     public new sealed class Fixture : FilterTests<string>.Fixture
     {
-        public override TestStore TestStore => CosmosNoSqlTestStore.Instance;
+        private readonly Lazy<CosmosNoSqlTestStore> _store = new(() => new CosmosNoSqlTestStore(nameof(CosmosNoSqlFilterTests)));
+        
+        public override TestStore TestStore => _store.Value   ;
     }
 }

@@ -16,7 +16,7 @@ public sealed class CosmosNoSqlIndexKindTests(CosmosNoSqlIndexKindTests.Fixture 
 
     public override Task Flat()
     {
-        if (!CosmosNoSqlTestStore.Instance.UsesLocalEmulator)
+        if (!((CosmosNoSqlTestStore)fixture.TestStore).UsesLocalEmulator)
         {
             return base.Flat();
         }
@@ -26,6 +26,8 @@ public sealed class CosmosNoSqlIndexKindTests(CosmosNoSqlIndexKindTests.Fixture 
 
     public new sealed class Fixture : IndexKindTests<string>.Fixture
     {
-        public override TestStore TestStore => CosmosNoSqlTestStore.Instance;
+        private readonly Lazy<CosmosNoSqlTestStore> _store = new(() => new CosmosNoSqlTestStore(nameof(CosmosNoSqlIndexKindTests)));
+
+        public override TestStore TestStore => _store.Value;
     }
 }

@@ -23,20 +23,22 @@ public sealed class CosmosNoSqlEmbeddingGenerationTests(
     {
         public override string DefaultIndexKind => "DiskAnn";
 
-        public override TestStore TestStore => CosmosNoSqlTestStore.Instance;
+        private readonly Lazy<CosmosNoSqlTestStore> _store = new(() => new CosmosNoSqlTestStore(nameof(CosmosNoSqlEmbeddingGenerationTests)));
+
+        public override TestStore TestStore => _store.Value;
 
         public override VectorStoreCollectionDefinition CreateRecordDefinition()
             => CosmosNoSqlConformanceTestHelpers.UseLowerCaseVectorStorageName(base.CreateRecordDefinition(), "embedding");
 
         public override VectorStore CreateVectorStore(IEmbeddingGenerator? embeddingGenerator = null)
             => new CosmosNoSqlVectorStore(
-                CosmosNoSqlTestStore.Instance.Database,
+                ((CosmosNoSqlTestStore)TestStore).Database,
                 new() { EmbeddingGenerator = embeddingGenerator, JsonSerializerOptions = CosmosNoSqlTestStore.SerializerOptions });
 
         public override Func<IServiceCollection, IServiceCollection>[] DependencyInjectionStoreRegistrationDelegates =>
         [
             services => services
-                .AddSingleton(CosmosNoSqlTestStore.Instance.Database)
+                .AddSingleton(((CosmosNoSqlTestStore)TestStore).Database)
                 .AddCosmosNoSqlVectorStore(new()
                 {
                     JsonSerializerOptions = CosmosNoSqlTestStore.SerializerOptions,
@@ -46,7 +48,7 @@ public sealed class CosmosNoSqlEmbeddingGenerationTests(
         public override Func<IServiceCollection, IServiceCollection>[] DependencyInjectionCollectionRegistrationDelegates =>
         [
             services => services
-                .AddSingleton(CosmosNoSqlTestStore.Instance.Database)
+                .AddSingleton(((CosmosNoSqlTestStore)TestStore).Database)
                 .AddCosmosNoSqlCollection<string, RecordWithAttributes>(CollectionName, new()
                 {
                     JsonSerializerOptions = CosmosNoSqlTestStore.SerializerOptions,
@@ -58,21 +60,23 @@ public sealed class CosmosNoSqlEmbeddingGenerationTests(
     {
         public override string DefaultIndexKind => "DiskAnn";
 
-        public override TestStore TestStore => CosmosNoSqlTestStore.Instance;
+        private readonly Lazy<CosmosNoSqlTestStore> _store = new(() => new CosmosNoSqlTestStore(nameof(CosmosNoSqlEmbeddingGenerationTests)));
+
+        public override TestStore TestStore => _store.Value;
 
         public override VectorStoreCollectionDefinition CreateRecordDefinition()
             => CosmosNoSqlConformanceTestHelpers.UseLowerCaseVectorStorageName(base.CreateRecordDefinition(), "embedding");
 
         public override VectorStore CreateVectorStore(IEmbeddingGenerator? embeddingGenerator = null)
             => new CosmosNoSqlVectorStore(
-                CosmosNoSqlTestStore.Instance.Database,
+                ((CosmosNoSqlTestStore)TestStore).Database,
                 new() { EmbeddingGenerator = embeddingGenerator, JsonSerializerOptions = CosmosNoSqlTestStore.SerializerOptions });
 
         public override Func<IServiceCollection, IServiceCollection>[] DependencyInjectionStoreRegistrationDelegates =>
         [
             services => services.AddCosmosNoSqlVectorStore(
-                CosmosNoSqlTestStore.Instance.ConnectionString,
-                CosmosNoSqlTestStore.DatabaseName,
+                ((CosmosNoSqlTestStore)TestStore).ConnectionString,
+                nameof(CosmosNoSqlEmbeddingGenerationTests),
                 new() { JsonSerializerOptions = CosmosNoSqlTestStore.SerializerOptions })
         ];
 
@@ -80,8 +84,8 @@ public sealed class CosmosNoSqlEmbeddingGenerationTests(
         [
             services => services.AddCosmosNoSqlCollection<string, RecordWithAttributes>(
                 CollectionName,
-                CosmosNoSqlTestStore.Instance.ConnectionString,
-                CosmosNoSqlTestStore.DatabaseName,
+                ((CosmosNoSqlTestStore)TestStore).ConnectionString,
+                nameof(CosmosNoSqlEmbeddingGenerationTests),
                 new() { JsonSerializerOptions = CosmosNoSqlTestStore.SerializerOptions })
         ];
     }

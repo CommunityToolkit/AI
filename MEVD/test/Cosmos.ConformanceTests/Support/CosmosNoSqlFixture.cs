@@ -7,5 +7,7 @@ namespace Cosmos.ConformanceTests.Support;
 
 public sealed class CosmosNoSqlFixture : VectorStoreFixture
 {
-    public override TestStore TestStore => CosmosNoSqlTestStore.Instance;
+    private readonly Lazy<CosmosNoSqlTestStore> _store = new(() => new CosmosNoSqlTestStore(nameof(CosmosNoSqlFixture)));
+
+    public override TestStore TestStore => _store.Value;
 }

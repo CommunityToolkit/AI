@@ -17,7 +17,9 @@ internal sealed class CosmosNoSqlDataTypeTests(CosmosNoSqlDataTypeTests.Fixture 
 
     public new sealed class Fixture : DataTypeTests<string, DataTypeTests<string>.DefaultRecord>.Fixture
     {
-        public override TestStore TestStore => CosmosNoSqlTestStore.Instance;
+        private readonly Lazy<CosmosNoSqlTestStore> _store = new(() => new CosmosNoSqlTestStore(nameof(CosmosNoSqlDataTypeTests)));
+
+        public override TestStore TestStore => _store.Value;
 
         public override Type[] UnsupportedDefaultTypes { get; } =
         [

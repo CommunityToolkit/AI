@@ -19,7 +19,7 @@ public sealed class CosmosNoSqlDistanceFunctionTests(CosmosNoSqlDistanceFunction
 
     public override Task EuclideanDistance()
     {
-        if (!CosmosNoSqlTestStore.Instance.UsesLocalEmulator)
+        if (!((CosmosNoSqlTestStore)fixture.TestStore).UsesLocalEmulator)
         {
             // Fails on emulator, most likely due to emulator bug
             return base.EuclideanDistance();
@@ -30,6 +30,8 @@ public sealed class CosmosNoSqlDistanceFunctionTests(CosmosNoSqlDistanceFunction
 
     public new sealed class Fixture : DistanceFunctionTests<string>.Fixture
     {
-        public override TestStore TestStore => CosmosNoSqlTestStore.Instance;
+        private readonly Lazy<CosmosNoSqlTestStore> _store = new(() => new CosmosNoSqlTestStore(nameof(CosmosNoSqlDistanceFunctionTests)));
+
+        public override TestStore TestStore => _store.Value;
     }
 }

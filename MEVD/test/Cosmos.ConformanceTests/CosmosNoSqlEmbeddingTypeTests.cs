@@ -17,7 +17,9 @@ public sealed class CosmosNoSqlEmbeddingTypeTests(CosmosNoSqlEmbeddingTypeTests.
     {
         public override string DefaultIndexKind => "DiskAnn";
 
-        public override TestStore TestStore => CosmosNoSqlTestStore.Instance;
+        private readonly Lazy<CosmosNoSqlTestStore> _store = new(() => new CosmosNoSqlTestStore(nameof(CosmosNoSqlEmbeddingTypeTests)));
+
+        public override TestStore TestStore => _store.Value;
 
         public override VectorStoreCollectionDefinition CreateRecordDefinition<TVectorProperty>(
             IEmbeddingGenerator? embeddingGenerator,

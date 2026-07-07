@@ -12,16 +12,14 @@ namespace Cosmos.ConformanceTests.Support;
 
 #pragma warning disable CA1001 // Type owns disposable fields but is not disposable
 
-internal sealed class CosmosNoSqlTestStore : TestStore
+/// <param name="uniqueDatabaseName">The emulator does not support running multiple queries simultaneously, so we create a unique database for each test store instance.</param>
+internal sealed class CosmosNoSqlTestStore(string uniqueDatabaseName) : TestStore
 {
-    public const string DatabaseName = "VectorDataConformanceTests";
-
     private CosmosDbContainer? _container;
     private CosmosClient? _client;
     private Database? _database;
     private string? _connectionString;
-
-    public static CosmosNoSqlTestStore Instance { get; } = new();
+    
 
     public bool UsesLocalEmulator => _container is not null;
 
@@ -35,10 +33,6 @@ internal sealed class CosmosNoSqlTestStore : TestStore
     };
 
     public Database Database => _database ?? throw new InvalidOperationException("Cosmos DB test store has not been started.");
-
-    private CosmosNoSqlTestStore()
-    {
-    }
 
     public override VectorStoreCollection<TKey, TRecord> CreateCollection<TKey, TRecord>(
         string name,
@@ -72,7 +66,7 @@ internal sealed class CosmosNoSqlTestStore : TestStore
         }
         else
         {
-            _container = new CosmosDbBuilder("mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-latest")
+            _container ??= new CosmosDbBuilder("mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-latest")
                 .WithEnvironment("QUERY_BUFFER_SIZE_KB", "65536")
                 .Build();
 
@@ -93,7 +87,7 @@ internal sealed class CosmosNoSqlTestStore : TestStore
 
         _client = new CosmosClient(_connectionString, clientOptions);
 
-        _database = await _client.CreateDatabaseIfNotExistsAsync(DatabaseName).ConfigureAwait(false);
+        _database = await _client.CreateDatabaseIfNotExistsAsync(uniqueDatabaseName).ConfigureAwait(false);
         DefaultVectorStore = new CosmosNoSqlVectorStore(_database, new() { JsonSerializerOptions = SerializerOptions });
     }
 
@@ -101,9 +95,7 @@ internal sealed class CosmosNoSqlTestStore : TestStore
     {
         if (_container is not null)
         {
-            // Instead of stopping the container, we dispose it so every test class gets a brand new container.
-            // This is because the emulator does not handle running multiple tests well.
-            await _container.DisposeAsync();
+            await _container.StopAsync();
         }
     }
 

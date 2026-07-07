@@ -13,6 +13,8 @@ public sealed class CosmosNoSqlNoVectorModelTests(CosmosNoSqlNoVectorModelTests.
 {
     public new sealed class Fixture : NoVectorModelTests<string>.Fixture
     {
-        public override TestStore TestStore => CosmosNoSqlTestStore.Instance;
+        private readonly Lazy<CosmosNoSqlTestStore> _store = new(() => new CosmosNoSqlTestStore(nameof(CosmosNoSqlNoVectorModelTests)));
+        
+        public override TestStore TestStore => _store.Value;
     }
 }

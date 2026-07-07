@@ -18,11 +18,15 @@ internal sealed class CosmosNoSqlHybridSearchTests(
 {
     public new sealed class VectorAndStringFixture : HybridSearchTests<string>.VectorAndStringFixture
     {
-        public override TestStore TestStore => CosmosNoSqlTestStore.Instance;
+        private readonly Lazy<CosmosNoSqlTestStore> _store = new(() => new CosmosNoSqlTestStore(nameof(VectorAndStringFixture)));
+
+        public override TestStore TestStore => _store.Value;
     }
 
     public new sealed class MultiTextFixture : HybridSearchTests<string>.MultiTextFixture
     {
-        public override TestStore TestStore => CosmosNoSqlTestStore.Instance;
+        private readonly Lazy<CosmosNoSqlTestStore> _store = new(() => new CosmosNoSqlTestStore(nameof(MultiTextFixture)));
+
+        public override TestStore TestStore => _store.Value;
     }
 }
