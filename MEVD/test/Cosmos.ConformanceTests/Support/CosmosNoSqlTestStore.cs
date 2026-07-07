@@ -72,7 +72,7 @@ internal sealed class CosmosNoSqlTestStore : TestStore
         }
         else
         {
-            _container ??= new CosmosDbBuilder("mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-latest")
+            _container = new CosmosDbBuilder("mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-latest")
                 .WithEnvironment("QUERY_BUFFER_SIZE_KB", "65536")
                 .Build();
 
@@ -101,7 +101,9 @@ internal sealed class CosmosNoSqlTestStore : TestStore
     {
         if (_container is not null)
         {
-            await _container.StopAsync();
+            // Instead of stopping the container, we dispose it so every test class gets a brand new container.
+            // This is because the emulator does not handle running multiple tests well.
+            await _container.DisposeAsync();
         }
     }
 
