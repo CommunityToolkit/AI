@@ -572,7 +572,7 @@ public class PineconeCollection<TKey, TRecord> : VectorStoreCollection<TKey, TRe
                     // If we don't provide "host" to the Index method, it's going to perform
                     // a blocking call to DescribeIndexAsync!!
                     string hostName = (await _pineconeClient.DescribeIndexAsync(Name).ConfigureAwait(false)).Host;
-                    _indexClient = _pineconeClient.Index(host: hostName);
+                    _indexClient = _pineconeClient.Index(name: Name, host: hostName);
                 }
 
                 return await operation.Invoke(_indexClient).ConfigureAwait(false);
@@ -593,12 +593,12 @@ public class PineconeCollection<TKey, TRecord> : VectorStoreCollection<TKey, TRe
             _ => throw new ArgumentException($"Invalid serverless index cloud: {serverlessIndexCloud}.", nameof(serverlessIndexCloud))
         };
 
-    private static CreateIndexRequestMetric MapDistanceFunction(VectorPropertyModel vectorProperty)
+    private static MetricType MapDistanceFunction(VectorPropertyModel vectorProperty)
         => vectorProperty.DistanceFunction switch
         {
-            DistanceFunction.CosineSimilarity or null => CreateIndexRequestMetric.Cosine,
-            DistanceFunction.DotProductSimilarity => CreateIndexRequestMetric.Dotproduct,
-            DistanceFunction.EuclideanSquaredDistance => CreateIndexRequestMetric.Euclidean,
+            DistanceFunction.CosineSimilarity or null => MetricType.Cosine,
+            DistanceFunction.DotProductSimilarity => MetricType.Dotproduct,
+            DistanceFunction.EuclideanSquaredDistance => MetricType.Euclidean,
             _ => throw new NotSupportedException($"Distance function '{vectorProperty.DistanceFunction}' is not supported.")
         };
 
