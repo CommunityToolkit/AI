@@ -4,7 +4,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable SER001 // VectorSet types are experimental
+#pragma warning disable SER001, SER003, SER006 // Experimental StackExchange.Redis APIs
 
 using System.Net;
 using StackExchange.Redis;
@@ -568,4 +568,82 @@ internal class FakeDatabase : IDatabase
     public Task<bool> VectorSetRemoveAsync(RedisKey arg0, RedisValue arg1, CommandFlags arg2) => throw new NotImplementedException();
     public Task<bool> VectorSetSetAttributesJsonAsync(RedisKey arg0, RedisValue arg1, string arg2, CommandFlags arg3) => throw new NotImplementedException();
     public Task<Lease<VectorSetSimilaritySearchResult>?> VectorSetSimilaritySearchAsync(RedisKey arg0, VectorSetSimilaritySearchRequest arg1, CommandFlags arg2) => throw new NotImplementedException();
+    public RedisArrayIndex ArrayCount(RedisKey key, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public bool ArrayDelete(RedisKey key, RedisArrayIndex index, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public int ArrayDelete(RedisKey key, RedisArrayIndex[] indices, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public RedisArrayIndex ArrayDeleteRange(RedisKey key, RedisArrayIndex start, RedisArrayIndex stop, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public RedisArrayIndex ArrayDeleteRange(RedisKey key, RedisArrayRange[] ranges, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public RedisValue ArrayGet(RedisKey key, RedisArrayIndex index, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public RedisValue[] ArrayGet(RedisKey key, RedisArrayIndex[] indices, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public RedisValue[] ArrayGetRange(RedisKey key, RedisArrayIndex start, RedisArrayIndex stop, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public RedisArrayEntry[] ArrayGrep(RedisKey key, ArrayGrepRequest request, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public ArrayInfo ArrayInfo(RedisKey key, bool full, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public RedisArrayIndex ArrayInsert(RedisKey key, RedisValue value, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public RedisArrayIndex ArrayInsert(RedisKey key, RedisValue[] values, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public RedisValue[] ArrayLastItems(RedisKey key, int count, bool remove, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public RedisArrayIndex ArrayLength(RedisKey key, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public RedisArrayIndex? ArrayNext(RedisKey key, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public RedisValue ArrayOperation(RedisKey key, RedisArrayIndex start, RedisArrayIndex stop, ArrayOperation operation, RedisValue pivot, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public RedisArrayIndex ArrayRing(RedisKey key, RedisArrayIndex index, RedisValue value, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public RedisArrayIndex ArrayRing(RedisKey key, RedisArrayIndex index, RedisValue[] values, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public RedisArrayEntry[] ArrayScan(RedisKey key, RedisArrayIndex start, RedisArrayIndex stop, int pageSize, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public bool ArraySeek(RedisKey key, RedisArrayIndex index, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public int ArraySet(RedisKey key, RedisArrayEntry[] entries, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public bool ArraySet(RedisKey key, RedisArrayIndex index, RedisValue value, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public int ArraySet(RedisKey key, RedisArrayIndex index, RedisValue[] values, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public double? SortedSetIncrement(RedisKey key, RedisValue member, double value, ValueCondition condition, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public RedisValue StreamAdd(RedisKey key, NameValueEntry[] streamPairs, StreamIdempotentId messageId, long? maxLength, bool useApproximateMaxLength, long? minId, StreamTrimMode trimMode, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public RedisValue StreamAdd(RedisKey key, RedisValue streamField, RedisValue streamValue, StreamIdempotentId messageId, long? maxLength, bool useApproximateMaxLength, long? minId, StreamTrimMode trimMode, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public void StreamConfigure(RedisKey key, StreamConfiguration config, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public long StreamNegativeAcknowledge(RedisKey key, RedisValue groupName, StreamNackMode mode, RedisValue id, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public long StreamNegativeAcknowledge(RedisKey key, RedisValue groupName, StreamNackMode mode, RedisValue[] ids, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public StreamEntry[] StreamReadGroup(RedisKey key, RedisValue groupName, RedisValue consumerName, RedisValue? position, int? count, bool noAck, TimeSpan? blockTimeout, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public RedisStream[] StreamReadGroup(StreamPosition[] positions, RedisValue groupName, RedisValue consumerName, int? count, bool noAck, TimeSpan? blockTimeout, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public bool StringDelete(RedisKey key, ValueCondition condition, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public ValueCondition? StringDigest(RedisKey key, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public StringIncrementResult<long> StringIncrement(RedisKey key, long value, Expiration expiry, long? lowerBound, long? upperBound, IncrementOptions options, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public StringIncrementResult<double> StringIncrement(RedisKey key, double value, Expiration expiry, double? lowerBound, double? upperBound, IncrementOptions options, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public bool StringSet(KeyValuePair<RedisKey, RedisValue>[] values, When when, Expiration expiry, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public bool StringSet(RedisKey key, RedisValue value, Expiration expiry, ValueCondition condition, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Lease<RedisValue> VectorSetRange(RedisKey key, RedisValue lowerBound, RedisValue upperBound, long count, Exclude exclude, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public IEnumerable<RedisValue> VectorSetRangeEnumerate(RedisKey key, RedisValue lowerBound, RedisValue upperBound, long count, Exclude exclude, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<RedisArrayIndex> ArrayCountAsync(RedisKey key, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<bool> ArrayDeleteAsync(RedisKey key, RedisArrayIndex index, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<int> ArrayDeleteAsync(RedisKey key, RedisArrayIndex[] indices, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<RedisArrayIndex> ArrayDeleteRangeAsync(RedisKey key, RedisArrayIndex start, RedisArrayIndex stop, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<RedisArrayIndex> ArrayDeleteRangeAsync(RedisKey key, RedisArrayRange[] ranges, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<RedisValue> ArrayGetAsync(RedisKey key, RedisArrayIndex index, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<RedisValue[]> ArrayGetAsync(RedisKey key, RedisArrayIndex[] indices, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<RedisValue[]> ArrayGetRangeAsync(RedisKey key, RedisArrayIndex start, RedisArrayIndex stop, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<RedisArrayEntry[]> ArrayGrepAsync(RedisKey key, ArrayGrepRequest request, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<ArrayInfo> ArrayInfoAsync(RedisKey key, bool full, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<RedisArrayIndex> ArrayInsertAsync(RedisKey key, RedisValue value, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<RedisArrayIndex> ArrayInsertAsync(RedisKey key, RedisValue[] values, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<RedisValue[]> ArrayLastItemsAsync(RedisKey key, int count, bool remove, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<RedisArrayIndex> ArrayLengthAsync(RedisKey key, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<RedisArrayIndex?> ArrayNextAsync(RedisKey key, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<RedisValue> ArrayOperationAsync(RedisKey key, RedisArrayIndex start, RedisArrayIndex stop, ArrayOperation operation, RedisValue pivot, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<RedisArrayIndex> ArrayRingAsync(RedisKey key, RedisArrayIndex index, RedisValue value, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<RedisArrayIndex> ArrayRingAsync(RedisKey key, RedisArrayIndex index, RedisValue[] values, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<RedisArrayEntry[]> ArrayScanAsync(RedisKey key, RedisArrayIndex start, RedisArrayIndex stop, int pageSize, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<bool> ArraySeekAsync(RedisKey key, RedisArrayIndex index, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<int> ArraySetAsync(RedisKey key, RedisArrayEntry[] entries, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<bool> ArraySetAsync(RedisKey key, RedisArrayIndex index, RedisValue value, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<int> ArraySetAsync(RedisKey key, RedisArrayIndex index, RedisValue[] values, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<double?> SortedSetIncrementAsync(RedisKey key, RedisValue member, double value, ValueCondition condition, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<RedisValue> StreamAddAsync(RedisKey key, NameValueEntry[] streamPairs, StreamIdempotentId messageId, long? maxLength, bool useApproximateMaxLength, long? minId, StreamTrimMode trimMode, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<RedisValue> StreamAddAsync(RedisKey key, RedisValue streamField, RedisValue streamValue, StreamIdempotentId messageId, long? maxLength, bool useApproximateMaxLength, long? minId, StreamTrimMode trimMode, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task StreamConfigureAsync(RedisKey key, StreamConfiguration config, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<long> StreamNegativeAcknowledgeAsync(RedisKey key, RedisValue groupName, StreamNackMode mode, RedisValue id, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<long> StreamNegativeAcknowledgeAsync(RedisKey key, RedisValue groupName, StreamNackMode mode, RedisValue[] ids, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<StreamEntry[]> StreamReadGroupAsync(RedisKey key, RedisValue groupName, RedisValue consumerName, RedisValue? position, int? count, bool noAck, TimeSpan? blockTimeout, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<RedisStream[]> StreamReadGroupAsync(StreamPosition[] positions, RedisValue groupName, RedisValue consumerName, int? count, bool noAck, TimeSpan? blockTimeout, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<bool> StringDeleteAsync(RedisKey key, ValueCondition condition, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<ValueCondition?> StringDigestAsync(RedisKey key, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<StringIncrementResult<long>> StringIncrementAsync(RedisKey key, long value, Expiration expiry, long? lowerBound, long? upperBound, IncrementOptions options, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<StringIncrementResult<double>> StringIncrementAsync(RedisKey key, double value, Expiration expiry, double? lowerBound, double? upperBound, IncrementOptions options, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<bool> StringSetAsync(KeyValuePair<RedisKey, RedisValue>[] values, When when, Expiration expiry, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<bool> StringSetAsync(RedisKey key, RedisValue value, Expiration expiry, ValueCondition condition, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public Task<Lease<RedisValue>?> VectorSetRangeAsync(RedisKey key, RedisValue lowerBound, RedisValue upperBound, long count, Exclude exclude, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
+    public IAsyncEnumerable<RedisValue> VectorSetRangeEnumerateAsync(RedisKey key, RedisValue lowerBound, RedisValue upperBound, long count, Exclude exclude, CommandFlags flags = CommandFlags.None) => throw new NotImplementedException();
 }

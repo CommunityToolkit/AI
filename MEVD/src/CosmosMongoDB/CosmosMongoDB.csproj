@@ -22,7 +22,6 @@
     <PackageReference Include="Microsoft.Extensions.AI.Abstractions" />
     <PackageReference Include="MongoDB.Driver" />
     <PackageReference Include="SharpCompress" />
-    <PackageReference Include="Snappier" />
   </ItemGroup>
 
 </Project>
