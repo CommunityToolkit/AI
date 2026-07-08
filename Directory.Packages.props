@@ -15,6 +15,7 @@
     <PackageVersion Include="Microsoft.Azure.Cosmos" Version="3.61.0" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.0.2" />
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.9" />
+    <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
     <PackageVersion Include="MongoDB.Driver" Version="3.10.0" />
     <PackageVersion Include="Npgsql" Version="10.0.3" />
     <PackageVersion Include="NRedisStack" Version="1.6.0" />
@@ -22,6 +23,7 @@
     <PackageVersion Include="Pinecone.Client" Version="4.0.2" />
     <PackageVersion Include="Qdrant.Client" Version="1.18.1" />
     <PackageVersion Include="SharpCompress" Version="0.49.1" />
+    <PackageVersion Include="sqlite-vec" Version="0.1.7-alpha.2.1" />
   </ItemGroup>
 
   <ItemGroup Label="Build">
