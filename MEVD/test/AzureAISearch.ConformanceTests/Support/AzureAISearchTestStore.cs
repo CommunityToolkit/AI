@@ -75,7 +75,7 @@ internal sealed class AzureAISearchTestStore : TestStore
         {
             try
             {
-                await Client.DeleteIndexAsync(name, cancellationToken: default);
+                await Client.DeleteIndexAsync(name);
             }
             catch
             {

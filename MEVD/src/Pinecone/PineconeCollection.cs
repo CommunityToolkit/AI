@@ -572,7 +572,7 @@ public class PineconeCollection<TKey, TRecord> : VectorStoreCollection<TKey, TRe
                     // If we don't provide "host" to the Index method, it's going to perform
                     // a blocking call to DescribeIndexAsync!!
                     string hostName = (await _pineconeClient.DescribeIndexAsync(Name).ConfigureAwait(false)).Host;
-                    _indexClient = _pineconeClient.Index(name: Name, host: hostName);
+                    _indexClient = _pineconeClient.Index(host: hostName);
                 }
 
                 return await operation.Invoke(_indexClient).ConfigureAwait(false);
