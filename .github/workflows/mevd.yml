@@ -99,14 +99,13 @@ jobs:
         run: dotnet build MEVD/MEVD.slnf
 
   unit-tests:
-    name: 'Unit: ${{ matrix.provider }} (${{ matrix.os }})'
-    needs: [discover, build]
+    name: 'Unit Tests (${{ matrix.os }})'
+    needs: build
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        provider: ${{ fromJson(needs.discover.outputs.all_providers) }}
     steps:
       - uses: actions/checkout@v6
 
@@ -122,7 +121,27 @@ jobs:
           restore-keys: nuget-
 
       - name: Test
-        run: dotnet test MEVD/test/${{ matrix.provider }}.UnitTests
+        shell: bash
+        run: |
+          rc=0
+          count=0
+          for src in MEVD/src/*/; do
+            provider="$(basename "$src")"
+            [[ "$provider" == "Shared" ]] && continue
+            testDir="MEVD/test/${provider}.UnitTests"
+            if [[ -d "$testDir" ]]; then
+              count=$((count + 1))
+              dotnet test "$testDir" || rc=1
+            else
+              echo "Missing unit tests directory: $testDir" >&2
+              rc=1
+            fi
+          done
+          if [[ $count -eq 0 ]]; then
+            echo "No unit test projects found." >&2
+            rc=1
+          fi
+          exit $rc
 
   # Conformance tests run on Ubuntu only: most providers use Testcontainers with Linux Docker
   # images, which aren't available on Windows GitHub-hosted runners.
