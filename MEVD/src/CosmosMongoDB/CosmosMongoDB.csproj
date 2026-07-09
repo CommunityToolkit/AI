@@ -21,7 +21,6 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.AI.Abstractions" />
     <PackageReference Include="MongoDB.Driver" />
-    <PackageReference Include="SharpCompress" />
   </ItemGroup>
 
 </Project>
