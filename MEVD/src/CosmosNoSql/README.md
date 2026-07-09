@@ -48,7 +48,7 @@ public sealed class Hotel
     [VectorStoreData(IsIndexed = true)]
     public string HotelName { get; set; } = string.Empty;
 
-    [VectorStoreVector(Dimensions: 1536, DistanceFunction = DistanceFunction.CosineSimilarity)]
+    [VectorStoreVector(dimensions: 1536, DistanceFunction = DistanceFunction.CosineSimilarity)]
     public ReadOnlyMemory<float> DescriptionEmbedding { get; set; }
 }
 ```

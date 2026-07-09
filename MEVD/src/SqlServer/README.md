@@ -23,7 +23,7 @@ public sealed class BlogPost
     [VectorStoreData]
     public string? Content { get; set; }
 
-    [VectorStoreVector(Dimensions: 1536)]
+    [VectorStoreVector(dimensions: 1536)]
     public ReadOnlyMemory<float> ContentEmbedding { get; set; }
 }
 
