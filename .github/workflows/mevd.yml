@@ -123,11 +123,24 @@ jobs:
       - name: Test
         shell: bash
         run: |
-          shopt -s nullglob
           rc=0
-          for dir in MEVD/test/*.UnitTests; do
-            dotnet test "$dir" || rc=1
+          count=0
+          for src in MEVD/src/*/; do
+            provider="$(basename "$src")"
+            [[ "$provider" == "Shared" ]] && continue
+            testDir="MEVD/test/${provider}.UnitTests"
+            if [[ -d "$testDir" ]]; then
+              count=$((count + 1))
+              dotnet test "$testDir" || rc=1
+            else
+              echo "Missing unit tests directory: $testDir" >&2
+              rc=1
+            fi
           done
+          if [[ $count -eq 0 ]]; then
+            echo "No unit test projects found." >&2
+            rc=1
+          fi
           exit $rc
 
   # Conformance tests run on Ubuntu only: most providers use Testcontainers with Linux Docker
