@@ -99,9 +99,13 @@ jobs:
         run: dotnet build MEVD/MEVD.slnf
 
   unit-tests:
-    name: Unit Tests
+    name: 'Unit Tests (${{ matrix.os }})'
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v6
 
@@ -117,7 +121,14 @@ jobs:
           restore-keys: nuget-
 
       - name: Test
-        run: dotnet test MEVD/UnitTests.slnf
+        shell: bash
+        run: |
+          shopt -s nullglob
+          rc=0
+          for dir in MEVD/test/*.UnitTests; do
+            dotnet test "$dir" || rc=1
+          done
+          exit $rc
 
   # Conformance tests run on Ubuntu only: most providers use Testcontainers with Linux Docker
   # images, which aren't available on Windows GitHub-hosted runners.
