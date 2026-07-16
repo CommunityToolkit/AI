@@ -204,7 +204,7 @@ jobs:
           -p:CI=true
 
       - name: Upload NuGet packages as artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: nuget-packages
           if-no-files-found: error
@@ -216,7 +216,7 @@ jobs:
           find nuget -type f -name '*.nupkg' -exec basename {} \; >> $GITHUB_STEP_SUMMARY
 
       - name: Upload signing file list
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: nuget-list
           if-no-files-found: error
