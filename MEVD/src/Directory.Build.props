@@ -6,16 +6,13 @@
     <IsPackable>true</IsPackable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
-    <NoWarn>$(NoWarn);MEVD9000,MEVD9001</NoWarn> <!-- Experimental MEVD connector-facing APIs -->
+    <NoWarn>$(NoWarn);MEVD9001</NoWarn> <!-- Experimental MEVD connector-facing APIs (FilterTranslatorBase etc.) -->
     <InjectCallerAttributesOnLegacy>true</InjectCallerAttributesOnLegacy>
     <InjectTrimAttributesOnLegacy>true</InjectTrimAttributesOnLegacy>
     <InjectDiagnosticAttributesOnLegacy>true</InjectDiagnosticAttributesOnLegacy>
     <InjectUnreachableExceptionOnLegacy>true</InjectUnreachableExceptionOnLegacy>
     <InjectSystemIndexOnLegacy>true</InjectSystemIndexOnLegacy>
     <InjectIsExternalInitOnLegacy>true</InjectIsExternalInitOnLegacy>
-
-    <!-- Temporary, remove after this is fixed on the MEVD.Abstractions side -->
-    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
   </PropertyGroup>
 
   <ItemGroup>
