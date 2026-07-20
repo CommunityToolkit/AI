@@ -27,19 +27,9 @@ The AI Community Toolkit also has a list of issues that are labeled as [help wan
 -   If it gets approved by the team, proceed to submit a PR of the proposed Feature.
 -   If the PR contains an error-free code and the reviewer signs off, the PR will be merged.
 
-## 📝 Add or Improve Documentation <a name="docs"></a>
-
-The documentation for the AI Community Toolkit is available on [Microsoft Learn](https://learn.microsoft.com/en-us/dotnet/ai/vector-stores/overview).
-
-If you want to improve the documentation or report any issues with it, please raise an issue on the [MicrosoftDocs/ai-dev-docs](https://github.com/MicrosoftDocs/ai-dev-docs) repository.
-
 ## 🚀 Create, Submit or Review Pull Request <a name="pr"></a>
 
 Anyone can create a Pull Request by forking the AI Community Toolkit Repository. Here is how you can [Create a Pull Request from fork](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request-from-a-fork). Once you fork the AI Community Toolkit repo, it is essential to create all changes in the feature branch of your forked repository. If you have the changes in the forked feature branch, you can then create a Pull Request in the main AI Community Toolkit.
-
-### 🥽 Previewing Packages
-
-Each PR that builds successfully will have preview packages created as artifacts attached to the build.
 
 ## 💙 Thank You
 
@@ -48,9 +38,3 @@ Each PR that builds successfully will have preview packages created as artifacts
 ## Code of Conduct
 
 Please see our [Code of Conduct](CODE_OF_CONDUCT.md).
-
-As should be clear by now: we assume everyone tries to do their best, everyone should be treated with respect and equally.
-
-In the unfortunate event that doesn't happen, please feel free to report it to the community leaders at [conduct@dotnetfoundation.org](mailto:conduct@dotnetfoundation.org).
-
-We will take appropriate actions and measures if necessary.
