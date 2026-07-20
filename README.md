@@ -30,7 +30,7 @@ The following NuGet packages have been published:
 
 The majority of tests in the test suite use [Testcontainers](https://testcontainers.com/) so that conformance tests are run against real servers running inside Docker containers. Docker must be running on your machine for this to work.
 
-Some providers (AzureAISearch, CosmosMongoDB) require a cloud-hosted service and cannot be tested with containers. For those, provide a real service and configure the connection string using one of the following methods:
+Some providers (AzureAISearch, CosmosMongoDB) require a cloud-hosted service provisioned in Azure and cannot be tested with containers. For those, first create the required Azure service, then configure the connection string using one of the following methods:
 
 **Option 1: Environment Variable**
 

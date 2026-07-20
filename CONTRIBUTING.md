@@ -31,7 +31,7 @@ The AI Community Toolkit also has a list of issues that are labeled as [help wan
 
 The documentation for the AI Community Toolkit is available on [Microsoft Learn](https://learn.microsoft.com/en-us/dotnet/ai/vector-stores/overview).
 
-If you want to create new documentation, improve existing documentation, or report any issues with the documentation, please raise an issue on the [learn.microsoft.com repository](https://github.com/MicrosoftDocs/learn.microsoft.com).
+If you want to improve the documentation or report any issues with it, please raise an issue on the [MicrosoftDocs/ai-dev-docs](https://github.com/MicrosoftDocs/ai-dev-docs) repository.
 
 ## 🚀 Create, Submit or Review Pull Request <a name="pr"></a>
 
