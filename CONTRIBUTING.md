@@ -12,10 +12,6 @@ To ensure that the maintainers are able to manage issues, bugs and questions ple
 
 If you find any bug, you can help the community by [submitting an issue](https://github.com/CommunityToolkit/AI/issues/new?template=bug_report.md&labels=bug+:bug:&title=[Bug]). Once the issue is filed, feel free to start working on the PR and submit a PR.
 
-## 👌 Good First Issue <a name="issue"></a>
-
-If this is your first time contributing to the AI Community Toolkit and do not have advanced level programming experience, we have got you covered 💥. We have a list of [good first issues](https://github.com/CommunityToolkit/AI/labels/good%20first%20issue) that can be a great entryway to find and fix any issues that best fit your expertise or technical background.
-
 ## 🙋 Help Wanted <a name="help"></a>
 
 The AI Community Toolkit also has a list of issues that are labeled as [help wanted](https://github.com/CommunityToolkit/AI/labels/help%20wanted). The level of complexity in the list can vary but if you have an advanced level of programming experience, feel free to jump in to solve these issues.

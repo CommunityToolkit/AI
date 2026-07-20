@@ -30,28 +30,7 @@ The following NuGet packages have been published:
 
 The majority of tests in the test suite use [Testcontainers](https://testcontainers.com/) so that conformance tests are run against real servers running inside Docker containers. Docker must be running on your machine for this to work.
 
-Some providers (AzureAISearch, CosmosMongoDB) require a cloud-hosted service provisioned in Azure and cannot be tested with containers. For those, first create the required Azure service, then configure the required settings (e.g., endpoint and API key) using one of the following methods:
-
-**Option 1: Environment Variable**
-
-```bash
-# Example for Azure AI Search
-export AzureAISearch__Endpoint="https://my-search.search.windows.net"
-export AzureAISearch__ApiKey="my-api-key"
-```
-
-**Option 2: Configuration File**
-
-Create a `testsettings.development.json` file in the relevant test project directory:
-
-```json
-{
-  "AzureAISearch": {
-    "Endpoint": "https://my-search.search.windows.net",
-    "ApiKey": "my-api-key"
-  }
-}
-```
+Some providers (AzureAISearch, CosmosMongoDB) require a cloud-hosted service and cannot be tested with containers. For those, first create the required cloud service, then configure the required settings (e.g., endpoint and API key) using environment variables or the `testsettings.development.json` file in the relevant test project directory.
 
 > **NOTE**: The `testsettings.development.json` file contains secrets and is git-ignored. It should not be checked in.
 
