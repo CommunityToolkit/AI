@@ -1,6 +1,6 @@
 # ✨ Contributing to the AI Community Toolkit
 
-Thank you for exhibiting interest in contributing to the AI Community Toolkit. The team is delighted to welcome you onboard to our exciting and growing project. Any contribution or value added go a long way to enhance the project!
+Thank you for exhibiting interest in contributing to the AI Community Toolkit. The team is delighted to welcome you on board to our exciting and growing project. Any contribution or value added goes a long way toward enhancing the project!
 
 In the next few steps, you will be able to see a glimpse of ways you can contribute to the AI Community Toolkit.
 
@@ -14,7 +14,7 @@ If you find any bug, you can help the community by [submitting an issue](https:/
 
 ## 👌 Good First Issue <a name="issue"></a>
 
-If this is your first time contributing to the AI Community Toolkit and do not have advanced level programming experience, we have got you covered 💥 we have a list of [good first issue](https://github.com/CommunityToolkit/AI/labels/good%20first%20issue) that can be a great entryway to find and fix any issues that best fit your expertise or technical background.
+If this is your first time contributing to the AI Community Toolkit and do not have advanced level programming experience, we have got you covered 💥. We have a list of [good first issues](https://github.com/CommunityToolkit/AI/labels/good%20first%20issue) that can be a great entryway to find and fix any issues that best fit your expertise or technical background.
 
 ## 🙋 Help Wanted <a name="help"></a>
 
