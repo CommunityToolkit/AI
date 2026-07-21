@@ -19,7 +19,6 @@ The following NuGet packages have been published:
 | [CommunityToolkit.VectorData.CosmosNoSql] | ![CosmosNoSql Version][v-cosmosnosql] | ![CosmosNoSql Downloads][d-cosmosnosql] |
 | [CommunityToolkit.VectorData.InMemory] | ![InMemory Version][v-inmemory] | ![InMemory Downloads][d-inmemory] |
 | [CommunityToolkit.VectorData.PgVector] | ![PgVector Version][v-pgvector] | ![PgVector Downloads][d-pgvector] |
-| [CommunityToolkit.VectorData.Pinecone] | ![Pinecone Version][v-pinecone] | ![Pinecone Downloads][d-pinecone] |
 | [CommunityToolkit.VectorData.Qdrant] | ![Qdrant Version][v-qdrant] | ![Qdrant Downloads][d-qdrant] |
 | [CommunityToolkit.VectorData.Redis] | ![Redis Version][v-redis] | ![Redis Downloads][d-redis] |
 | [CommunityToolkit.VectorData.SqlServer] | ![SqlServer Version][v-sqlserver] | ![SqlServer Downloads][d-sqlserver] |
@@ -57,7 +56,6 @@ The Vector Data connectors in this toolkit were initially part of the [Semantic 
 [CommunityToolkit.VectorData.CosmosNoSql]: https://www.nuget.org/packages/CommunityToolkit.VectorData.CosmosNoSql
 [CommunityToolkit.VectorData.InMemory]: https://www.nuget.org/packages/CommunityToolkit.VectorData.InMemory
 [CommunityToolkit.VectorData.PgVector]: https://www.nuget.org/packages/CommunityToolkit.VectorData.PgVector
-[CommunityToolkit.VectorData.Pinecone]: https://www.nuget.org/packages/CommunityToolkit.VectorData.Pinecone
 [CommunityToolkit.VectorData.Qdrant]: https://www.nuget.org/packages/CommunityToolkit.VectorData.Qdrant
 [CommunityToolkit.VectorData.Redis]: https://www.nuget.org/packages/CommunityToolkit.VectorData.Redis
 [CommunityToolkit.VectorData.SqlServer]: https://www.nuget.org/packages/CommunityToolkit.VectorData.SqlServer
@@ -70,7 +68,6 @@ The Vector Data connectors in this toolkit were initially part of the [Semantic 
 [v-cosmosnosql]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.CosmosNoSql
 [v-inmemory]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.InMemory
 [v-pgvector]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.PgVector
-[v-pinecone]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.Pinecone
 [v-qdrant]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.Qdrant
 [v-redis]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.Redis
 [v-sqlserver]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.SqlServer
@@ -83,7 +80,6 @@ The Vector Data connectors in this toolkit were initially part of the [Semantic 
 [d-cosmosnosql]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.CosmosNoSql
 [d-inmemory]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.InMemory
 [d-pgvector]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.PgVector
-[d-pinecone]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.Pinecone
 [d-qdrant]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.Qdrant
 [d-redis]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.Redis
 [d-sqlserver]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.SqlServer
