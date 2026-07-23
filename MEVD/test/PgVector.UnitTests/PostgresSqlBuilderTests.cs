@@ -9,7 +9,6 @@ using Microsoft.Extensions.VectorData.ProviderServices;
 using CommunityToolkit.VectorData.PgVector;
 using Npgsql;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace PgVector.UnitTests;
 
