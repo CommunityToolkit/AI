@@ -19,13 +19,9 @@ public sealed class CosmosNoSqlDistanceFunctionTests(CosmosNoSqlDistanceFunction
 
     public override Task EuclideanDistance()
     {
-        if (!((CosmosNoSqlTestStore)fixture.TestStore).UsesLocalEmulator)
-        {
-            // Fails on emulator, most likely due to emulator bug
-            return base.EuclideanDistance();
-        }
+        Assert.SkipUnless(!((CosmosNoSqlTestStore)fixture.TestStore).UsesLocalEmulator, "Fails on emulator, most likely due to emulator bug");
 
-        return Task.CompletedTask;
+        return base.EuclideanDistance();
     }
 
     public new sealed class Fixture : DistanceFunctionTests<string>.Fixture
