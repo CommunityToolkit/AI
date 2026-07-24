@@ -5,6 +5,8 @@
   <PropertyGroup>
     <!-- .NET Framework TFMs are only supported on Windows (no Mono on Linux CI) -->
     <NetFrameworkTfm Condition="$([MSBuild]::IsOSPlatform('Windows'))">net472</NetFrameworkTfm>
+    <!-- required by xUnit v3 -->
+    <OutputType>Exe</OutputType>
 
     <NoWarn>$(NoWarn);MEVD9000,MEVD9001</NoWarn> <!-- Experimental MEVD connector-facing APIs -->
     <NoWarn>$(NoWarn);CA1515</NoWarn> <!-- Because an application's API isn't typically referenced from outside the assembly, types can be made internal -->
@@ -34,6 +36,12 @@
     <!-- Explicitly pin VectorData.Abstractions to 10.8.0 (10.8.2 not yet on NuGet). -->
     <!-- ConformanceTests 10.8.2 requires >= 10.8.2; NU1605 is suppressed above. -->
     <PackageReference Include="Microsoft.Extensions.VectorData.Abstractions" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
   </ItemGroup>
 
 </Project>
