@@ -16,12 +16,9 @@ public sealed class CosmosNoSqlIndexKindTests(CosmosNoSqlIndexKindTests.Fixture 
 
     public override Task Flat()
     {
-        if (!((CosmosNoSqlTestStore)fixture.TestStore).UsesLocalEmulator)
-        {
-            return base.Flat();
-        }
+        Assert.SkipUnless(!((CosmosNoSqlTestStore)fixture.TestStore).UsesLocalEmulator, "Not supported on emulator.");
 
-        return Task.CompletedTask;
+        return base.Flat();
     }
 
     public new sealed class Fixture : IndexKindTests<string>.Fixture

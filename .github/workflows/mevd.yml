@@ -16,7 +16,9 @@ on:
       - 'nuget.config'
       - '.github/workflows/mevd.yml'
   pull_request:
-    branches: [main]
+    branches:
+      - main
+      - copilot/*
     paths:
       - 'MEVD/**'
       - 'Shared/**'

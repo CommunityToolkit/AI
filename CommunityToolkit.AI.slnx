@@ -20,6 +20,7 @@
     <Project Path="MEVD/src/Weaviate/Weaviate.csproj" />
   </Folder>
   <Folder Name="/MEVD/test/">
+    <File Path="MEVD/test/Directory.Build.props" />
     <Project Path="MEVD/test/AzureAISearch.UnitTests/AzureAISearch.UnitTests.csproj" />
     <Project Path="MEVD/test/AzureAISearch.ConformanceTests/AzureAISearch.ConformanceTests.csproj" />
     <Project Path="MEVD/test/CosmosNoSql.UnitTests/CosmosNoSql.UnitTests.csproj" />
