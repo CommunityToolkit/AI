@@ -7,7 +7,6 @@ using System.IO;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.AI;
 using Microsoft.Extensions.VectorData;
 using CommunityToolkit.VectorData.InMemory;
 using Xunit;
@@ -116,52 +115,4 @@ public class InMemoryVectorStoreExtensionsTests
         });
     }
 
-    private sealed class TestRecord
-    {
-        [VectorStoreKey]
-        public Guid Key { get; init; }
-
-        [VectorStoreData]
-        public string Text { get; init; } = string.Empty;
-
-        [VectorStoreVector(dimensions: 3)]
-        public ReadOnlyMemory<float> Embedding { get; init; }
-    }
-
-    private sealed class TestRecordAutoEmbed
-    {
-        [VectorStoreKey]
-        public Guid Key { get; init; }
-
-        [VectorStoreData]
-        public string Text { get; init; } = string.Empty;
-
-        [VectorStoreVector(dimensions: 3)]
-        public string Embedding => this.Text;
-    }
-
-    private sealed class FakeEmbeddingGenerator() : IEmbeddingGenerator<string, Embedding<float>>
-    {
-        public Task<GeneratedEmbeddings<Embedding<float>>> GenerateAsync(
-            IEnumerable<string> values,
-            EmbeddingGenerationOptions? options = null,
-            CancellationToken cancellationToken = default)
-        {
-            var results = new GeneratedEmbeddings<Embedding<float>>();
-
-            foreach (var value in values)
-            {
-                results.Add(new Embedding<float>(new float[] { 0.1f, 0.2f, 0.3f }));
-            }
-
-            return Task.FromResult(results);
-        }
-
-        public object? GetService(Type serviceType, object? serviceKey = null)
-            => null;
-
-        public void Dispose()
-        {
-        }
-    }
 }

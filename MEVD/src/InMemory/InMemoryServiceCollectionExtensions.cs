@@ -25,19 +25,18 @@ public static class InMemoryServiceCollectionExtensions
     [RequiresDynamicCode("The InMemory provider is incompatible with NativeAOT.")]
     public static IServiceCollection AddInMemoryVectorStore(this IServiceCollection services, InMemoryVectorStoreOptions? options = default, string? serviceId = default)
     {
-        services.AddKeyedTransient<VectorStore>(
+        services.AddKeyedSingleton<InMemoryVectorStore>(
             serviceId,
             (sp, obj) =>
             {
-                options ??= sp.GetService<InMemoryVectorStoreOptions>() ?? new()
+                var vectorStoreOptions = options ?? sp.GetService<InMemoryVectorStoreOptions>() ?? new()
                 {
                     EmbeddingGenerator = sp.GetService<IEmbeddingGenerator>()
                 };
 
-                return new InMemoryVectorStore(options);
+                return new InMemoryVectorStore(vectorStoreOptions);
             });
 
-        services.AddKeyedSingleton<InMemoryVectorStore, InMemoryVectorStore>(serviceId);
         services.AddKeyedSingleton<VectorStore>(serviceId, (sp, obj) => sp.GetRequiredKeyedService<InMemoryVectorStore>(serviceId));
         return services;
     }
