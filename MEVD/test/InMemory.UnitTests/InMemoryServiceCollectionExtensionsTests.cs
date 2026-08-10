@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.VectorData;
 using CommunityToolkit.VectorData.InMemory;
@@ -32,6 +36,25 @@ public class InMemoryServiceCollectionExtensionsTests
         var vectorStore = serviceProvider.GetRequiredService<VectorStore>();
         Assert.NotNull(vectorStore);
         Assert.IsType<InMemoryVectorStore>(vectorStore);
+    }
+
+    [Fact]
+    public async Task AddVectorStoreAppliesConfiguredEmbeddingGenerator()
+    {
+        // Arrange.
+        this._serviceCollection.AddInMemoryVectorStore(new() { EmbeddingGenerator = new FakeEmbeddingGenerator() });
+        var serviceProvider = this._serviceCollection.BuildServiceProvider();
+        var vectorStore = serviceProvider.GetRequiredService<VectorStore>();
+        var collection = vectorStore.GetCollection<string, AutoEmbedTestRecord>("testcollection");
+
+        // Act.
+        await collection.EnsureCollectionExistsAsync();
+        await collection.UpsertAsync(new AutoEmbedTestRecord { Id = "1", Text = "Test record" });
+
+        // Assert.
+        var record = await collection.GetAsync("1");
+        Assert.NotNull(record);
+        Assert.Equal("Test record", record.Text);
     }
 
     [Fact]
@@ -66,5 +89,42 @@ public class InMemoryServiceCollectionExtensionsTests
 
         [VectorStoreVector(dimensions: 4)]
         public ReadOnlyMemory<float> Vector { get; set; }
+    }
+
+    private sealed class AutoEmbedTestRecord
+    {
+        [VectorStoreKey]
+        public string Id { get; init; } = string.Empty;
+
+        [VectorStoreData]
+        public string Text { get; init; } = string.Empty;
+
+        [VectorStoreVector(dimensions: 3)]
+        public string Embedding => this.Text;
+    }
+
+    private sealed class FakeEmbeddingGenerator : IEmbeddingGenerator<string, Embedding<float>>
+    {
+        public Task<GeneratedEmbeddings<Embedding<float>>> GenerateAsync(
+            IEnumerable<string> values,
+            EmbeddingGenerationOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            var results = new GeneratedEmbeddings<Embedding<float>>();
+
+            foreach (var value in values)
+            {
+                results.Add(new Embedding<float>([0.1f, 0.2f, 0.3f]));
+            }
+
+            return Task.FromResult(results);
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null)
+            => null;
+
+        public void Dispose()
+        {
+        }
     }
 }
