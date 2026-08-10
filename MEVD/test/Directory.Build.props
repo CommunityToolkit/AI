@@ -25,7 +25,6 @@
     <!-- Remove this after switching to C# 14 -->
     <NoWarn>$(NoWarn);IDE0340</NoWarn> <!-- Use unbound generic type -->
 
-    <NoWarn>$(NoWarn);NU1605</NoWarn> <!-- Microsoft.Extensions.VectorData.Abstractions 10.8.2 is not yet published; suppress downgrade from ConformanceTests 10.8.2 dependency -->
     <NoWarn>$(NoWarn);xUnit1051</NoWarn> <!-- xUnit v3: use TestContext.Current.CancellationToken (new recommendation, not yet adopted) -->
 
     <!-- Temporary, remove after this is fixed on the MEVD.Abstractions side -->
@@ -33,9 +32,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Explicitly pin VectorData.Abstractions to 10.8.0 (10.8.2 not yet on NuGet). -->
-    <!-- ConformanceTests 10.8.2 requires >= 10.8.2; NU1605 is suppressed above. -->
-    <PackageReference Include="Microsoft.Extensions.VectorData.Abstractions" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio">
