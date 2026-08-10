@@ -3,7 +3,7 @@
     <PackageVersion Include="System.Linq.AsyncEnumerable" Version="10.0.10" />
     <PackageVersion Include="System.Numerics.Tensors" Version="10.0.10" />
     <PackageVersion Include="System.Text.Json" Version="10.0.10" />
-    <PackageVersion Include="Microsoft.Extensions.AI.Abstractions" Version="10.8.1" />
+    <PackageVersion Include="Microsoft.Extensions.AI.Abstractions" Version="10.8.3" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
   </ItemGroup>
 
