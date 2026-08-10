@@ -42,7 +42,8 @@ public class InMemoryServiceCollectionExtensionsTests
     public async Task AddVectorStoreAppliesConfiguredEmbeddingGenerator()
     {
         // Arrange.
-        this._serviceCollection.AddInMemoryVectorStore(new() { EmbeddingGenerator = new FakeEmbeddingGenerator() });
+        var embeddingGenerator = new FakeEmbeddingGenerator();
+        this._serviceCollection.AddInMemoryVectorStore(new() { EmbeddingGenerator = embeddingGenerator });
         var serviceProvider = this._serviceCollection.BuildServiceProvider();
         var vectorStore = serviceProvider.GetRequiredService<VectorStore>();
         var collection = vectorStore.GetCollection<string, AutoEmbedTestRecord>("testcollection");
@@ -55,6 +56,7 @@ public class InMemoryServiceCollectionExtensionsTests
         var record = await collection.GetAsync("1");
         Assert.NotNull(record);
         Assert.Equal("Test record", record.Text);
+        Assert.Equal(1, embeddingGenerator.CallCount);
     }
 
     [Fact]
@@ -105,11 +107,14 @@ public class InMemoryServiceCollectionExtensionsTests
 
     private sealed class FakeEmbeddingGenerator : IEmbeddingGenerator<string, Embedding<float>>
     {
+        public int CallCount { get; private set; }
+
         public Task<GeneratedEmbeddings<Embedding<float>>> GenerateAsync(
             IEnumerable<string> values,
             EmbeddingGenerationOptions? options = null,
             CancellationToken cancellationToken = default)
         {
+            this.CallCount++;
             var results = new GeneratedEmbeddings<Embedding<float>>();
 
             foreach (var value in values)
