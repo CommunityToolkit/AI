@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.VectorData;
 using CommunityToolkit.VectorData.InMemory;
@@ -28,12 +25,10 @@ public class InMemoryServiceCollectionExtensionsTests
     [Fact]
     public void AddVectorStoreRegistersClass()
     {
-        // Act.
         this._serviceCollection.AddInMemoryVectorStore();
 
-        // Assert.
-        var serviceProvider = this._serviceCollection.BuildServiceProvider();
-        var vectorStore = serviceProvider.GetRequiredService<VectorStore>();
+        ServiceProvider serviceProvider = this._serviceCollection.BuildServiceProvider();
+        VectorStore vectorStore = serviceProvider.GetRequiredService<VectorStore>();
         Assert.NotNull(vectorStore);
         Assert.IsType<InMemoryVectorStore>(vectorStore);
     }
@@ -41,19 +36,17 @@ public class InMemoryServiceCollectionExtensionsTests
     [Fact]
     public async Task AddVectorStoreAppliesConfiguredEmbeddingGenerator()
     {
-        // Arrange.
-        var embeddingGenerator = new FakeEmbeddingGenerator();
+        FakeEmbeddingGenerator embeddingGenerator = new();
         this._serviceCollection.AddInMemoryVectorStore(new() { EmbeddingGenerator = embeddingGenerator });
-        var serviceProvider = this._serviceCollection.BuildServiceProvider();
-        var vectorStore = serviceProvider.GetRequiredService<VectorStore>();
-        var collection = vectorStore.GetCollection<string, AutoEmbedTestRecord>("testcollection");
+        ServiceProvider serviceProvider = this._serviceCollection.BuildServiceProvider();
+        VectorStore vectorStore = serviceProvider.GetRequiredService<VectorStore>();
+        VectorStoreCollection<Guid, TestRecordAutoEmbed> collection = vectorStore.GetCollection<Guid, TestRecordAutoEmbed>("testcollection");
+        Guid key = Guid.NewGuid();
 
-        // Act.
         await collection.EnsureCollectionExistsAsync();
-        await collection.UpsertAsync(new AutoEmbedTestRecord { Id = "1", Text = "Test record" });
+        await collection.UpsertAsync(new TestRecordAutoEmbed { Key = key, Text = "Test record" });
 
-        // Assert.
-        var record = await collection.GetAsync("1");
+        TestRecordAutoEmbed? record = await collection.GetAsync(key);
         Assert.NotNull(record);
         Assert.Equal("Test record", record.Text);
         Assert.Equal(1, embeddingGenerator.CallCount);
@@ -62,74 +55,21 @@ public class InMemoryServiceCollectionExtensionsTests
     [Fact]
     public void AddVectorStoreRecordCollectionRegistersClass()
     {
-        // Act.
-        this._serviceCollection.AddInMemoryVectorStoreRecordCollection<string, TestRecord>("testcollection");
+        this._serviceCollection.AddInMemoryVectorStoreRecordCollection<Guid, TestRecord>("testcollection");
 
-        // Assert.
         this.AssertVectorStoreRecordCollectionCreated();
     }
 
     private void AssertVectorStoreRecordCollectionCreated()
     {
-        var serviceProvider = this._serviceCollection.BuildServiceProvider();
+        ServiceProvider serviceProvider = this._serviceCollection.BuildServiceProvider();
 
-        var collection = serviceProvider.GetRequiredService<VectorStoreCollection<string, TestRecord>>();
+        VectorStoreCollection<Guid, TestRecord> collection = serviceProvider.GetRequiredService<VectorStoreCollection<Guid, TestRecord>>();
         Assert.NotNull(collection);
-        Assert.IsType<InMemoryCollection<string, TestRecord>>(collection);
+        Assert.IsType<InMemoryCollection<Guid, TestRecord>>(collection);
 
-        var vectorizedSearch = serviceProvider.GetRequiredService<IVectorSearchable<TestRecord>>();
+        IVectorSearchable<TestRecord> vectorizedSearch = serviceProvider.GetRequiredService<IVectorSearchable<TestRecord>>();
         Assert.NotNull(vectorizedSearch);
-        Assert.IsType<InMemoryCollection<string, TestRecord>>(vectorizedSearch);
-    }
-
-#pragma warning disable CA1812 // Avoid uninstantiated internal classes
-    private sealed class TestRecord
-#pragma warning restore CA1812 // Avoid uninstantiated internal classes
-    {
-        [VectorStoreKey]
-        public string Id { get; set; } = string.Empty;
-
-        [VectorStoreVector(dimensions: 4)]
-        public ReadOnlyMemory<float> Vector { get; set; }
-    }
-
-    private sealed class AutoEmbedTestRecord
-    {
-        [VectorStoreKey]
-        public string Id { get; init; } = string.Empty;
-
-        [VectorStoreData]
-        public string Text { get; init; } = string.Empty;
-
-        [VectorStoreVector(dimensions: 3)]
-        public string Embedding => this.Text;
-    }
-
-    private sealed class FakeEmbeddingGenerator : IEmbeddingGenerator<string, Embedding<float>>
-    {
-        public int CallCount { get; private set; }
-
-        public Task<GeneratedEmbeddings<Embedding<float>>> GenerateAsync(
-            IEnumerable<string> values,
-            EmbeddingGenerationOptions? options = null,
-            CancellationToken cancellationToken = default)
-        {
-            this.CallCount++;
-            var results = new GeneratedEmbeddings<Embedding<float>>();
-
-            foreach (var value in values)
-            {
-                results.Add(new Embedding<float>(new float[] { 0.1f, 0.2f, 0.3f }));
-            }
-
-            return Task.FromResult(results);
-        }
-
-        public object? GetService(Type serviceType, object? serviceKey = null)
-            => null;
-
-        public void Dispose()
-        {
-        }
+        Assert.IsType<InMemoryCollection<Guid, TestRecord>>(vectorizedSearch);
     }
 }
