@@ -33,13 +33,15 @@ public class InMemoryServiceCollectionExtensionsTests
         Assert.IsType<InMemoryVectorStore>(vectorStore);
     }
 
-    [Fact]
-    public async Task AddVectorStoreAppliesConfiguredEmbeddingGenerator()
+    [Theory]
+    [InlineData(typeof(VectorStore))]
+    [InlineData(typeof(InMemoryVectorStore))]
+    public async Task AddVectorStoreAppliesConfiguredEmbeddingGenerator(Type vectorStoreType)
     {
         FakeEmbeddingGenerator embeddingGenerator = new();
         this._serviceCollection.AddInMemoryVectorStore(new() { EmbeddingGenerator = embeddingGenerator });
         ServiceProvider serviceProvider = this._serviceCollection.BuildServiceProvider();
-        VectorStore vectorStore = serviceProvider.GetRequiredService<VectorStore>();
+        VectorStore vectorStore = (VectorStore)serviceProvider.GetRequiredService(vectorStoreType);
         VectorStoreCollection<Guid, TestRecordAutoEmbed> collection = vectorStore.GetCollection<Guid, TestRecordAutoEmbed>("testcollection");
         Guid key = Guid.NewGuid();
 
