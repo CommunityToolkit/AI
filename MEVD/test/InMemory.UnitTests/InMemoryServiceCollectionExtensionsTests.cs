@@ -114,7 +114,7 @@ public class InMemoryServiceCollectionExtensionsTests
 
             foreach (var value in values)
             {
-                results.Add(new Embedding<float>([0.1f, 0.2f, 0.3f]));
+                results.Add(new Embedding<float>(new float[] { 0.1f, 0.2f, 0.3f }));
             }
 
             return Task.FromResult(results);
