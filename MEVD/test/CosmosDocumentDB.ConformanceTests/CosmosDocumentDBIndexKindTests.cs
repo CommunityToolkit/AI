@@ -12,7 +12,7 @@ namespace CosmosDocumentDB.ConformanceTests;
 public class CosmosDocumentDBIndexKindTests(CosmosDocumentDBIndexKindTests.Fixture fixture)
     : IndexKindTests<int>(fixture), IClassFixture<CosmosDocumentDBIndexKindTests.Fixture>
 {
-    // Note: Cosmos Mongo support HNSW, but only in a specific tier.
+    // Note: Cosmos DocumentDB supports HNSW, but only in a specific tier.
     // [Fact]
     // public virtual Task Hnsw()
     //     => this.Test(IndexKind.Hnsw);
@@ -21,7 +21,7 @@ public class CosmosDocumentDBIndexKindTests(CosmosDocumentDBIndexKindTests.Fixtu
     public virtual Task IvfFlat()
         => this.Test(IndexKind.IvfFlat);
 
-    // Cosmos Mongo does not support index-less searching
+    // Cosmos DocumentDB does not support index-less searching
     public override Task Flat() => Assert.ThrowsAsync<NotSupportedException>(base.Flat);
 
     public new class Fixture() : IndexKindTests<int>.Fixture

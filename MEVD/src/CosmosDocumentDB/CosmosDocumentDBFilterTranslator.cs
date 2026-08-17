@@ -63,7 +63,7 @@ internal class CosmosDocumentDBFilterTranslator : FilterTranslatorBase
     {
         if (value is null)
         {
-            throw new NotSupportedException("MongogDB does not support null checks in vector search pre-filters");
+            throw new NotSupportedException("MongoDB does not support null checks in vector search pre-filters");
         }
 
         // Short form of equality (instead of $eq)
@@ -142,7 +142,7 @@ internal class CosmosDocumentDBFilterTranslator : FilterTranslatorBase
             return new BsonDocument { [fieldName] = new BsonDocument { ["$nin"] = values } };
         }
 
-        throw new NotSupportedException("MongogDB does not support the NOT operator in vector search pre-filters");
+        throw new NotSupportedException("MongoDB does not support the NOT operator in vector search pre-filters");
     }
 
     private BsonDocument TranslateMethodCall(MethodCallExpression methodCall)
