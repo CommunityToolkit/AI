@@ -1,5 +1,5 @@
 # MongoShared
 
-These files are shared utilities that are identical across the Cosmos DocumentDB and the regular MongoDB vector store providers.
+These files are derived from the MongoDB vector store provider utilities.
 
-If a regular MongoDB provider is added in the future, these files should be extracted to a shared location and linked into both projects.
+MongoDB now maintains its provider separately at https://github.com/mongodb/mongo-mevd-provider/tree/main/src/MongoDB. Periodically compare these files with that repository and sync relevant changes when needed.

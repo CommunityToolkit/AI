@@ -7,8 +7,9 @@
     <TargetFrameworks>net10.0;net8.0;netstandard2.1;net472</TargetFrameworks>
     <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</IsAotCompatible>
 
-    <Title>Azure DocumentDB vCore provider for Microsoft.Extensions.VectorData</Title>
-    <Description>Azure DocumentDB vCore provider for Microsoft.Extensions.VectorData by the .NET Community Toolkit</Description>
+    <Title>Azure DocumentDB (with MongoDB compatibility) provider for Microsoft.Extensions.VectorData</Title>
+    <Description>Azure DocumentDB (with MongoDB compatibility) provider for Microsoft.Extensions.VectorData by the .NET Community Toolkit</Description>
+    <PackageTags>AzureDocumentDB;AzureMongoDB;VectorData</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
