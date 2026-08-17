@@ -22,6 +22,7 @@
     <PackageVersion Include="Qdrant.Client" Version="1.18.1" />
     <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
     <PackageVersion Include="sqlite-vec" Version="0.1.7-alpha.2.1" />
+    <PackageVersion Include="SSH.NET" Version="2026.0.0" />
   </ItemGroup>
 
   <ItemGroup Label="Build">
