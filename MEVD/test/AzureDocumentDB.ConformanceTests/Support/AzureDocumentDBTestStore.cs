@@ -23,7 +23,7 @@ public sealed class AzureDocumentDBTestStore : TestStore
 
     public override string DefaultDistanceFunction => Microsoft.Extensions.VectorData.DistanceFunction.CosineDistance;
 
-    public AzureDocumentDBVectorStore GetVectorStore(AzureDocumentDBVectorStoreOptions options)
+    public DocumentDBVectorStore GetVectorStore(DocumentDBVectorStoreOptions options)
         => new(this.Database, options);
 
     private AzureDocumentDBTestStore()
@@ -39,7 +39,7 @@ public sealed class AzureDocumentDBTestStore : TestStore
 
         this._client = new MongoClient(AzureDocumentDBTestEnvironment.ConnectionString);
         this._database = this._client.GetDatabase("VectorSearchTests");
-        this.DefaultVectorStore = new AzureDocumentDBVectorStore(this._database);
+        this.DefaultVectorStore = new DocumentDBVectorStore(this._database);
 
         return Task.CompletedTask;
     }

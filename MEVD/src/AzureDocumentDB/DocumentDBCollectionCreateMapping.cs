@@ -10,7 +10,7 @@ namespace CommunityToolkit.VectorData.AzureDocumentDB;
 /// <summary>
 /// Contains mapping helpers to use when creating a collection in Azure DocumentDB.
 /// </summary>
-internal static class AzureDocumentDBCollectionCreateMapping
+internal static class DocumentDBCollectionCreateMapping
 {
     /// <summary>
     /// Returns an array of indexes to create for vector properties.
@@ -107,7 +107,7 @@ internal static class AzureDocumentDBCollectionCreateMapping
     /// More information about Azure DocumentDB index kinds here: <see href="https://learn.microsoft.com/azure/documentdb/vector-search" />.
     /// </summary>
     private static string GetIndexKind(string? indexKind, string vectorPropertyName)
-        => AzureDocumentDBCollectionSearchMapping.GetVectorPropertyIndexKind(indexKind) switch
+        => DocumentDBCollectionSearchMapping.GetVectorPropertyIndexKind(indexKind) switch
         {
             IndexKind.Hnsw => "vector-hnsw",
             IndexKind.IvfFlat => "vector-ivf",
@@ -118,7 +118,7 @@ internal static class AzureDocumentDBCollectionCreateMapping
     /// More information about Azure DocumentDB distance functions here: <see href="https://learn.microsoft.com/azure/documentdb/vector-search" />.
     /// </summary>
     private static string GetDistanceFunction(string? distanceFunction, string vectorPropertyName)
-        => AzureDocumentDBCollectionSearchMapping.GetVectorPropertyDistanceFunction(distanceFunction) switch
+        => DocumentDBCollectionSearchMapping.GetVectorPropertyDistanceFunction(distanceFunction) switch
         {
             DistanceFunction.CosineDistance => "COS",
             DistanceFunction.DotProductSimilarity => "IP",

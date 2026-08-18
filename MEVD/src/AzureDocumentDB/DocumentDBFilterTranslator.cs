@@ -12,7 +12,7 @@ namespace CommunityToolkit.VectorData.AzureDocumentDB;
 
 // MongoDB query reference: https://www.mongodb.com/docs/manual/reference/operator/query
 // Information specific to vector search pre-filter: https://www.mongodb.com/docs/atlas/atlas-vector-search/vector-search-stage/#atlas-vector-search-pre-filter
-internal class AzureDocumentDBFilterTranslator : FilterTranslatorBase
+internal class DocumentDBFilterTranslator : FilterTranslatorBase
 {
     internal BsonDocument Translate(LambdaExpression lambdaExpression, CollectionModel model)
     {

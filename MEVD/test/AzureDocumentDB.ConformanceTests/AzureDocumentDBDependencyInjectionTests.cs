@@ -11,7 +11,7 @@ using Xunit;
 namespace AzureDocumentDB.ConformanceTests;
 
 public class AzureDocumentDBDependencyInjectionTests
-    : DependencyInjectionTests<AzureDocumentDBVectorStore, AzureDocumentDBCollection<string, DependencyInjectionTests<string>.Record>, string, DependencyInjectionTests<string>.Record>
+    : DependencyInjectionTests<DocumentDBVectorStore, DocumentDBCollection<string, DependencyInjectionTests<string>.Record>, string, DependencyInjectionTests<string>.Record>
 {
     protected const string ConnectionString = "mongodb://localhost:27017";
     protected const string DatabaseName = "dbName";

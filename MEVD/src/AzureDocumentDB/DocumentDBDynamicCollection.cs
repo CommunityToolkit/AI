@@ -10,16 +10,16 @@ namespace CommunityToolkit.VectorData.AzureDocumentDB;
 /// Represents a collection of vector store records in a Mongo database, mapped to a dynamic <c>Dictionary&lt;string, object?&gt;</c>.
 /// </summary>
 #pragma warning disable CA1711 // Identifiers should not have incorrect suffix
-public sealed class AzureDocumentDBDynamicCollection : AzureDocumentDBCollection<object, Dictionary<string, object?>>
+public sealed class DocumentDBDynamicCollection : DocumentDBCollection<object, Dictionary<string, object?>>
 #pragma warning restore CA1711 // Identifiers should not have incorrect suffix
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="AzureDocumentDBDynamicCollection"/> class.
+    /// Initializes a new instance of the <see cref="DocumentDBDynamicCollection"/> class.
     /// </summary>
     /// <param name="mongoDatabase"><see cref="IMongoDatabase"/> that can be used to manage the collections in MongoDB.</param>
     /// <param name="name">The name of the collection.</param>
     /// <param name="options">Optional configuration options for this class.</param>
-    public AzureDocumentDBDynamicCollection(IMongoDatabase mongoDatabase, string name, AzureDocumentDBCollectionOptions options)
+    public DocumentDBDynamicCollection(IMongoDatabase mongoDatabase, string name, DocumentDBCollectionOptions options)
         : base(
             mongoDatabase,
             name,

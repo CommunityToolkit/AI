@@ -6,18 +6,18 @@ using Microsoft.Extensions.AI;
 namespace CommunityToolkit.VectorData.AzureDocumentDB;
 
 /// <summary>
-/// Options when creating a <see cref="AzureDocumentDBVectorStore"/>
+/// Options when creating a <see cref="DocumentDBVectorStore"/>
 /// </summary>
-public sealed class AzureDocumentDBVectorStoreOptions
+public sealed class DocumentDBVectorStoreOptions
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="AzureDocumentDBVectorStoreOptions"/> class.
+    /// Initializes a new instance of the <see cref="DocumentDBVectorStoreOptions"/> class.
     /// </summary>
-    public AzureDocumentDBVectorStoreOptions()
+    public DocumentDBVectorStoreOptions()
     {
     }
 
-    internal AzureDocumentDBVectorStoreOptions(AzureDocumentDBVectorStoreOptions? source)
+    internal DocumentDBVectorStoreOptions(DocumentDBVectorStoreOptions? source)
     {
         EmbeddingGenerator = source?.EmbeddingGenerator;
     }

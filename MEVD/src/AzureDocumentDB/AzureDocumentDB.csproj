@@ -9,7 +9,7 @@
 
     <Title>Azure DocumentDB (with MongoDB compatibility) provider for Microsoft.Extensions.VectorData</Title>
     <Description>Azure DocumentDB (with MongoDB compatibility) provider for Microsoft.Extensions.VectorData by the .NET Community Toolkit</Description>
-    <PackageTags>AzureDocumentDB;AzureMongoDB;VectorData</PackageTags>
+    <PackageTags>AzureDocumentDB;AzureMongoDB;CosmosMongoDB;VectorData</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

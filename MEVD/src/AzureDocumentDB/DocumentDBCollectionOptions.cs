@@ -6,20 +6,20 @@ using Microsoft.Extensions.VectorData;
 namespace CommunityToolkit.VectorData.AzureDocumentDB;
 
 /// <summary>
-/// Options when creating a <see cref="AzureDocumentDBCollection{TKey, TRecord}"/>.
+/// Options when creating a <see cref="DocumentDBCollection{TKey, TRecord}"/>.
 /// </summary>
-public sealed class AzureDocumentDBCollectionOptions : VectorStoreCollectionOptions
+public sealed class DocumentDBCollectionOptions : VectorStoreCollectionOptions
 {
-    internal static readonly AzureDocumentDBCollectionOptions Default = new();
+    internal static readonly DocumentDBCollectionOptions Default = new();
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="AzureDocumentDBCollectionOptions"/> class.
+    /// Initializes a new instance of the <see cref="DocumentDBCollectionOptions"/> class.
     /// </summary>
-    public AzureDocumentDBCollectionOptions()
+    public DocumentDBCollectionOptions()
     {
     }
 
-    internal AzureDocumentDBCollectionOptions(AzureDocumentDBCollectionOptions? source) : base(source)
+    internal DocumentDBCollectionOptions(DocumentDBCollectionOptions? source) : base(source)
     {
         NumLists = source?.NumLists ?? Default.NumLists;
         EfConstruction = source?.EfConstruction ?? Default.EfConstruction;

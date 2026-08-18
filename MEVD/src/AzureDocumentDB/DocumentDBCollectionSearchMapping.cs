@@ -10,7 +10,7 @@ namespace CommunityToolkit.VectorData.AzureDocumentDB;
 /// <summary>
 /// Contains mapping helpers to use when searching for documents using Azure DocumentDB.
 /// </summary>
-internal static class AzureDocumentDBCollectionSearchMapping
+internal static class DocumentDBCollectionSearchMapping
 {
     /// <summary>Returns index kind specified on vector property or default <see cref="MongoConstants.DefaultIndexKind"/>.</summary>
     public static string GetVectorPropertyIndexKind(string? indexKind) => !string.IsNullOrWhiteSpace(indexKind) ? indexKind! : MongoConstants.DefaultIndexKind;

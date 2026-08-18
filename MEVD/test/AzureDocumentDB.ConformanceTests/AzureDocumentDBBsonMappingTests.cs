@@ -30,7 +30,7 @@ public sealed class AzureDocumentDBBsonMappingTests(AzureDocumentDBBsonMappingTe
 
         var model = new BsonTestModel { Id = "key", HotelName = "Test Name" };
 
-        using var collection = new AzureDocumentDBCollection<string, BsonTestModel>(
+        using var collection = new DocumentDBCollection<string, BsonTestModel>(
             store.Database,
             collectionName,
             new() { Definition = definition });
@@ -60,7 +60,7 @@ public sealed class AzureDocumentDBBsonMappingTests(AzureDocumentDBBsonMappingTe
 
         var model = new BsonVectorStoreTestModel { HotelId = "key", HotelName = "Test Name" };
 
-        using var collection = new AzureDocumentDBCollection<string, BsonVectorStoreTestModel>(store.Database, collectionName);
+        using var collection = new DocumentDBCollection<string, BsonVectorStoreTestModel>(store.Database, collectionName);
 
         await collection.EnsureCollectionExistsAsync();
 
@@ -87,7 +87,7 @@ public sealed class AzureDocumentDBBsonMappingTests(AzureDocumentDBBsonMappingTe
 
         var model = new BsonVectorStoreWithNameTestModel { Id = "key", HotelName = "Test Name" };
 
-        using var collection = new AzureDocumentDBCollection<string, BsonVectorStoreWithNameTestModel>(store.Database, collectionName);
+        using var collection = new DocumentDBCollection<string, BsonVectorStoreWithNameTestModel>(store.Database, collectionName);
 
         await collection.EnsureCollectionExistsAsync();
 

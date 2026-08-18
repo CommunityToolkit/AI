@@ -14,7 +14,7 @@ using Xunit;
 namespace AzureDocumentDB.UnitTests;
 
 /// <summary>
-/// Unit tests for <see cref="AzureDocumentDBVectorStore"/> class.
+/// Unit tests for <see cref="DocumentDBVectorStore"/> class.
 /// </summary>
 public sealed class AzureDocumentDBVectorStoreTests
 {
@@ -24,7 +24,7 @@ public sealed class AzureDocumentDBVectorStoreTests
     public void GetCollectionWithNotSupportedKeyThrowsException()
     {
         // Arrange
-        using var sut = new AzureDocumentDBVectorStore(this._mockMongoDatabase.Object);
+        using var sut = new DocumentDBVectorStore(this._mockMongoDatabase.Object);
 
         // Act & Assert
         Assert.Throws<NotSupportedException>(() => sut.GetCollection<byte[], AzureDocumentDBHotelModel>("collection"));
@@ -34,7 +34,7 @@ public sealed class AzureDocumentDBVectorStoreTests
     public void GetCollectionWithoutFactoryReturnsDefaultCollection()
     {
         // Arrange
-        using var sut = new AzureDocumentDBVectorStore(this._mockMongoDatabase.Object);
+        using var sut = new DocumentDBVectorStore(this._mockMongoDatabase.Object);
 
         // Act
         var collection = sut.GetCollection<string, AzureDocumentDBHotelModel>("collection");
@@ -63,7 +63,7 @@ public sealed class AzureDocumentDBVectorStoreTests
             .Setup(l => l.ListCollectionNamesAsync(It.IsAny<ListCollectionNamesOptions>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockCursor.Object);
 
-        using var sut = new AzureDocumentDBVectorStore(this._mockMongoDatabase.Object);
+        using var sut = new DocumentDBVectorStore(this._mockMongoDatabase.Object);
 
         // Act
         var actualCollectionNames = await sut.ListCollectionNamesAsync().ToListAsync();

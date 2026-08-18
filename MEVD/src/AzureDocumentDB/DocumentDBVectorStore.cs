@@ -18,7 +18,7 @@ namespace CommunityToolkit.VectorData.AzureDocumentDB;
 /// <remarks>
 /// This class can be used with collections of any schema type, but requires you to provide schema information when getting a collection.
 /// </remarks>
-public sealed class AzureDocumentDBVectorStore : VectorStore
+public sealed class DocumentDBVectorStore : VectorStore
 {
     /// <summary>Metadata about vector store.</summary>
     private readonly VectorStoreMetadata _metadata;
@@ -32,11 +32,11 @@ public sealed class AzureDocumentDBVectorStore : VectorStore
     private readonly IEmbeddingGenerator? _embeddingGenerator;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="AzureDocumentDBVectorStore"/> class.
+    /// Initializes a new instance of the <see cref="DocumentDBVectorStore"/> class.
     /// </summary>
     /// <param name="mongoDatabase"><see cref="IMongoDatabase"/> that can be used to manage the collections in Azure DocumentDB.</param>
     /// <param name="options">Optional configuration options for this class.</param>
-    public AzureDocumentDBVectorStore(IMongoDatabase mongoDatabase, AzureDocumentDBVectorStoreOptions? options = default)
+    public DocumentDBVectorStore(IMongoDatabase mongoDatabase, DocumentDBVectorStoreOptions? options = default)
     {
         Throw.IfNull(mongoDatabase);
 
@@ -45,7 +45,7 @@ public sealed class AzureDocumentDBVectorStore : VectorStore
 
         _metadata = new()
         {
-            VectorStoreSystemName = AzureDocumentDBConstants.VectorStoreSystemName,
+            VectorStoreSystemName = DocumentDBConstants.VectorStoreSystemName,
             VectorStoreName = mongoDatabase.DatabaseNamespace?.DatabaseName
         };
     }
@@ -55,13 +55,13 @@ public sealed class AzureDocumentDBVectorStore : VectorStore
     [RequiresDynamicCode("This overload of GetCollection() is incompatible with NativeAOT. For dynamic mapping via Dictionary<string, object?>, call GetDynamicCollection() instead.")]
     [RequiresUnreferencedCode("This overload of GetCollection() is incompatible with trimming. For dynamic mapping via Dictionary<string, object?>, call GetDynamicCollection() instead.")]
 #if NET
-    public override AzureDocumentDBCollection<TKey, TRecord> GetCollection<TKey, TRecord>(string name, VectorStoreCollectionDefinition? definition = null)
+    public override DocumentDBCollection<TKey, TRecord> GetCollection<TKey, TRecord>(string name, VectorStoreCollectionDefinition? definition = null)
 #else
     public override VectorStoreCollection<TKey, TRecord> GetCollection<TKey, TRecord>(string name, VectorStoreCollectionDefinition? definition = null)
 #endif
         => typeof(TRecord) == typeof(Dictionary<string, object?>)
             ? throw new ArgumentException(VectorDataStrings.GetCollectionWithDictionaryNotSupported)
-            : new AzureDocumentDBCollection<TKey, TRecord>(
+            : new DocumentDBCollection<TKey, TRecord>(
                 _mongoDatabase,
                 name,
                 new()
@@ -72,11 +72,11 @@ public sealed class AzureDocumentDBVectorStore : VectorStore
 
     /// <inheritdoc />
 #if NET
-    public override AzureDocumentDBDynamicCollection GetDynamicCollection(string name, VectorStoreCollectionDefinition definition)
+    public override DocumentDBDynamicCollection GetDynamicCollection(string name, VectorStoreCollectionDefinition definition)
 #else
     public override VectorStoreCollection<object, Dictionary<string, object?>> GetDynamicCollection(string name, VectorStoreCollectionDefinition definition)
 #endif
-        => new AzureDocumentDBDynamicCollection(
+        => new DocumentDBDynamicCollection(
             _mongoDatabase,
             name,
             new()

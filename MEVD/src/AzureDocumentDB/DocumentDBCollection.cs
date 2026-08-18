@@ -23,7 +23,7 @@ namespace CommunityToolkit.VectorData.AzureDocumentDB;
 /// <typeparam name="TKey">The data type of the record key. Must be either <see cref="string"/>.</typeparam>
 /// <typeparam name="TRecord">The data model to use for adding, updating and retrieving data from storage.</typeparam>
 #pragma warning disable CA1711 // Identifiers should not have incorrect suffix
-public class AzureDocumentDBCollection<TKey, TRecord> : VectorStoreCollection<TKey, TRecord>
+public class DocumentDBCollection<TKey, TRecord> : VectorStoreCollection<TKey, TRecord>
     where TKey : notnull
     where TRecord : class
 #pragma warning restore CA1711 // Identifiers should not have incorrect suffix
@@ -70,28 +70,28 @@ public class AzureDocumentDBCollection<TKey, TRecord> : VectorStoreCollection<TK
     private static readonly Type[] s_validKeyTypes = [typeof(string), typeof(Guid), typeof(ObjectId), typeof(int), typeof(long)];
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="AzureDocumentDBCollection{TKey, TRecord}"/> class.
+    /// Initializes a new instance of the <see cref="DocumentDBCollection{TKey, TRecord}"/> class.
     /// </summary>
     /// <param name="mongoDatabase"><see cref="IMongoDatabase"/> that can be used to manage the collections in Azure DocumentDB.</param>
-    /// <param name="name">The name of the collection that this <see cref="AzureDocumentDBCollection{TKey, TRecord}"/> will access.</param>
+    /// <param name="name">The name of the collection that this <see cref="DocumentDBCollection{TKey, TRecord}"/> will access.</param>
     /// <param name="options">Optional configuration options for this class.</param>
-    [RequiresDynamicCode("This constructor is incompatible with NativeAOT. For dynamic mapping via Dictionary<string, object?>, instantiate AzureDocumentDBDynamicCollection instead.")]
-    [RequiresUnreferencedCode("This constructor is incompatible with trimming. For dynamic mapping via Dictionary<string, object?>, instantiate AzureDocumentDBDynamicCollection instead.")]
-    public AzureDocumentDBCollection(
+    [RequiresDynamicCode("This constructor is incompatible with NativeAOT. For dynamic mapping via Dictionary<string, object?>, instantiate DocumentDBDynamicCollection instead.")]
+    [RequiresUnreferencedCode("This constructor is incompatible with trimming. For dynamic mapping via Dictionary<string, object?>, instantiate DocumentDBDynamicCollection instead.")]
+    public DocumentDBCollection(
         IMongoDatabase mongoDatabase,
         string name,
-        AzureDocumentDBCollectionOptions? options = default)
+        DocumentDBCollectionOptions? options = default)
         : this(
             mongoDatabase,
             name,
             static options => typeof(TRecord) == typeof(Dictionary<string, object?>)
-                ? throw new NotSupportedException(VectorDataStrings.NonDynamicCollectionWithDictionaryNotSupported(typeof(AzureDocumentDBDynamicCollection)))
+                ? throw new NotSupportedException(VectorDataStrings.NonDynamicCollectionWithDictionaryNotSupported(typeof(DocumentDBDynamicCollection)))
                 : new MongoModelBuilder().Build(typeof(TRecord), typeof(TKey), options.Definition, options.EmbeddingGenerator),
             options)
     {
     }
 
-    internal AzureDocumentDBCollection(IMongoDatabase mongoDatabase, string name, Func<AzureDocumentDBCollectionOptions, CollectionModel> modelFactory, AzureDocumentDBCollectionOptions? options)
+    internal DocumentDBCollection(IMongoDatabase mongoDatabase, string name, Func<DocumentDBCollectionOptions, CollectionModel> modelFactory, DocumentDBCollectionOptions? options)
     {
         // Verify.
         Throw.IfNull(mongoDatabase);
@@ -102,7 +102,7 @@ public class AzureDocumentDBCollection<TKey, TRecord> : VectorStoreCollection<TK
             throw new NotSupportedException("Only ObjectID, string, Guid, int and long keys are supported.");
         }
 
-        options ??= AzureDocumentDBCollectionOptions.Default;
+        options ??= DocumentDBCollectionOptions.Default;
 
         // Assign.
         _mongoDatabase = mongoDatabase;
@@ -119,7 +119,7 @@ public class AzureDocumentDBCollection<TKey, TRecord> : VectorStoreCollection<TK
 
         _collectionMetadata = new()
         {
-            VectorStoreSystemName = AzureDocumentDBConstants.VectorStoreSystemName,
+            VectorStoreSystemName = DocumentDBConstants.VectorStoreSystemName,
             VectorStoreName = mongoDatabase.DatabaseNamespace?.DatabaseName,
             CollectionName = name
         };
@@ -370,24 +370,24 @@ public class AzureDocumentDBCollection<TKey, TRecord> : VectorStoreCollection<TK
         };
 
         var filter = options.Filter is not null
-            ? new AzureDocumentDBFilterTranslator().Translate(options.Filter, _model)
+            ? new DocumentDBFilterTranslator().Translate(options.Filter, _model)
             : null;
 
         // Constructing a query to fetch "skip + top" total items
         // to perform skip logic locally, since skip option is not part of API.
         var itemsAmount = options.Skip + top;
 
-        var vectorPropertyIndexKind = AzureDocumentDBCollectionSearchMapping.GetVectorPropertyIndexKind(vectorProperty.IndexKind);
+        var vectorPropertyIndexKind = DocumentDBCollectionSearchMapping.GetVectorPropertyIndexKind(vectorProperty.IndexKind);
 
         var searchQuery = vectorPropertyIndexKind switch
         {
-            IndexKind.Hnsw => AzureDocumentDBCollectionSearchMapping.GetSearchQueryForHnswIndex(
+            IndexKind.Hnsw => DocumentDBCollectionSearchMapping.GetSearchQueryForHnswIndex(
                 vector,
                 vectorProperty.StorageName,
                 itemsAmount,
                 _efSearch,
                 filter),
-            IndexKind.IvfFlat => AzureDocumentDBCollectionSearchMapping.GetSearchQueryForIvfIndex(
+            IndexKind.IvfFlat => DocumentDBCollectionSearchMapping.GetSearchQueryForIvfIndex(
                 vector,
                 vectorProperty.StorageName,
                 itemsAmount,
@@ -397,7 +397,7 @@ public class AzureDocumentDBCollection<TKey, TRecord> : VectorStoreCollection<TK
                 $"Supported index kinds are: {string.Join(", ", [IndexKind.Hnsw, IndexKind.IvfFlat])}")
         };
 
-        var projectionQuery = AzureDocumentDBCollectionSearchMapping.GetProjectionQuery(
+        var projectionQuery = DocumentDBCollectionSearchMapping.GetProjectionQuery(
             ScorePropertyName,
             DocumentPropertyName);
 
@@ -406,7 +406,7 @@ public class AzureDocumentDBCollection<TKey, TRecord> : VectorStoreCollection<TK
         // Add score threshold filter as a $match stage if specified
         if (options.ScoreThreshold.HasValue)
         {
-            pipeline.Add(AzureDocumentDBCollectionSearchMapping.GetScoreThresholdMatchQuery(ScorePropertyName, options.ScoreThreshold.Value));
+            pipeline.Add(DocumentDBCollectionSearchMapping.GetScoreThresholdMatchQuery(ScorePropertyName, options.ScoreThreshold.Value));
         }
 
         const string OperationName = "Aggregate";
@@ -455,7 +455,7 @@ public class AzureDocumentDBCollection<TKey, TRecord> : VectorStoreCollection<TK
         options ??= new();
 
         // Translate the filter now, so if it fails, we throw immediately.
-        var translatedFilter = new AzureDocumentDBFilterTranslator().Translate(filter, _model);
+        var translatedFilter = new DocumentDBFilterTranslator().Translate(filter, _model);
 
         SortDefinition<BsonDocument>? sortDefinition = null;
         var orderBy = options.OrderBy?.Invoke(new()).Values;
@@ -503,13 +503,13 @@ public class AzureDocumentDBCollection<TKey, TRecord> : VectorStoreCollection<TK
 
         var indexArray = new BsonArray();
 
-        indexArray.AddRange(AzureDocumentDBCollectionCreateMapping.GetVectorIndexes(
+        indexArray.AddRange(DocumentDBCollectionCreateMapping.GetVectorIndexes(
             _model.VectorProperties,
             uniqueIndexes,
             _numLists,
             _efConstruction));
 
-        indexArray.AddRange(AzureDocumentDBCollectionCreateMapping.GetFilterableDataIndexes(
+        indexArray.AddRange(DocumentDBCollectionCreateMapping.GetFilterableDataIndexes(
             _model.DataProperties,
             uniqueIndexes));
 
