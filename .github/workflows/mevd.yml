@@ -155,10 +155,10 @@ jobs:
       fail-fast: false
       matrix:
         provider: ${{ fromJson(needs.discover.outputs.all_providers) }}
-        # AzureAISearch and CosmosMongoDB require cloud instances and can't run in CI.
+        # AzureAISearch and AzureDocumentDB require cloud instances and can't run in CI.
         exclude:
           - provider: AzureAISearch
-          - provider: CosmosMongoDB
+          - provider: AzureDocumentDB
     steps:
       - uses: actions/checkout@v6
 
