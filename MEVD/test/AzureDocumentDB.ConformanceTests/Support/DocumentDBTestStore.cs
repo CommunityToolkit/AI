@@ -24,7 +24,7 @@ public sealed class DocumentDBTestStore : TestStore
         .WithEnvironment("USERNAME", Username)
         .WithEnvironment("PASSWORD", Password)
         .WithWaitStrategy(Wait.ForUnixContainer()
-            .UntilMessageIsLogged("=== DocumentDB is ready ==="))
+            .UntilMessageIsLogged("=== DocumentDB is ready ===", strategy => strategy.WithTimeout(TimeSpan.FromMinutes(5))))
         .Build();
 
     private MongoClient? _client;
