@@ -10,7 +10,7 @@
     <File Path="MEVD/src/Directory.Build.props" />
     <Project Path="MEVD/src/AzureAISearch/AzureAISearch.csproj" />
     <Project Path="MEVD/src/CosmosNoSql/CosmosNoSql.csproj" />
-    <Project Path="MEVD/src/CosmosDocumentDB/CosmosDocumentDB.csproj" />
+    <Project Path="MEVD/src/AzureDocumentDB/AzureDocumentDB.csproj" />
     <Project Path="MEVD/src/InMemory/InMemory.csproj" />
     <Project Path="MEVD/src/PgVector/PgVector.csproj" />
     <Project Path="MEVD/src/Qdrant/Qdrant.csproj" />
@@ -25,8 +25,8 @@
     <Project Path="MEVD/test/AzureAISearch.ConformanceTests/AzureAISearch.ConformanceTests.csproj" />
     <Project Path="MEVD/test/CosmosNoSql.UnitTests/CosmosNoSql.UnitTests.csproj" />
     <Project Path="MEVD/test/CosmosNoSql.ConformanceTests/CosmosNoSql.ConformanceTests.csproj" />
-    <Project Path="MEVD/test/CosmosDocumentDB.UnitTests/CosmosDocumentDB.UnitTests.csproj" />
-    <Project Path="MEVD/test/CosmosDocumentDB.ConformanceTests/CosmosDocumentDB.ConformanceTests.csproj" />
+    <Project Path="MEVD/test/AzureDocumentDB.UnitTests/AzureDocumentDB.UnitTests.csproj" />
+    <Project Path="MEVD/test/AzureDocumentDB.ConformanceTests/AzureDocumentDB.ConformanceTests.csproj" />
     <Project Path="MEVD/test/InMemory.UnitTests/InMemory.UnitTests.csproj" />
     <Project Path="MEVD/test/InMemory.ConformanceTests/InMemory.ConformanceTests.csproj" />
     <Project Path="MEVD/test/PgVector.UnitTests/PgVector.UnitTests.csproj" />

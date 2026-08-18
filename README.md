@@ -15,7 +15,7 @@ The following NuGet packages have been published:
 | Package | Version | Downloads |
 |---------|---------|-----------|
 | [CommunityToolkit.VectorData.AzureAISearch] | ![AzureAISearch Version][v-azureaisearch] | ![AzureAISearch Downloads][d-azureaisearch] |
-| [CommunityToolkit.VectorData.CosmosDocumentDB] | ![CosmosDocumentDB Version][v-cosmosdocumentdb] | ![CosmosDocumentDB Downloads][d-cosmosdocumentdb] |
+| [CommunityToolkit.VectorData.AzureDocumentDB] | ![AzureDocumentDB Version][v-azuredocumentdb] | ![AzureDocumentDB Downloads][d-azuredocumentdb] |
 | [CommunityToolkit.VectorData.CosmosNoSql] | ![CosmosNoSql Version][v-cosmosnosql] | ![CosmosNoSql Downloads][d-cosmosnosql] |
 | [CommunityToolkit.VectorData.InMemory] | ![InMemory Version][v-inmemory] | ![InMemory Downloads][d-inmemory] |
 | [CommunityToolkit.VectorData.PgVector] | ![PgVector Version][v-pgvector] | ![PgVector Downloads][d-pgvector] |
@@ -29,7 +29,7 @@ The following NuGet packages have been published:
 
 The majority of tests in the test suite use [Testcontainers](https://testcontainers.com/) so that conformance tests are run against real servers running inside Docker containers. Docker must be running on your machine for this to work.
 
-Some providers (AzureAISearch, CosmosDocumentDB) require a cloud-hosted service and cannot be tested with containers. For those, first create the required cloud service, then configure the required settings (e.g., endpoint and API key) using environment variables or the `testsettings.development.json` file in the relevant test project directory.
+Some providers (AzureAISearch, AzureDocumentDB) require a cloud-hosted service and cannot be tested with containers. For those, first create the required cloud service, then configure the required settings (e.g., endpoint and API key) using environment variables or the `testsettings.development.json` file in the relevant test project directory.
 
 > **NOTE**: The `testsettings.development.json` file contains secrets and is git-ignored. It should not be checked in.
 
@@ -52,7 +52,7 @@ The Vector Data connectors in this toolkit were initially part of the [Semantic 
 
 <!-- Package links -->
 [CommunityToolkit.VectorData.AzureAISearch]: https://www.nuget.org/packages/CommunityToolkit.VectorData.AzureAISearch
-[CommunityToolkit.VectorData.CosmosDocumentDB]: https://www.nuget.org/packages/CommunityToolkit.VectorData.CosmosDocumentDB
+[CommunityToolkit.VectorData.AzureDocumentDB]: https://www.nuget.org/packages/CommunityToolkit.VectorData.AzureDocumentDB
 [CommunityToolkit.VectorData.CosmosNoSql]: https://www.nuget.org/packages/CommunityToolkit.VectorData.CosmosNoSql
 [CommunityToolkit.VectorData.InMemory]: https://www.nuget.org/packages/CommunityToolkit.VectorData.InMemory
 [CommunityToolkit.VectorData.PgVector]: https://www.nuget.org/packages/CommunityToolkit.VectorData.PgVector
@@ -64,7 +64,7 @@ The Vector Data connectors in this toolkit were initially part of the [Semantic 
 
 <!-- Version badges -->
 [v-azureaisearch]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.AzureAISearch
-[v-cosmosdocumentdb]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.CosmosDocumentDB
+[v-azuredocumentdb]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.AzureDocumentDB
 [v-cosmosnosql]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.CosmosNoSql
 [v-inmemory]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.InMemory
 [v-pgvector]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.PgVector
@@ -76,7 +76,7 @@ The Vector Data connectors in this toolkit were initially part of the [Semantic 
 
 <!-- Download badges -->
 [d-azureaisearch]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.AzureAISearch
-[d-cosmosdocumentdb]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.CosmosDocumentDB
+[d-azuredocumentdb]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.AzureDocumentDB
 [d-cosmosnosql]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.CosmosNoSql
 [d-inmemory]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.InMemory
 [d-pgvector]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.PgVector
