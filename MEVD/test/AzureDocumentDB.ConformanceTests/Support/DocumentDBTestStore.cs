@@ -59,16 +59,19 @@ public sealed class DocumentDBTestStore : TestStore
         else
         {
             await this._container.StartAsync();
-            connectionString = $"mongodb://{Username}:{Password}@{this._container.Hostname}:{this._container.GetMappedPublicPort(DocumentDBPort)}/?tls=true&tlsAllowInvalidCertificates=true";
+            connectionString = $"mongodb://{Username}:{Password}@{this._container.Hostname}:{this._container.GetMappedPublicPort(DocumentDBPort)}/?tls=true";
             this._useExternalInstance = false;
         }
 
         MongoClientSettings settings = MongoClientSettings.FromConnectionString(connectionString);
-        settings.SslSettings = new SslSettings
+        if (!this._useExternalInstance)
         {
-            EnabledSslProtocols = SslProtocols.Tls12,
-            ServerCertificateValidationCallback = static (_, _, _, _) => true,
-        };
+            settings.SslSettings = new SslSettings
+            {
+                EnabledSslProtocols = SslProtocols.Tls12,
+                ServerCertificateValidationCallback = static (_, _, _, _) => true,
+            };
+        }
 
         this._client = new MongoClient(settings);
         await this.WaitForMongoServiceAsync(this._client, TimeSpan.FromMinutes(5));
