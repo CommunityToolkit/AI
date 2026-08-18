@@ -1,9 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Net.Security;
+using System.Security.Authentication;
 using CommunityToolkit.VectorData.AzureDocumentDB;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using VectorData.ConformanceTests.Support;
 
@@ -60,7 +63,15 @@ public sealed class DocumentDBTestStore : TestStore
             this._useExternalInstance = false;
         }
 
-        this._client = new MongoClient(connectionString);
+        MongoClientSettings settings = MongoClientSettings.FromConnectionString(connectionString);
+        settings.SslSettings = new SslSettings
+        {
+            EnabledSslProtocols = SslProtocols.Tls12,
+            ServerCertificateValidationCallback = static (_, _, _, _) => true,
+        };
+
+        this._client = new MongoClient(settings);
+        await this.WaitForMongoServiceAsync(this._client, TimeSpan.FromMinutes(5));
         this._database = this._client.GetDatabase("VectorSearchTests");
         this.DefaultVectorStore = new DocumentDBVectorStore(this._database);
     }
@@ -70,5 +81,27 @@ public sealed class DocumentDBTestStore : TestStore
         return this._useExternalInstance
             ? Task.CompletedTask
             : this._container.StopAsync();
+    }
+
+    private async Task WaitForMongoServiceAsync(MongoClient client, TimeSpan timeout)
+    {
+        DateTimeOffset deadline = DateTimeOffset.UtcNow.Add(timeout);
+        Exception? lastException = null;
+
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            try
+            {
+                await client.GetDatabase("admin").RunCommandAsync<BsonDocument>(new BsonDocument("ping", 1));
+                return;
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
+                await Task.Delay(TimeSpan.FromSeconds(2));
+            }
+        }
+
+        throw new TimeoutException($"Timed out waiting for the DocumentDB container to accept MongoDB connections. Last error: {lastException?.Message}", lastException);
     }
 }
