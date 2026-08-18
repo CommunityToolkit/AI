@@ -19,8 +19,7 @@ public sealed class DocumentDBTestStore : TestStore
 
     public static DocumentDBTestStore Instance { get; } = new();
 
-    private readonly IContainer _container = new ContainerBuilder()
-        .WithImage("ghcr.io/microsoft/documentdb/documentdb-local:latest")
+    private readonly IContainer _container = new ContainerBuilder("ghcr.io/microsoft/documentdb/documentdb-local:latest")
         .WithPortBinding(DocumentDBPort, assignRandomHostPort: true)
         .WithEnvironment("USERNAME", Username)
         .WithEnvironment("PASSWORD", Password)
