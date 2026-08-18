@@ -6,5 +6,5 @@ namespace CommunityToolkit.VectorData.AzureDocumentDB;
 
 internal static class DocumentDBConstants
 {
-    public const string VectorStoreSystemName = "azure.cosmosdbmongodb";
+    public const string VectorStoreSystemName = "azure.documentdb";
 }
