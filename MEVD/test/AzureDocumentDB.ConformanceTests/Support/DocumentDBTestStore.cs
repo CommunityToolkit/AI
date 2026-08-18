@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using CommunityToolkit.VectorData.AzureDocumentDB;
+using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Containers;
 using MongoDB.Driver;
 using VectorData.ConformanceTests.Support;
 
@@ -11,10 +13,24 @@ namespace AzureDocumentDB.ConformanceTests.Support;
 public sealed class DocumentDBTestStore : TestStore
 #pragma warning restore CA1001
 {
+    private const string Username = "testuser";
+    private const string Password = "TestPassword123!";
+    private const ushort DocumentDBPort = 10260;
+
     public static DocumentDBTestStore Instance { get; } = new();
+
+    private readonly IContainer _container = new ContainerBuilder()
+        .WithImage("ghcr.io/microsoft/documentdb/documentdb-local:latest")
+        .WithPortBinding(DocumentDBPort, assignRandomHostPort: true)
+        .WithEnvironment("USERNAME", Username)
+        .WithEnvironment("PASSWORD", Password)
+        .WithWaitStrategy(Wait.ForUnixContainer()
+            .UntilMessageIsLogged("=== DocumentDB is ready ==="))
+        .Build();
 
     private MongoClient? _client;
     private IMongoDatabase? _database;
+    private bool _useExternalInstance;
 
     public MongoClient Client => this._client ?? throw new InvalidOperationException("Not initialized");
     public IMongoDatabase Database => this._database ?? throw new InvalidOperationException("Not initialized");
@@ -30,17 +46,30 @@ public sealed class DocumentDBTestStore : TestStore
     {
     }
 
-    protected override Task StartAsync()
+    protected override async Task StartAsync()
     {
-        if (string.IsNullOrWhiteSpace(DocumentDBTestEnvironment.ConnectionString))
+        string connectionString;
+        if (DocumentDBTestEnvironment.IsConnectionStringDefined)
         {
-            throw new InvalidOperationException("Connection string is not configured, set the AzureDocumentDB:ConnectionString environment variable");
+            connectionString = DocumentDBTestEnvironment.ConnectionString!;
+            this._useExternalInstance = true;
+        }
+        else
+        {
+            await this._container.StartAsync();
+            connectionString = $"mongodb://{Username}:{Password}@{this._container.Hostname}:{this._container.GetMappedPublicPort(DocumentDBPort)}/?tls=true&tlsAllowInvalidCertificates=true";
+            this._useExternalInstance = false;
         }
 
-        this._client = new MongoClient(DocumentDBTestEnvironment.ConnectionString);
+        this._client = new MongoClient(connectionString);
         this._database = this._client.GetDatabase("VectorSearchTests");
         this.DefaultVectorStore = new DocumentDBVectorStore(this._database);
+    }
 
-        return Task.CompletedTask;
+    protected override Task StopAsync()
+    {
+        return this._useExternalInstance
+            ? Task.CompletedTask
+            : this._container.StopAsync();
     }
 }
