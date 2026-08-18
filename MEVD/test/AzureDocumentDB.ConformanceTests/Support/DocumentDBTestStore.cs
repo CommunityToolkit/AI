@@ -8,10 +8,10 @@ using VectorData.ConformanceTests.Support;
 namespace AzureDocumentDB.ConformanceTests.Support;
 
 #pragma warning disable CA1001
-public sealed class AzureDocumentDBTestStore : TestStore
+public sealed class DocumentDBTestStore : TestStore
 #pragma warning restore CA1001
 {
-    public static AzureDocumentDBTestStore Instance { get; } = new();
+    public static DocumentDBTestStore Instance { get; } = new();
 
     private MongoClient? _client;
     private IMongoDatabase? _database;
@@ -26,18 +26,18 @@ public sealed class AzureDocumentDBTestStore : TestStore
     public DocumentDBVectorStore GetVectorStore(DocumentDBVectorStoreOptions options)
         => new(this.Database, options);
 
-    private AzureDocumentDBTestStore()
+    private DocumentDBTestStore()
     {
     }
 
     protected override Task StartAsync()
     {
-        if (string.IsNullOrWhiteSpace(AzureDocumentDBTestEnvironment.ConnectionString))
+        if (string.IsNullOrWhiteSpace(DocumentDBTestEnvironment.ConnectionString))
         {
             throw new InvalidOperationException("Connection string is not configured, set the AzureDocumentDB:ConnectionString environment variable");
         }
 
-        this._client = new MongoClient(AzureDocumentDBTestEnvironment.ConnectionString);
+        this._client = new MongoClient(DocumentDBTestEnvironment.ConnectionString);
         this._database = this._client.GetDatabase("VectorSearchTests");
         this.DefaultVectorStore = new DocumentDBVectorStore(this._database);
 

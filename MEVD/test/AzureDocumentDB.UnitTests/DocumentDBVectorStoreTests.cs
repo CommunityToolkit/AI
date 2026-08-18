@@ -16,7 +16,7 @@ namespace AzureDocumentDB.UnitTests;
 /// <summary>
 /// Unit tests for <see cref="DocumentDBVectorStore"/> class.
 /// </summary>
-public sealed class AzureDocumentDBVectorStoreTests
+public sealed class DocumentDBVectorStoreTests
 {
     private readonly Mock<IMongoDatabase> _mockMongoDatabase = new();
 
@@ -27,7 +27,7 @@ public sealed class AzureDocumentDBVectorStoreTests
         using var sut = new DocumentDBVectorStore(this._mockMongoDatabase.Object);
 
         // Act & Assert
-        Assert.Throws<NotSupportedException>(() => sut.GetCollection<byte[], AzureDocumentDBHotelModel>("collection"));
+        Assert.Throws<NotSupportedException>(() => sut.GetCollection<byte[], DocumentDBHotelModel>("collection"));
     }
 
     [Fact]
@@ -37,7 +37,7 @@ public sealed class AzureDocumentDBVectorStoreTests
         using var sut = new DocumentDBVectorStore(this._mockMongoDatabase.Object);
 
         // Act
-        var collection = sut.GetCollection<string, AzureDocumentDBHotelModel>("collection");
+        var collection = sut.GetCollection<string, DocumentDBHotelModel>("collection");
 
         // Assert
         Assert.NotNull(collection);

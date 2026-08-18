@@ -10,13 +10,13 @@ using Xunit;
 
 namespace AzureDocumentDB.ConformanceTests;
 
-public sealed class AzureDocumentDBBsonMappingTests(AzureDocumentDBBsonMappingTests.Fixture fixture)
-    : IClassFixture<AzureDocumentDBBsonMappingTests.Fixture>
+public sealed class DocumentDBBsonMappingTests(DocumentDBBsonMappingTests.Fixture fixture)
+    : IClassFixture<DocumentDBBsonMappingTests.Fixture>
 {
     [Fact]
     public async Task Upsert_with_bson_model_works()
     {
-        var store = (AzureDocumentDBTestStore)fixture.TestStore;
+        var store = (DocumentDBTestStore)fixture.TestStore;
         var collectionName = fixture.TestStore.AdjustCollectionName("BsonModel");
 
         var definition = new VectorStoreCollectionDefinition
@@ -55,7 +55,7 @@ public sealed class AzureDocumentDBBsonMappingTests(AzureDocumentDBBsonMappingTe
     [Fact]
     public async Task Upsert_with_bson_vector_store_model_works()
     {
-        var store = (AzureDocumentDBTestStore)fixture.TestStore;
+        var store = (DocumentDBTestStore)fixture.TestStore;
         var collectionName = fixture.TestStore.AdjustCollectionName("BsonVectorStoreModel");
 
         var model = new BsonVectorStoreTestModel { HotelId = "key", HotelName = "Test Name" };
@@ -82,7 +82,7 @@ public sealed class AzureDocumentDBBsonMappingTests(AzureDocumentDBBsonMappingTe
     [Fact]
     public async Task Upsert_with_bson_vector_store_with_name_model_works()
     {
-        var store = (AzureDocumentDBTestStore)fixture.TestStore;
+        var store = (DocumentDBTestStore)fixture.TestStore;
         var collectionName = fixture.TestStore.AdjustCollectionName("BsonVectorStoreWithNameModel");
 
         var model = new BsonVectorStoreWithNameTestModel { Id = "key", HotelName = "Test Name" };
@@ -108,7 +108,7 @@ public sealed class AzureDocumentDBBsonMappingTests(AzureDocumentDBBsonMappingTe
 
     public sealed class Fixture : VectorStoreFixture
     {
-        public override TestStore TestStore => AzureDocumentDBTestStore.Instance;
+        public override TestStore TestStore => DocumentDBTestStore.Instance;
     }
 
     private sealed class BsonTestModel

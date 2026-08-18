@@ -5,7 +5,7 @@ using VectorData.ConformanceTests.Support;
 
 namespace AzureDocumentDB.ConformanceTests.Support;
 
-public class AzureDocumentDBFixture : VectorStoreFixture
+public class DocumentDBFixture : VectorStoreFixture
 {
-    public override TestStore TestStore => AzureDocumentDBTestStore.Instance;
+    public override TestStore TestStore => DocumentDBTestStore.Instance;
 }

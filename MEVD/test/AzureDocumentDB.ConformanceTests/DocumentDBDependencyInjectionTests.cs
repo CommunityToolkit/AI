@@ -10,7 +10,7 @@ using Xunit;
 
 namespace AzureDocumentDB.ConformanceTests;
 
-public class AzureDocumentDBDependencyInjectionTests
+public class DocumentDBDependencyInjectionTests
     : DependencyInjectionTests<DocumentDBVectorStore, DocumentDBCollection<string, DependencyInjectionTests<string>.Record>, string, DependencyInjectionTests<string>.Record>
 {
     protected const string ConnectionString = "mongodb://localhost:27017";
@@ -43,22 +43,22 @@ public class AzureDocumentDBDependencyInjectionTests
                 ? services
                     .AddSingleton<MongoClient>(sp => new MongoClient(MongoClientSettings.FromConnectionString(ConnectionString)))
                     .AddSingleton<IMongoDatabase>(sp => sp.GetRequiredService<MongoClient>().GetDatabase(DatabaseName))
-                    .AddAzureDocumentDBCollection<Record>(name, lifetime: lifetime)
+                    .AddDocumentDBCollection<Record>(name, lifetime: lifetime)
                 : services
                     .AddSingleton<MongoClient>(sp => new MongoClient(MongoClientSettings.FromConnectionString(ConnectionString)))
                     .AddSingleton<IMongoDatabase>(sp => sp.GetRequiredService<MongoClient>().GetDatabase(DatabaseName))
-                    .AddKeyedAzureDocumentDBCollection<Record>(serviceKey, name, lifetime: lifetime);
+                    .AddKeyedDocumentDBCollection<Record>(serviceKey, name, lifetime: lifetime);
 
             yield return (services, serviceKey, name, lifetime) => serviceKey is null
-                ? services.AddAzureDocumentDBCollection<Record>(
+                ? services.AddDocumentDBCollection<Record>(
                     name, ConnectionString, DatabaseName, lifetime: lifetime)
-                : services.AddKeyedAzureDocumentDBCollection<Record>(
+                : services.AddKeyedDocumentDBCollection<Record>(
                     serviceKey, name, ConnectionString, DatabaseName, lifetime: lifetime);
 
             yield return (services, serviceKey, name, lifetime) => serviceKey is null
-                ? services.AddAzureDocumentDBCollection<Record>(
+                ? services.AddDocumentDBCollection<Record>(
                     name, ConnectionStringProvider, DatabaseNameProvider, lifetime: lifetime)
-                : services.AddKeyedAzureDocumentDBCollection<Record>(
+                : services.AddKeyedDocumentDBCollection<Record>(
                     serviceKey, name, sp => ConnectionStringProvider(sp, serviceKey), sp => DatabaseNameProvider(sp, serviceKey), lifetime: lifetime);
         }
     }
@@ -68,20 +68,20 @@ public class AzureDocumentDBDependencyInjectionTests
         get
         {
             yield return (services, serviceKey, lifetime) => serviceKey is null
-                ? services.AddAzureDocumentDBVectorStore(
+                ? services.AddDocumentDBVectorStore(
                     ConnectionString, DatabaseName, lifetime: lifetime)
-                : services.AddKeyedAzureDocumentDBVectorStore(
+                : services.AddKeyedDocumentDBVectorStore(
                     serviceKey, ConnectionString, DatabaseName, lifetime: lifetime);
 
             yield return (services, serviceKey, lifetime) => serviceKey is null
                 ? services
                     .AddSingleton<MongoClient>(sp => new MongoClient(MongoClientSettings.FromConnectionString(ConnectionString)))
                     .AddSingleton<IMongoDatabase>(sp => sp.GetRequiredService<MongoClient>().GetDatabase(DatabaseName))
-                    .AddAzureDocumentDBVectorStore(lifetime: lifetime)
+                    .AddDocumentDBVectorStore(lifetime: lifetime)
                 : services
                     .AddSingleton<MongoClient>(sp => new MongoClient(MongoClientSettings.FromConnectionString(ConnectionString)))
                     .AddSingleton<IMongoDatabase>(sp => sp.GetRequiredService<MongoClient>().GetDatabase(DatabaseName))
-                    .AddKeyedAzureDocumentDBVectorStore(serviceKey, lifetime: lifetime);
+                    .AddKeyedDocumentDBVectorStore(serviceKey, lifetime: lifetime);
         }
     }
 
@@ -90,9 +90,9 @@ public class AzureDocumentDBDependencyInjectionTests
     {
         IServiceCollection services = new ServiceCollection();
 
-        Assert.Throws<ArgumentNullException>(() => services.AddAzureDocumentDBCollection<Record>(
+        Assert.Throws<ArgumentNullException>(() => services.AddDocumentDBCollection<Record>(
             name: "notNull", connectionStringProvider: null!, databaseNameProvider: DatabaseNameProvider));
-        Assert.Throws<ArgumentNullException>(() => services.AddKeyedAzureDocumentDBCollection<Record>(
+        Assert.Throws<ArgumentNullException>(() => services.AddKeyedDocumentDBCollection<Record>(
             serviceKey: "notNull", name: "notNull", connectionStringProvider: null!, databaseNameProvider: DatabaseNameProvider));
     }
 
@@ -101,9 +101,9 @@ public class AzureDocumentDBDependencyInjectionTests
     {
         IServiceCollection services = new ServiceCollection();
 
-        Assert.Throws<ArgumentNullException>(() => services.AddAzureDocumentDBCollection<Record>(
+        Assert.Throws<ArgumentNullException>(() => services.AddDocumentDBCollection<Record>(
             name: "notNull", connectionStringProvider: ConnectionStringProvider, databaseNameProvider: null!));
-        Assert.Throws<ArgumentNullException>(() => services.AddKeyedAzureDocumentDBCollection<Record>(
+        Assert.Throws<ArgumentNullException>(() => services.AddKeyedDocumentDBCollection<Record>(
             serviceKey: "notNull", name: "notNull", connectionStringProvider: ConnectionStringProvider, databaseNameProvider: null!));
     }
 
@@ -112,15 +112,15 @@ public class AzureDocumentDBDependencyInjectionTests
     {
         IServiceCollection services = new ServiceCollection();
 
-        Assert.Throws<ArgumentNullException>(() => services.AddAzureDocumentDBVectorStore(connectionString: null!, DatabaseName));
-        Assert.Throws<ArgumentNullException>(() => services.AddKeyedAzureDocumentDBVectorStore(serviceKey: "notNull", connectionString: null!, DatabaseName));
-        Assert.Throws<ArgumentNullException>(() => services.AddAzureDocumentDBCollection<Record>(
+        Assert.Throws<ArgumentNullException>(() => services.AddDocumentDBVectorStore(connectionString: null!, DatabaseName));
+        Assert.Throws<ArgumentNullException>(() => services.AddKeyedDocumentDBVectorStore(serviceKey: "notNull", connectionString: null!, DatabaseName));
+        Assert.Throws<ArgumentNullException>(() => services.AddDocumentDBCollection<Record>(
             name: "notNull", connectionString: null!, DatabaseName));
-        Assert.Throws<ArgumentException>(() => services.AddAzureDocumentDBCollection<Record>(
+        Assert.Throws<ArgumentException>(() => services.AddDocumentDBCollection<Record>(
             name: "notNull", connectionString: "", DatabaseName));
-        Assert.Throws<ArgumentNullException>(() => services.AddKeyedAzureDocumentDBCollection<Record>(
+        Assert.Throws<ArgumentNullException>(() => services.AddKeyedDocumentDBCollection<Record>(
             serviceKey: "notNull", name: "notNull", connectionString: null!, DatabaseName));
-        Assert.Throws<ArgumentException>(() => services.AddKeyedAzureDocumentDBCollection<Record>(
+        Assert.Throws<ArgumentException>(() => services.AddKeyedDocumentDBCollection<Record>(
             serviceKey: "notNull", name: "notNull", connectionString: "", DatabaseName));
     }
 
@@ -129,15 +129,15 @@ public class AzureDocumentDBDependencyInjectionTests
     {
         IServiceCollection services = new ServiceCollection();
 
-        Assert.Throws<ArgumentNullException>(() => services.AddAzureDocumentDBVectorStore(ConnectionString, databaseName: null!));
-        Assert.Throws<ArgumentNullException>(() => services.AddKeyedAzureDocumentDBVectorStore(serviceKey: "notNull", ConnectionString, databaseName: null!));
-        Assert.Throws<ArgumentNullException>(() => services.AddAzureDocumentDBCollection<Record>(
+        Assert.Throws<ArgumentNullException>(() => services.AddDocumentDBVectorStore(ConnectionString, databaseName: null!));
+        Assert.Throws<ArgumentNullException>(() => services.AddKeyedDocumentDBVectorStore(serviceKey: "notNull", ConnectionString, databaseName: null!));
+        Assert.Throws<ArgumentNullException>(() => services.AddDocumentDBCollection<Record>(
             name: "notNull", ConnectionString, databaseName: null!));
-        Assert.Throws<ArgumentException>(() => services.AddAzureDocumentDBCollection<Record>(
+        Assert.Throws<ArgumentException>(() => services.AddDocumentDBCollection<Record>(
             name: "notNull", ConnectionString, databaseName: ""));
-        Assert.Throws<ArgumentNullException>(() => services.AddKeyedAzureDocumentDBCollection<Record>(
+        Assert.Throws<ArgumentNullException>(() => services.AddKeyedDocumentDBCollection<Record>(
             serviceKey: "notNull", name: "notNull", ConnectionString, databaseName: null!));
-        Assert.Throws<ArgumentException>(() => services.AddKeyedAzureDocumentDBCollection<Record>(
+        Assert.Throws<ArgumentException>(() => services.AddKeyedDocumentDBCollection<Record>(
             serviceKey: "notNull", name: "notNull", ConnectionString, databaseName: ""));
     }
 }

@@ -8,11 +8,11 @@ using Xunit;
 
 namespace AzureDocumentDB.ConformanceTests.ModelTests;
 
-public class AzureDocumentDBNoVectorModelTests(AzureDocumentDBNoVectorModelTests.Fixture fixture)
-    : NoVectorModelTests<string>(fixture), IClassFixture<AzureDocumentDBNoVectorModelTests.Fixture>
+public class DocumentDBNoDataModelTests(DocumentDBNoDataModelTests.Fixture fixture)
+    : NoDataModelTests<string>(fixture), IClassFixture<DocumentDBNoDataModelTests.Fixture>
 {
-    public new class Fixture : NoVectorModelTests<string>.Fixture
+    public new class Fixture : NoDataModelTests<string>.Fixture
     {
-        public override TestStore TestStore => AzureDocumentDBTestStore.Instance;
+        public override TestStore TestStore => DocumentDBTestStore.Instance;
     }
 }

@@ -9,8 +9,8 @@ using Xunit;
 
 namespace AzureDocumentDB.ConformanceTests.TypeTests;
 
-public class AzureDocumentDBKeyTypeTests(AzureDocumentDBKeyTypeTests.Fixture fixture)
-    : KeyTypeTests(fixture), IClassFixture<AzureDocumentDBKeyTypeTests.Fixture>
+public class DocumentDBKeyTypeTests(DocumentDBKeyTypeTests.Fixture fixture)
+    : KeyTypeTests(fixture), IClassFixture<DocumentDBKeyTypeTests.Fixture>
 {
     [Fact]
     public virtual Task ObjectId() => this.Test<ObjectId>(new("652f8c3e8f9b2c1a4d3e6a7b"), supportsAutoGeneration: true);
@@ -26,6 +26,6 @@ public class AzureDocumentDBKeyTypeTests(AzureDocumentDBKeyTypeTests.Fixture fix
 
     public new class Fixture : KeyTypeTests.Fixture
     {
-        public override TestStore TestStore => AzureDocumentDBTestStore.Instance;
+        public override TestStore TestStore => DocumentDBTestStore.Instance;
     }
 }

@@ -22,12 +22,12 @@ namespace AzureDocumentDB.UnitTests;
 /// <summary>
 /// Unit tests for <see cref="DocumentDBCollection{TKey, TRecord}"/> class.
 /// </summary>
-public sealed class AzureDocumentDBCollectionTests
+public sealed class DocumentDBCollectionTests
 {
     private readonly Mock<IMongoDatabase> _mockMongoDatabase = new();
     private readonly Mock<IMongoCollection<BsonDocument>> _mockMongoCollection = new();
 
-    public AzureDocumentDBCollectionTests()
+    public DocumentDBCollectionTests()
     {
         this._mockMongoDatabase
             .Setup(l => l.GetCollection<BsonDocument>(It.IsAny<string>(), It.IsAny<MongoCollectionSettings>()))
@@ -46,7 +46,7 @@ public sealed class AzureDocumentDBCollectionTests
     public void ConstructorWithDeclarativeModelInitializesCollection()
     {
         // Act & Assert
-        using var collection = new DocumentDBCollection<string, AzureDocumentDBHotelModel>(
+        using var collection = new DocumentDBCollection<string, DocumentDBHotelModel>(
             this._mockMongoDatabase.Object,
             "collection");
 
@@ -91,7 +91,7 @@ public sealed class AzureDocumentDBCollectionTests
             .Setup(l => l.ListCollectionNamesAsync(It.IsAny<ListCollectionNamesOptions>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockCursor.Object);
 
-        using var sut = new DocumentDBCollection<string, AzureDocumentDBHotelModel>(
+        using var sut = new DocumentDBCollection<string, DocumentDBHotelModel>(
             this._mockMongoDatabase.Object,
             collectionName);
 
@@ -141,7 +141,7 @@ public sealed class AzureDocumentDBCollectionTests
             .Setup(l => l.Indexes)
             .Returns(mockMongoIndexManager.Object);
 
-        using var sut = new DocumentDBCollection<string, AzureDocumentDBHotelModel>(
+        using var sut = new DocumentDBCollection<string, DocumentDBHotelModel>(
             this._mockMongoDatabase.Object,
             CollectionName);
 
@@ -165,7 +165,7 @@ public sealed class AzureDocumentDBCollectionTests
         // Arrange
         const string RecordKey = "key";
 
-        using var sut = new DocumentDBCollection<string, AzureDocumentDBHotelModel>(
+        using var sut = new DocumentDBCollection<string, DocumentDBHotelModel>(
             this._mockMongoDatabase.Object,
             "collection");
 
@@ -189,7 +189,7 @@ public sealed class AzureDocumentDBCollectionTests
         // Arrange
         List<string> recordKeys = ["key1", "key2"];
 
-        using var sut = new DocumentDBCollection<string, AzureDocumentDBHotelModel>(
+        using var sut = new DocumentDBCollection<string, DocumentDBHotelModel>(
             this._mockMongoDatabase.Object,
             "collection");
 
@@ -213,7 +213,7 @@ public sealed class AzureDocumentDBCollectionTests
         // Arrange
         const string CollectionName = "collection";
 
-        using var sut = new DocumentDBCollection<string, AzureDocumentDBHotelModel>(
+        using var sut = new DocumentDBCollection<string, DocumentDBHotelModel>(
             this._mockMongoDatabase.Object,
             CollectionName);
 
@@ -250,7 +250,7 @@ public sealed class AzureDocumentDBCollectionTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockCursor.Object);
 
-        using var sut = new DocumentDBCollection<string, AzureDocumentDBHotelModel>(
+        using var sut = new DocumentDBCollection<string, DocumentDBHotelModel>(
             this._mockMongoDatabase.Object,
             "collection");
 
@@ -288,7 +288,7 @@ public sealed class AzureDocumentDBCollectionTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockCursor.Object);
 
-        using var sut = new DocumentDBCollection<string, AzureDocumentDBHotelModel>(
+        using var sut = new DocumentDBCollection<string, DocumentDBHotelModel>(
             this._mockMongoDatabase.Object,
             "collection");
 
@@ -313,13 +313,13 @@ public sealed class AzureDocumentDBCollectionTests
     public async Task CanUpsertRecordAsync()
     {
         // Arrange
-        var hotel = new AzureDocumentDBHotelModel("key") { HotelName = "Test Name" };
+        var hotel = new DocumentDBHotelModel("key") { HotelName = "Test Name" };
 
         var serializerRegistry = BsonSerializer.SerializerRegistry;
         var documentSerializer = serializerRegistry.GetSerializer<BsonDocument>();
         var expectedDefinition = Builders<BsonDocument>.Filter.Eq(document => document["_id"], "key");
 
-        using var sut = new DocumentDBCollection<string, AzureDocumentDBHotelModel>(
+        using var sut = new DocumentDBCollection<string, DocumentDBHotelModel>(
             this._mockMongoDatabase.Object,
             "collection");
 
@@ -341,11 +341,11 @@ public sealed class AzureDocumentDBCollectionTests
     public async Task UpsertBatchReturnsRecordKeysAsync()
     {
         // Arrange
-        var hotel1 = new AzureDocumentDBHotelModel("key1") { HotelName = "Test Name 1" };
-        var hotel2 = new AzureDocumentDBHotelModel("key2") { HotelName = "Test Name 2" };
-        var hotel3 = new AzureDocumentDBHotelModel("key3") { HotelName = "Test Name 3" };
+        var hotel1 = new DocumentDBHotelModel("key1") { HotelName = "Test Name 1" };
+        var hotel2 = new DocumentDBHotelModel("key2") { HotelName = "Test Name 2" };
+        var hotel3 = new DocumentDBHotelModel("key3") { HotelName = "Test Name 3" };
 
-        using var sut = new DocumentDBCollection<string, AzureDocumentDBHotelModel>(
+        using var sut = new DocumentDBCollection<string, DocumentDBHotelModel>(
             this._mockMongoDatabase.Object,
             "collection");
 
@@ -420,7 +420,7 @@ public sealed class AzureDocumentDBCollectionTests
         // Arrange
         this.MockCollectionForSearch();
 
-        using var sut = new DocumentDBCollection<string, AzureDocumentDBHotelModel>(
+        using var sut = new DocumentDBCollection<string, DocumentDBHotelModel>(
             this._mockMongoDatabase.Object,
             "collection");
 
@@ -511,11 +511,11 @@ public sealed class AzureDocumentDBCollectionTests
         // Arrange
         this.MockCollectionForSearch();
 
-        using var sut = new DocumentDBCollection<string, AzureDocumentDBHotelModel>(
+        using var sut = new DocumentDBCollection<string, DocumentDBHotelModel>(
             this._mockMongoDatabase.Object,
             "collection");
 
-        var options = new MEVD.VectorSearchOptions<AzureDocumentDBHotelModel> { VectorProperty = r => "non-existent-property" };
+        var options = new MEVD.VectorSearchOptions<DocumentDBHotelModel> { VectorProperty = r => "non-existent-property" };
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(async () => await sut.SearchAsync(new ReadOnlyMemory<float>([1f, 2f, 3f]), top: 3, options).FirstOrDefaultAsync());
@@ -527,7 +527,7 @@ public sealed class AzureDocumentDBCollectionTests
         // Arrange
         this.MockCollectionForSearch();
 
-        using var sut = new DocumentDBCollection<string, AzureDocumentDBHotelModel>(
+        using var sut = new DocumentDBCollection<string, DocumentDBHotelModel>(
             this._mockMongoDatabase.Object,
             "collection");
 

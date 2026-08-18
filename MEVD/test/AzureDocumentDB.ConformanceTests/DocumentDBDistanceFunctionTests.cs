@@ -9,8 +9,8 @@ using Xunit;
 
 namespace AzureDocumentDB.ConformanceTests;
 
-public class AzureDocumentDBDistanceFunctionTests(AzureDocumentDBDistanceFunctionTests.Fixture fixture)
-    : DistanceFunctionTests<int>(fixture), IClassFixture<AzureDocumentDBDistanceFunctionTests.Fixture>
+public class DocumentDBDistanceFunctionTests(DocumentDBDistanceFunctionTests.Fixture fixture)
+    : DistanceFunctionTests<int>(fixture), IClassFixture<DocumentDBDistanceFunctionTests.Fixture>
 {
     public override Task CosineSimilarity() => Assert.ThrowsAsync<NotSupportedException>(base.CosineSimilarity);
     public override Task EuclideanSquaredDistance() => Assert.ThrowsAsync<NotSupportedException>(base.EuclideanSquaredDistance);
@@ -25,7 +25,7 @@ public class AzureDocumentDBDistanceFunctionTests(AzureDocumentDBDistanceFunctio
 
     public new class Fixture() : DistanceFunctionTests<int>.Fixture
     {
-        public override TestStore TestStore => AzureDocumentDBTestStore.Instance;
+        public override TestStore TestStore => DocumentDBTestStore.Instance;
 
         public override bool AssertScores { get; } = false;
     }

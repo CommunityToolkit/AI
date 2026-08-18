@@ -7,7 +7,7 @@ using Xunit;
 
 namespace AzureDocumentDB.ConformanceTests;
 
-public class AzureDocumentDBCollectionManagementTests(AzureDocumentDBFixture fixture)
-    : CollectionManagementTests<string>(fixture), IClassFixture<AzureDocumentDBFixture>
+public class DocumentDBCollectionManagementTests(DocumentDBFixture fixture)
+    : CollectionManagementTests<string>(fixture), IClassFixture<DocumentDBFixture>
 {
 }

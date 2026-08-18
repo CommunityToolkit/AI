@@ -11,50 +11,50 @@ using Xunit;
 
 namespace AzureDocumentDB.ConformanceTests;
 
-public class AzureDocumentDBEmbeddingGenerationTests(AzureDocumentDBEmbeddingGenerationTests.StringVectorFixture stringVectorFixture, AzureDocumentDBEmbeddingGenerationTests.RomOfFloatVectorFixture romOfFloatVectorFixture)
-    : EmbeddingGenerationTests<string>(stringVectorFixture, romOfFloatVectorFixture), IClassFixture<AzureDocumentDBEmbeddingGenerationTests.StringVectorFixture>, IClassFixture<AzureDocumentDBEmbeddingGenerationTests.RomOfFloatVectorFixture>
+public class DocumentDBEmbeddingGenerationTests(DocumentDBEmbeddingGenerationTests.StringVectorFixture stringVectorFixture, DocumentDBEmbeddingGenerationTests.RomOfFloatVectorFixture romOfFloatVectorFixture)
+    : EmbeddingGenerationTests<string>(stringVectorFixture, romOfFloatVectorFixture), IClassFixture<DocumentDBEmbeddingGenerationTests.StringVectorFixture>, IClassFixture<DocumentDBEmbeddingGenerationTests.RomOfFloatVectorFixture>
 {
     public new class StringVectorFixture : EmbeddingGenerationTests<string>.StringVectorFixture
     {
-        public override TestStore TestStore => AzureDocumentDBTestStore.Instance;
+        public override TestStore TestStore => DocumentDBTestStore.Instance;
 
         public override VectorStore CreateVectorStore(IEmbeddingGenerator? embeddingGenerator)
-            => AzureDocumentDBTestStore.Instance.GetVectorStore(new() { EmbeddingGenerator = embeddingGenerator });
+            => DocumentDBTestStore.Instance.GetVectorStore(new() { EmbeddingGenerator = embeddingGenerator });
 
         public override Func<IServiceCollection, IServiceCollection>[] DependencyInjectionStoreRegistrationDelegates =>
         [
             services => services
-                .AddSingleton(AzureDocumentDBTestStore.Instance.Database)
-                .AddAzureDocumentDBVectorStore()
+                .AddSingleton(DocumentDBTestStore.Instance.Database)
+                .AddDocumentDBVectorStore()
         ];
 
         public override Func<IServiceCollection, IServiceCollection>[] DependencyInjectionCollectionRegistrationDelegates =>
         [
             services => services
-                .AddSingleton(AzureDocumentDBTestStore.Instance.Database)
-                .AddAzureDocumentDBCollection<RecordWithAttributes>(this.CollectionName)
+                .AddSingleton(DocumentDBTestStore.Instance.Database)
+                .AddDocumentDBCollection<RecordWithAttributes>(this.CollectionName)
         ];
     }
 
     public new class RomOfFloatVectorFixture : EmbeddingGenerationTests<string>.RomOfFloatVectorFixture
     {
-        public override TestStore TestStore => AzureDocumentDBTestStore.Instance;
+        public override TestStore TestStore => DocumentDBTestStore.Instance;
 
         public override VectorStore CreateVectorStore(IEmbeddingGenerator? embeddingGenerator)
-            => AzureDocumentDBTestStore.Instance.GetVectorStore(new() { EmbeddingGenerator = embeddingGenerator });
+            => DocumentDBTestStore.Instance.GetVectorStore(new() { EmbeddingGenerator = embeddingGenerator });
 
         public override Func<IServiceCollection, IServiceCollection>[] DependencyInjectionStoreRegistrationDelegates =>
         [
             services => services
-                .AddSingleton(AzureDocumentDBTestStore.Instance.Database)
-                .AddAzureDocumentDBVectorStore()
+                .AddSingleton(DocumentDBTestStore.Instance.Database)
+                .AddDocumentDBVectorStore()
         ];
 
         public override Func<IServiceCollection, IServiceCollection>[] DependencyInjectionCollectionRegistrationDelegates =>
         [
             services => services
-                .AddSingleton(AzureDocumentDBTestStore.Instance.Database)
-                .AddAzureDocumentDBCollection<RecordWithAttributes>(this.CollectionName)
+                .AddSingleton(DocumentDBTestStore.Instance.Database)
+                .AddDocumentDBCollection<RecordWithAttributes>(this.CollectionName)
         ];
     }
 }

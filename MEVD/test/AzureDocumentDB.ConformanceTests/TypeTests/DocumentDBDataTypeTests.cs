@@ -8,8 +8,8 @@ using Xunit;
 
 namespace AzureDocumentDB.ConformanceTests.TypeTests;
 
-public class AzureDocumentDBDataTypeTests(AzureDocumentDBDataTypeTests.Fixture fixture)
-    : DataTypeTests<string, DataTypeTests<string>.DefaultRecord>(fixture), IClassFixture<AzureDocumentDBDataTypeTests.Fixture>
+public class DocumentDBDataTypeTests(DocumentDBDataTypeTests.Fixture fixture)
+    : DataTypeTests<string, DataTypeTests<string>.DefaultRecord>(fixture), IClassFixture<DocumentDBDataTypeTests.Fixture>
 {
     public override Task Decimal()
         => this.Test<decimal>(
@@ -37,7 +37,7 @@ public class AzureDocumentDBDataTypeTests(AzureDocumentDBDataTypeTests.Fixture f
 
     public new class Fixture : DataTypeTests<string, DataTypeTests<string>.DefaultRecord>.Fixture
     {
-        public override TestStore TestStore => AzureDocumentDBTestStore.Instance;
+        public override TestStore TestStore => DocumentDBTestStore.Instance;
 
         // MongoDB does not support null checks in vector search pre-filters
         public override bool IsNullFilteringSupported => false;

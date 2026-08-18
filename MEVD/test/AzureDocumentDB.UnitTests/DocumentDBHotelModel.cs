@@ -8,7 +8,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace AzureDocumentDB.UnitTests;
 
-public class AzureDocumentDBHotelModel(string hotelId)
+public class DocumentDBHotelModel(string hotelId)
 {
     /// <summary>The key of the record.</summary>
     [VectorStoreKey]

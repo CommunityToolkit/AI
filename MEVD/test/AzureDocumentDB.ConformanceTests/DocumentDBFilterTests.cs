@@ -8,8 +8,8 @@ using Xunit;
 
 namespace AzureDocumentDB.ConformanceTests;
 
-public class AzureDocumentDBFilterTests(AzureDocumentDBFilterTests.Fixture fixture)
-    : FilterTests<string>(fixture), IClassFixture<AzureDocumentDBFilterTests.Fixture>
+public class DocumentDBFilterTests(DocumentDBFilterTests.Fixture fixture)
+    : FilterTests<string>(fixture), IClassFixture<DocumentDBFilterTests.Fixture>
 {
     // Specialized MongoDB syntax for NOT over Contains ($nin)
     [Fact]
@@ -86,7 +86,7 @@ public class AzureDocumentDBFilterTests(AzureDocumentDBFilterTests.Fixture fixtu
 
     public new class Fixture : FilterTests<string>.Fixture
     {
-        public override TestStore TestStore => AzureDocumentDBTestStore.Instance;
+        public override TestStore TestStore => DocumentDBTestStore.Instance;
 
         protected override string IndexKind => Microsoft.Extensions.VectorData.IndexKind.IvfFlat;
         protected override string DistanceFunction => Microsoft.Extensions.VectorData.DistanceFunction.CosineDistance;

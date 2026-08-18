@@ -9,8 +9,8 @@ using Xunit;
 
 namespace AzureDocumentDB.ConformanceTests;
 
-public class AzureDocumentDBIndexKindTests(AzureDocumentDBIndexKindTests.Fixture fixture)
-    : IndexKindTests<int>(fixture), IClassFixture<AzureDocumentDBIndexKindTests.Fixture>
+public class DocumentDBIndexKindTests(DocumentDBIndexKindTests.Fixture fixture)
+    : IndexKindTests<int>(fixture), IClassFixture<DocumentDBIndexKindTests.Fixture>
 {
     // Note: Azure DocumentDB supports HNSW, but only in a specific tier.
     // [Fact]
@@ -26,6 +26,6 @@ public class AzureDocumentDBIndexKindTests(AzureDocumentDBIndexKindTests.Fixture
 
     public new class Fixture() : IndexKindTests<int>.Fixture
     {
-        public override TestStore TestStore => AzureDocumentDBTestStore.Instance;
+        public override TestStore TestStore => DocumentDBTestStore.Instance;
     }
 }

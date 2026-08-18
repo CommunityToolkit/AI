@@ -6,7 +6,7 @@ using VectorData.ConformanceTests.ModelTests;
 
 namespace AzureDocumentDB.ConformanceTests;
 
-public class AzureDocumentDBTestSuiteImplementationTests : TestSuiteImplementationTests
+public class DocumentDBTestSuiteImplementationTests : TestSuiteImplementationTests
 {
     protected override ICollection<Type> IgnoredTestBases { get; } =
     [

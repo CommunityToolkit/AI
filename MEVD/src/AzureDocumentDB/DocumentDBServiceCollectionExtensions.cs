@@ -23,14 +23,14 @@ public static class DocumentDBServiceCollectionExtensions
     /// Registers a <see cref="DocumentDBVectorStore"/> as <see cref="VectorStore"/>
     /// with <see cref="IMongoDatabase"/> retrieved from the dependency injection container.
     /// </summary>
-    /// <inheritdoc cref="AddKeyedAzureDocumentDBVectorStore(IServiceCollection, object?, DocumentDBVectorStoreOptions?, ServiceLifetime)"/>
+    /// <inheritdoc cref="AddKeyedDocumentDBVectorStore(IServiceCollection, object?, DocumentDBVectorStoreOptions?, ServiceLifetime)"/>
     [RequiresUnreferencedCode(DynamicCodeMessage)]
     [RequiresDynamicCode(UnreferencedCodeMessage)]
-    public static IServiceCollection AddAzureDocumentDBVectorStore(
+    public static IServiceCollection AddDocumentDBVectorStore(
         this IServiceCollection services,
         DocumentDBVectorStoreOptions? options = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
-        => AddKeyedAzureDocumentDBVectorStore(services, serviceKey: null, options, lifetime);
+        => AddKeyedDocumentDBVectorStore(services, serviceKey: null, options, lifetime);
 
     /// <summary>
     /// Registers a keyed <see cref="DocumentDBVectorStore"/> as <see cref="VectorStore"/>
@@ -43,7 +43,7 @@ public static class DocumentDBServiceCollectionExtensions
     /// <returns>Service collection.</returns>
     [RequiresUnreferencedCode(DynamicCodeMessage)]
     [RequiresDynamicCode(UnreferencedCodeMessage)]
-    public static IServiceCollection AddKeyedAzureDocumentDBVectorStore(
+    public static IServiceCollection AddKeyedDocumentDBVectorStore(
         this IServiceCollection services,
         object? serviceKey,
         DocumentDBVectorStoreOptions? options = default,
@@ -69,16 +69,16 @@ public static class DocumentDBServiceCollectionExtensions
     /// Registers a <see cref="DocumentDBVectorStore"/> as <see cref="VectorStore"/>
     /// using the provided <paramref name="connectionString"/> and <paramref name="databaseName"/>.
     /// </summary>
-    /// <inheritdoc cref="AddKeyedAzureDocumentDBVectorStore(IServiceCollection, object?, string, string, DocumentDBVectorStoreOptions?, ServiceLifetime)"/>
+    /// <inheritdoc cref="AddKeyedDocumentDBVectorStore(IServiceCollection, object?, string, string, DocumentDBVectorStoreOptions?, ServiceLifetime)"/>
     [RequiresUnreferencedCode(DynamicCodeMessage)]
     [RequiresDynamicCode(UnreferencedCodeMessage)]
-    public static IServiceCollection AddAzureDocumentDBVectorStore(
+    public static IServiceCollection AddDocumentDBVectorStore(
         this IServiceCollection services,
         string connectionString,
         string databaseName,
         DocumentDBVectorStoreOptions? options = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
-        => AddKeyedAzureDocumentDBVectorStore(services, serviceKey: null, connectionString, databaseName, options, lifetime);
+        => AddKeyedDocumentDBVectorStore(services, serviceKey: null, connectionString, databaseName, options, lifetime);
 
     /// <summary>
     /// Registers a keyed <see cref="DocumentDBVectorStore"/> as <see cref="VectorStore"/>
@@ -93,7 +93,7 @@ public static class DocumentDBServiceCollectionExtensions
     /// <returns>Service collection.</returns>
     [RequiresUnreferencedCode(DynamicCodeMessage)]
     [RequiresDynamicCode(UnreferencedCodeMessage)]
-    public static IServiceCollection AddKeyedAzureDocumentDBVectorStore(
+    public static IServiceCollection AddKeyedDocumentDBVectorStore(
         this IServiceCollection services,
         object? serviceKey,
         string connectionString,
@@ -124,16 +124,16 @@ public static class DocumentDBServiceCollectionExtensions
     /// Registers a <see cref="DocumentDBCollection{TKey, TRecord}"/> as <see cref="VectorStoreCollection{TKey, TRecord}"/>
     /// with <see cref="IMongoDatabase"/> retrieved from the dependency injection container.
     /// </summary>
-    /// <inheritdoc cref="AddKeyedAzureDocumentDBVectorStore(IServiceCollection, object?, DocumentDBVectorStoreOptions?, ServiceLifetime)"/>
+    /// <inheritdoc cref="AddKeyedDocumentDBVectorStore(IServiceCollection, object?, DocumentDBVectorStoreOptions?, ServiceLifetime)"/>
     [RequiresUnreferencedCode(DynamicCodeMessage)]
     [RequiresDynamicCode(UnreferencedCodeMessage)]
-    public static IServiceCollection AddAzureDocumentDBCollection<TRecord>(
+    public static IServiceCollection AddDocumentDBCollection<TRecord>(
         this IServiceCollection services,
         string name,
         DocumentDBCollectionOptions? options = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
         where TRecord : class
-        => AddKeyedAzureDocumentDBCollection<TRecord>(services, serviceKey: null, name, options, lifetime);
+        => AddKeyedDocumentDBCollection<TRecord>(services, serviceKey: null, name, options, lifetime);
 
     /// <summary>
     /// Registers a keyed <see cref="DocumentDBCollection{TKey, TRecord}"/> as <see cref="VectorStoreCollection{TKey, TRecord}"/>
@@ -148,7 +148,7 @@ public static class DocumentDBServiceCollectionExtensions
     /// <returns>Service collection.</returns>
     [RequiresUnreferencedCode(DynamicCodeMessage)]
     [RequiresDynamicCode(UnreferencedCodeMessage)]
-    public static IServiceCollection AddKeyedAzureDocumentDBCollection<TRecord>(
+    public static IServiceCollection AddKeyedDocumentDBCollection<TRecord>(
         this IServiceCollection services,
         object? serviceKey,
         string name,
@@ -176,10 +176,10 @@ public static class DocumentDBServiceCollectionExtensions
     /// Registers a <see cref="DocumentDBCollection{TKey, TRecord}"/> as <see cref="VectorStoreCollection{TKey,TRecord}"/>
     /// using the provided <paramref name="connectionString"/> and <paramref name="databaseName"/>.
     /// </summary>
-    /// <inheritdoc cref="AddKeyedAzureDocumentDBCollection{TRecord}(IServiceCollection, object?, string, string, string, DocumentDBCollectionOptions?, ServiceLifetime)"/>
+    /// <inheritdoc cref="AddKeyedDocumentDBCollection{TRecord}(IServiceCollection, object?, string, string, string, DocumentDBCollectionOptions?, ServiceLifetime)"/>
     [RequiresUnreferencedCode(UnreferencedCodeMessage)]
     [RequiresDynamicCode(DynamicCodeMessage)]
-    public static IServiceCollection AddAzureDocumentDBCollection<TRecord>(
+    public static IServiceCollection AddDocumentDBCollection<TRecord>(
         this IServiceCollection services,
         string name,
         string connectionString,
@@ -187,7 +187,7 @@ public static class DocumentDBServiceCollectionExtensions
         DocumentDBCollectionOptions? options = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
         where TRecord : class
-        => AddKeyedAzureDocumentDBCollection<TRecord>(services, serviceKey: null, name, connectionString, databaseName, options, lifetime);
+        => AddKeyedDocumentDBCollection<TRecord>(services, serviceKey: null, name, connectionString, databaseName, options, lifetime);
 
     /// <summary>
     /// Registers a keyed <see cref="DocumentDBCollection{TKey, TRecord}"/> as <see cref="VectorStoreCollection{TKey,TRecord}"/>
@@ -204,7 +204,7 @@ public static class DocumentDBServiceCollectionExtensions
     /// <returns>Service collection.</returns>
     [RequiresUnreferencedCode(UnreferencedCodeMessage)]
     [RequiresDynamicCode(DynamicCodeMessage)]
-    public static IServiceCollection AddKeyedAzureDocumentDBCollection<TRecord>(
+    public static IServiceCollection AddKeyedDocumentDBCollection<TRecord>(
         this IServiceCollection services,
         object? serviceKey,
         string name,
@@ -217,17 +217,17 @@ public static class DocumentDBServiceCollectionExtensions
         Throw.IfNullOrWhitespace(connectionString);
         Throw.IfNullOrWhitespace(databaseName);
 
-        return AddKeyedAzureDocumentDBCollection<TRecord>(services, serviceKey, name, _ => connectionString, _ => databaseName, _ => options!, lifetime);
+        return AddKeyedDocumentDBCollection<TRecord>(services, serviceKey, name, _ => connectionString, _ => databaseName, _ => options!, lifetime);
     }
 
     /// <summary>
     /// Registers a <see cref="DocumentDBCollection{TKey, TRecord}"/> as <see cref="VectorStoreCollection{TKey,TRecord}"/>
     /// using the provided <paramref name="connectionStringProvider"/> and <paramref name="databaseNameProvider"/>.
     /// </summary>
-    /// <inheritdoc cref="AddKeyedAzureDocumentDBCollection{TRecord}(IServiceCollection, object?, string, Func{IServiceProvider, string}, Func{IServiceProvider, string}, Func{IServiceProvider, DocumentDBCollectionOptions}?, ServiceLifetime)"/>
+    /// <inheritdoc cref="AddKeyedDocumentDBCollection{TRecord}(IServiceCollection, object?, string, Func{IServiceProvider, string}, Func{IServiceProvider, string}, Func{IServiceProvider, DocumentDBCollectionOptions}?, ServiceLifetime)"/>
     [RequiresUnreferencedCode(UnreferencedCodeMessage)]
     [RequiresDynamicCode(DynamicCodeMessage)]
-    public static IServiceCollection AddAzureDocumentDBCollection<TRecord>(
+    public static IServiceCollection AddDocumentDBCollection<TRecord>(
         this IServiceCollection services,
         string name,
         Func<IServiceProvider, string> connectionStringProvider,
@@ -235,7 +235,7 @@ public static class DocumentDBServiceCollectionExtensions
         Func<IServiceProvider, DocumentDBCollectionOptions>? optionsProvider = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
         where TRecord : class
-        => AddKeyedAzureDocumentDBCollection<TRecord>(services, serviceKey: null, name, connectionStringProvider, databaseNameProvider, optionsProvider, lifetime);
+        => AddKeyedDocumentDBCollection<TRecord>(services, serviceKey: null, name, connectionStringProvider, databaseNameProvider, optionsProvider, lifetime);
 
     /// <summary>
     /// Registers a keyed <see cref="DocumentDBCollection{TKey, TRecord}"/> as <see cref="VectorStoreCollection{TKey,TRecord}"/>
@@ -252,7 +252,7 @@ public static class DocumentDBServiceCollectionExtensions
     /// <returns>Service collection.</returns>
     [RequiresUnreferencedCode(UnreferencedCodeMessage)]
     [RequiresDynamicCode(DynamicCodeMessage)]
-    public static IServiceCollection AddKeyedAzureDocumentDBCollection<TRecord>(
+    public static IServiceCollection AddKeyedDocumentDBCollection<TRecord>(
         this IServiceCollection services,
         object? serviceKey,
         string name,

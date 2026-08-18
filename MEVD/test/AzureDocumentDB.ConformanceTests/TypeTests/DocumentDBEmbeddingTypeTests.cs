@@ -10,11 +10,11 @@ using Xunit;
 
 namespace AzureDocumentDB.ConformanceTests.TypeTests;
 
-public class AzureDocumentDBEmbeddingTypeTests(AzureDocumentDBEmbeddingTypeTests.Fixture fixture)
-    : EmbeddingTypeTests<string>(fixture), IClassFixture<AzureDocumentDBEmbeddingTypeTests.Fixture>
+public class DocumentDBEmbeddingTypeTests(DocumentDBEmbeddingTypeTests.Fixture fixture)
+    : EmbeddingTypeTests<string>(fixture), IClassFixture<DocumentDBEmbeddingTypeTests.Fixture>
 {
     public new class Fixture : EmbeddingTypeTests<string>.Fixture
     {
-        public override TestStore TestStore => AzureDocumentDBTestStore.Instance;
+        public override TestStore TestStore => DocumentDBTestStore.Instance;
     }
 }
