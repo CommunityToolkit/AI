@@ -114,7 +114,9 @@ internal sealed class CosmosNoSqlTestStore(string uniqueDatabaseName) : TestStor
             catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable && attempt < DatabaseCreationMaxAttempts)
             {
                 TimeSpan? retryAfter = ex.RetryAfter;
-                TimeSpan retryDelay = retryAfter is > TimeSpan.Zero ? retryAfter.Value : s_databaseCreationRetryDelay;
+                TimeSpan retryDelay = retryAfter.HasValue && retryAfter.Value > TimeSpan.Zero
+                    ? retryAfter.Value
+                    : s_databaseCreationRetryDelay;
                 await Task.Delay(retryDelay).ConfigureAwait(false);
             }
         }
