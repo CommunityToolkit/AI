@@ -32,17 +32,16 @@ public sealed class DocumentDBTestStore : TestStore
 
     private MongoClient? _client;
     private IMongoDatabase? _database;
-    private bool _useExternalInstance;
 
-    public MongoClient Client => this._client ?? throw new InvalidOperationException("Not initialized");
-    public IMongoDatabase Database => this._database ?? throw new InvalidOperationException("Not initialized");
+    public MongoClient Client => _client ?? throw new InvalidOperationException("Not initialized");
+    public IMongoDatabase Database => _database ?? throw new InvalidOperationException("Not initialized");
 
     public override string DefaultIndexKind => Microsoft.Extensions.VectorData.IndexKind.IvfFlat;
 
     public override string DefaultDistanceFunction => Microsoft.Extensions.VectorData.DistanceFunction.CosineDistance;
 
     public DocumentDBVectorStore GetVectorStore(DocumentDBVectorStoreOptions options)
-        => new(this.Database, options);
+        => new(Database, options);
 
     private DocumentDBTestStore()
     {
@@ -50,41 +49,23 @@ public sealed class DocumentDBTestStore : TestStore
 
     protected override async Task StartAsync()
     {
-        string connectionString;
-        if (DocumentDBTestEnvironment.IsConnectionStringDefined)
-        {
-            connectionString = DocumentDBTestEnvironment.ConnectionString!;
-            this._useExternalInstance = true;
-        }
-        else
-        {
-            await this._container.StartAsync();
-            connectionString = $"mongodb://{Username}:{Password}@{this._container.Hostname}:{this._container.GetMappedPublicPort(DocumentDBPort)}/?tls=true";
-            this._useExternalInstance = false;
-        }
+        await _container.StartAsync();
+        string connectionString = $"mongodb://{Username}:{Password}@{_container.Hostname}:{_container.GetMappedPublicPort(DocumentDBPort)}/?tls=true";
 
         MongoClientSettings settings = MongoClientSettings.FromConnectionString(connectionString);
-        if (!this._useExternalInstance)
+        settings.SslSettings = new SslSettings
         {
-            settings.SslSettings = new SslSettings
-            {
-                EnabledSslProtocols = SslProtocols.Tls12,
-                ServerCertificateValidationCallback = static (_, _, _, _) => true,
-            };
-        }
+            EnabledSslProtocols = SslProtocols.Tls12,
+            ServerCertificateValidationCallback = static (_, _, _, _) => true,
+        };
 
-        this._client = new MongoClient(settings);
-        await this.WaitForMongoServiceAsync(this._client, TimeSpan.FromMinutes(5));
-        this._database = this._client.GetDatabase("VectorSearchTests");
-        this.DefaultVectorStore = new DocumentDBVectorStore(this._database);
+        _client = new MongoClient(settings);
+        await WaitForMongoServiceAsync(_client, TimeSpan.FromMinutes(5));
+        _database = _client.GetDatabase("VectorSearchTests");
+        DefaultVectorStore = new DocumentDBVectorStore(_database);
     }
 
-    protected override Task StopAsync()
-    {
-        return this._useExternalInstance
-            ? Task.CompletedTask
-            : this._container.StopAsync();
-    }
+    protected override Task StopAsync() => _container.StopAsync();
 
     private async Task WaitForMongoServiceAsync(MongoClient client, TimeSpan timeout)
     {
@@ -101,7 +82,7 @@ public sealed class DocumentDBTestStore : TestStore
             catch (Exception ex)
             {
                 lastException = ex;
-                await Task.Delay(TimeSpan.FromSeconds(2));
+                await Task.Delay(TimeSpan.FromMilliseconds(200));
             }
         }
 
