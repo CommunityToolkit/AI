@@ -112,7 +112,9 @@ internal sealed class CosmosNoSqlTestStore(string uniqueDatabaseName) : TestStor
             }
             catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
             {
-                TimeSpan retryDelay = ex.RetryAfter.HasValue ? ex.RetryAfter.Value : TimeSpan.FromMilliseconds(200);
+                TimeSpan retryDelay = ex.RetryAfter.HasValue && ex.RetryAfter.Value > TimeSpan.Zero
+                    ? ex.RetryAfter.Value
+                    : TimeSpan.FromMilliseconds(200);
                 TimeSpan remainingTime = deadline - DateTimeOffset.UtcNow;
                 if (remainingTime <= TimeSpan.Zero)
                 {
