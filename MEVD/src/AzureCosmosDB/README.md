@@ -18,7 +18,7 @@ using Microsoft.Extensions.VectorData;
 CosmosClient client = new("<connection-string>");
 Database database = client.GetDatabase("vector-database");
 
-VectorStore vectorStore = new CosmosDBVectorStore(database);
+VectorStore vectorStore = new CosmosVectorStore(database);
 VectorStoreCollection<string, Hotel> collection =
     vectorStore.GetCollection<string, Hotel>("hotels");
 ```
@@ -28,8 +28,8 @@ You can also register the provider with dependency injection:
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
 
-services.AddCosmosDBVectorStore("<connection-string>", "vector-database");
-services.AddCosmosDBCollection<string, Hotel>(
+services.AddCosmosVectorStore("<connection-string>", "vector-database");
+services.AddCosmosCollection<string, Hotel>(
     name: "hotels",
     connectionString: "<connection-string>",
     databaseName: "vector-database");

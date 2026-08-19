@@ -7,6 +7,7 @@
 
     <Title>Azure Cosmos DB for NoSQL provider for Microsoft.Extensions.VectorData</Title>
     <Description>Azure Cosmos DB for NoSQL provider for Microsoft.Extensions.VectorData by the .NET Community Toolkit</Description>
+    <PackageTags>AzureCosmosDB;CosmosNoSql;VectorData</PackageTags>
 
     <AzureCosmosDisableNewtonsoftJsonCheck>true</AzureCosmosDisableNewtonsoftJsonCheck>
   </PropertyGroup>
