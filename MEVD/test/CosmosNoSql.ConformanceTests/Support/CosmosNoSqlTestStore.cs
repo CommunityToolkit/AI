@@ -87,7 +87,7 @@ internal sealed class CosmosNoSqlTestStore(string uniqueDatabaseName) : TestStor
 
         _client = new CosmosClient(_connectionString, clientOptions);
 
-        _database = await CreateDatabaseIfNotExistsAsync().ConfigureAwait(false);
+        _database = await CreateDatabaseWithRetryAsync().ConfigureAwait(false);
         DefaultVectorStore = new CosmosNoSqlVectorStore(_database, new() { JsonSerializerOptions = SerializerOptions });
     }
 
@@ -100,7 +100,7 @@ internal sealed class CosmosNoSqlTestStore(string uniqueDatabaseName) : TestStor
         }
     }
 
-    private async Task<Database> CreateDatabaseIfNotExistsAsync()
+    private async Task<Database> CreateDatabaseWithRetryAsync()
     {
         DateTimeOffset deadline = DateTimeOffset.UtcNow.Add(TimeSpan.FromMinutes(1));
 
