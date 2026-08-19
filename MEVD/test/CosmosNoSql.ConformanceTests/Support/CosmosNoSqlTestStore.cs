@@ -15,6 +15,9 @@ namespace CosmosNoSql.ConformanceTests.Support;
 /// <param name="uniqueDatabaseName">The emulator does not support running multiple queries simultaneously, so we create a unique database for each test store instance.</param>
 internal sealed class CosmosNoSqlTestStore(string uniqueDatabaseName) : TestStore
 {
+    private const int DatabaseCreationMaxAttempts = 30;
+    private static readonly TimeSpan s_databaseCreationRetryDelay = TimeSpan.FromSeconds(1);
+
     private CosmosDbContainer? _container;
     private CosmosClient? _client;
     private Database? _database;
@@ -87,7 +90,7 @@ internal sealed class CosmosNoSqlTestStore(string uniqueDatabaseName) : TestStor
 
         _client = new CosmosClient(_connectionString, clientOptions);
 
-        _database = await _client.CreateDatabaseIfNotExistsAsync(uniqueDatabaseName).ConfigureAwait(false);
+        _database = await CreateDatabaseIfNotExistsAsync().ConfigureAwait(false);
         DefaultVectorStore = new CosmosNoSqlVectorStore(_database, new() { JsonSerializerOptions = SerializerOptions });
     }
 
@@ -97,6 +100,22 @@ internal sealed class CosmosNoSqlTestStore(string uniqueDatabaseName) : TestStor
         {
             await _container.StopAsync();
             await _container.DisposeAsync();
+        }
+    }
+
+    private async Task<Database> CreateDatabaseIfNotExistsAsync()
+    {
+        for (int attempt = 1; ; attempt++)
+        {
+            try
+            {
+                return await _client!.CreateDatabaseIfNotExistsAsync(uniqueDatabaseName).ConfigureAwait(false);
+            }
+            catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable && attempt < DatabaseCreationMaxAttempts)
+            {
+                TimeSpan retryDelay = ex.RetryAfter > TimeSpan.Zero ? ex.RetryAfter : s_databaseCreationRetryDelay;
+                await Task.Delay(retryDelay).ConfigureAwait(false);
+            }
         }
     }
 
