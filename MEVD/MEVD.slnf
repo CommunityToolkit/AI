@@ -4,7 +4,7 @@
     "projects":
     [
       "MEVD/src/AzureAISearch/AzureAISearch.csproj",
-      "MEVD/src/CosmosNoSql/CosmosNoSql.csproj",
+      "MEVD/src/AzureCosmosDB/AzureCosmosDB.csproj",
       "MEVD/src/AzureDocumentDB/AzureDocumentDB.csproj",
       "MEVD/src/InMemory/InMemory.csproj",
       "MEVD/src/PgVector/PgVector.csproj",
@@ -16,8 +16,8 @@
 
       "MEVD/test/AzureAISearch.UnitTests/AzureAISearch.UnitTests.csproj",
       "MEVD/test/AzureAISearch.ConformanceTests/AzureAISearch.ConformanceTests.csproj",
-      "MEVD/test/CosmosNoSql.UnitTests/CosmosNoSql.UnitTests.csproj",
-      "MEVD/test/CosmosNoSql.ConformanceTests/CosmosNoSql.ConformanceTests.csproj",
+      "MEVD/test/AzureCosmosDB.UnitTests/AzureCosmosDB.UnitTests.csproj",
+      "MEVD/test/AzureCosmosDB.ConformanceTests/AzureCosmosDB.ConformanceTests.csproj",
       "MEVD/test/AzureDocumentDB.UnitTests/AzureDocumentDB.UnitTests.csproj",
       "MEVD/test/AzureDocumentDB.ConformanceTests/AzureDocumentDB.ConformanceTests.csproj",
       "MEVD/test/InMemory.UnitTests/InMemory.UnitTests.csproj",
