@@ -65,7 +65,11 @@ public sealed class DocumentDBTestStore : TestStore
         DefaultVectorStore = new DocumentDBVectorStore(_database);
     }
 
-    protected override Task StopAsync() => _container.StopAsync();
+    protected override Task StopAsync()
+    {
+        _client?.Dispose();
+        return _container.StopAsync();
+    }
 
     private async Task WaitForMongoServiceAsync(MongoClient client, TimeSpan timeout)
     {
