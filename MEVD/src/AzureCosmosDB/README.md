@@ -5,7 +5,7 @@
 ## Install
 
 ```xml
-<PackageReference Include="CommunityToolkit.VectorData.AzureCosmosDB" Version="1.0.0-preview.1" />
+<PackageReference Include="CommunityToolkit.VectorData.AzureCosmosDB" Version="1.0.0" />
 ```
 
 ## Get started
