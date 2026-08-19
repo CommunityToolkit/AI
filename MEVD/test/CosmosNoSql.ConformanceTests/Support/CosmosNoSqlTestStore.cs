@@ -15,9 +15,6 @@ namespace CosmosNoSql.ConformanceTests.Support;
 /// <param name="uniqueDatabaseName">The emulator does not support running multiple queries simultaneously, so we create a unique database for each test store instance.</param>
 internal sealed class CosmosNoSqlTestStore(string uniqueDatabaseName) : TestStore
 {
-    private const int DatabaseCreationMaxAttempts = 30;
-    private static readonly TimeSpan s_databaseCreationRetryDelay = TimeSpan.FromSeconds(1);
-
     private CosmosDbContainer? _container;
     private CosmosClient? _client;
     private Database? _database;
@@ -105,18 +102,33 @@ internal sealed class CosmosNoSqlTestStore(string uniqueDatabaseName) : TestStor
 
     private async Task<Database> CreateDatabaseIfNotExistsAsync()
     {
-        for (int attempt = 1; ; attempt++)
+        TimeSpan maximumRetryDuration = TimeSpan.FromMinutes(1);
+        TimeSpan fallbackRetryDelay = TimeSpan.FromSeconds(1);
+        System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+        while (true)
         {
             try
             {
                 return await _client!.CreateDatabaseIfNotExistsAsync(uniqueDatabaseName).ConfigureAwait(false);
             }
-            catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable && attempt < DatabaseCreationMaxAttempts)
+            catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
             {
+                TimeSpan remainingRetryDuration = maximumRetryDuration - stopwatch.Elapsed;
+                if (remainingRetryDuration <= TimeSpan.Zero)
+                {
+                    throw;
+                }
+
                 TimeSpan? retryAfter = ex.RetryAfter;
                 TimeSpan retryDelay = retryAfter.HasValue && retryAfter.Value > TimeSpan.Zero
                     ? retryAfter.Value
-                    : s_databaseCreationRetryDelay;
+                    : fallbackRetryDelay;
+                if (retryDelay > remainingRetryDuration)
+                {
+                    retryDelay = remainingRetryDuration;
+                }
+
                 await Task.Delay(retryDelay).ConfigureAwait(false);
             }
         }
