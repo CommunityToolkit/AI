@@ -102,11 +102,9 @@ internal sealed class CosmosNoSqlTestStore(string uniqueDatabaseName) : TestStor
 
     private async Task<Database> CreateDatabaseIfNotExistsAsync()
     {
-        TimeSpan maximumRetryDuration = TimeSpan.FromMinutes(1);
-        TimeSpan fallbackRetryDelay = TimeSpan.FromSeconds(1);
-        System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        DateTimeOffset deadline = DateTimeOffset.UtcNow.Add(TimeSpan.FromMinutes(1));
 
-        while (true)
+        while (DateTimeOffset.UtcNow < deadline)
         {
             try
             {
@@ -114,24 +112,12 @@ internal sealed class CosmosNoSqlTestStore(string uniqueDatabaseName) : TestStor
             }
             catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
             {
-                TimeSpan remainingRetryDuration = maximumRetryDuration - stopwatch.Elapsed;
-                if (remainingRetryDuration <= TimeSpan.Zero)
-                {
-                    throw;
-                }
-
-                TimeSpan? retryAfter = ex.RetryAfter;
-                TimeSpan retryDelay = retryAfter.HasValue && retryAfter.Value > TimeSpan.Zero
-                    ? retryAfter.Value
-                    : fallbackRetryDelay;
-                if (retryDelay > remainingRetryDuration)
-                {
-                    retryDelay = remainingRetryDuration;
-                }
-
+                TimeSpan retryDelay = ex.RetryAfter.HasValue ? ex.RetryAfter.Value : TimeSpan.FromMilliseconds(200);
                 await Task.Delay(retryDelay).ConfigureAwait(false);
             }
         }
+
+        throw new TimeoutException("Cosmos DB did not become available within one minute.");
     }
 
     private sealed class CosmosNoSqlTestJsonNamingPolicy : JsonNamingPolicy
