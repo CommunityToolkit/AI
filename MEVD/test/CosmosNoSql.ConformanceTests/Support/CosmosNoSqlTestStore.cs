@@ -87,7 +87,7 @@ internal sealed class CosmosNoSqlTestStore(string uniqueDatabaseName) : TestStor
 
         _client = new CosmosClient(_connectionString, clientOptions);
 
-        _database = await _client.CreateDatabaseIfNotExistsAsync(uniqueDatabaseName).ConfigureAwait(false);
+        _database = await CreateDatabaseWithRetryAsync().ConfigureAwait(false);
         DefaultVectorStore = new CosmosNoSqlVectorStore(_database, new() { JsonSerializerOptions = SerializerOptions });
     }
 
@@ -98,6 +98,34 @@ internal sealed class CosmosNoSqlTestStore(string uniqueDatabaseName) : TestStor
             await _container.StopAsync();
             await _container.DisposeAsync();
         }
+    }
+
+    private async Task<Database> CreateDatabaseWithRetryAsync()
+    {
+        DateTimeOffset deadline = DateTimeOffset.UtcNow.Add(TimeSpan.FromMinutes(1));
+
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            try
+            {
+                return await _client!.CreateDatabaseIfNotExistsAsync(uniqueDatabaseName).ConfigureAwait(false);
+            }
+            catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+            {
+                TimeSpan retryDelay = ex.RetryAfter.HasValue && ex.RetryAfter.Value > TimeSpan.Zero
+                    ? ex.RetryAfter.Value
+                    : TimeSpan.FromMilliseconds(200);
+                TimeSpan remainingTime = deadline - DateTimeOffset.UtcNow;
+                if (remainingTime <= TimeSpan.Zero)
+                {
+                    break;
+                }
+
+                await Task.Delay(retryDelay < remainingTime ? retryDelay : remainingTime).ConfigureAwait(false);
+            }
+        }
+
+        throw new TimeoutException("Cosmos DB did not become available within one minute.");
     }
 
     private sealed class CosmosNoSqlTestJsonNamingPolicy : JsonNamingPolicy
