@@ -406,7 +406,7 @@ public class DocumentDBCollection<TKey, TRecord> : VectorStoreCollection<TKey, T
         // Add score threshold filter as a $match stage if specified
         if (options.ScoreThreshold.HasValue)
         {
-            pipeline.Add(DocumentDBCollectionSearchMapping.GetScoreThresholdMatchQuery(ScorePropertyName, options.ScoreThreshold.Value));
+            pipeline.Add(DocumentDBCollectionSearchMapping.GetScoreThresholdMatchQuery(ScorePropertyName, options.ScoreThreshold.Value, vectorProperty.DistanceFunction));
         }
 
         const string OperationName = "Aggregate";

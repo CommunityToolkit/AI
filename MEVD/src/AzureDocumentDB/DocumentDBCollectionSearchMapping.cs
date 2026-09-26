@@ -98,17 +98,27 @@ internal static class DocumentDBCollectionSearchMapping
 
     /// <summary>Returns a $match stage to filter results by score threshold.</summary>
     /// <remarks>
-    /// Azure DocumentDB returns a similarity score where higher values mean more similar,
-    /// so we filter with $gte to keep results at or above the threshold.
+    /// For COS and IP Azure DocumentDB returns a similarity score where higher values mean more similar,
+    /// so we filter with $gte. For L2 it returns a distance where lower values mean more similar,
+    /// so we filter with $lte.
     /// </remarks>
-    public static BsonDocument GetScoreThresholdMatchQuery(string scorePropertyName, double scoreThreshold)
-        => new()
+    public static BsonDocument GetScoreThresholdMatchQuery(string scorePropertyName, double scoreThreshold, string? distanceFunction)
+    {
+        var comparisonOperator = GetVectorPropertyDistanceFunction(distanceFunction) switch
+        {
+            DistanceFunction.CosineDistance or DistanceFunction.DotProductSimilarity => "$gte",
+            DistanceFunction.EuclideanDistance => "$lte",
+            _ => throw new NotSupportedException($"Score threshold is not supported for distance function '{distanceFunction}'.")
+        };
+
+        return new()
         {
             {
                 "$match", new BsonDocument
                 {
-                    { scorePropertyName, new BsonDocument { { "$gte", scoreThreshold } } }
+                    { scorePropertyName, new BsonDocument { { comparisonOperator, scoreThreshold } } }
                 }
             }
         };
+    }
 }
