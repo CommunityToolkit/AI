@@ -52,6 +52,12 @@ public class SqliteCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
     /// <summary>Table name in SQLite for vector properties.</summary>
     private readonly string _vectorTableName;
 
+    /// <summary>Properties to bind on inserts into the data table.</summary>
+    private readonly IReadOnlyList<PropertyModel> _dataInsertProperties;
+
+    /// <summary>Properties to bind on inserts into the vector table.</summary>
+    private readonly IReadOnlyList<PropertyModel> _vectorInsertProperties;
+
     /// <inheritdoc />
     public override string Name { get; }
 
@@ -103,6 +109,9 @@ public class SqliteCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         _vectorTableName = GetVectorTableName(name, options);
 
         _vectorPropertiesExist = _model.VectorProperties.Count > 0;
+
+        _dataInsertProperties = SqliteCommandBuilder.GetDataInsertProperties(_model);
+        _vectorInsertProperties = SqliteCommandBuilder.GetVectorInsertProperties(_model);
 
         // Populate some collections of properties
         _keyStorageName = _model.KeyProperty.StorageName;
@@ -569,15 +578,14 @@ public class SqliteCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
 
         DbCommand? insertCommandReturning = null;
         DbCommand? insertCommandNonReturning = null;
-        var insertProperties = SqliteCommandBuilder.GetInsertProperties(_model, data: true);
 
         try
         {
             foreach (var record in records)
             {
                 var isRecordKeyDatabaseGenerated = isKeyPossiblyDatabaseGenerated && (
-                    (keyProperty.Type == typeof(int) && keyProperty.GetValue<int>(record) is var i && i == 0)
-                    || (keyProperty.Type == typeof(long) && keyProperty.GetValue<long>(record) is var l && l == 0L));
+                    (keyProperty.Type == typeof(int) && keyProperty.GetValue<int>(record) == default)
+                    || (keyProperty.Type == typeof(long) && keyProperty.GetValue<long>(record) == default));
 
                 DbCommand insertCommand;
                 if (isRecordKeyDatabaseGenerated)
@@ -586,7 +594,7 @@ public class SqliteCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
                         connection,
                         _dataTableName,
                         _model,
-                        data: true,
+                        _dataInsertProperties,
                         isRecordKeyDatabaseGenerated: true,
                         replaceIfExists: true);
                     insertCommand = insertCommandReturning;
@@ -597,7 +605,7 @@ public class SqliteCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
                         connection,
                         _dataTableName,
                         _model,
-                        data: true,
+                        _dataInsertProperties,
                         isRecordKeyDatabaseGenerated: false,
                         replaceIfExists: true);
                     insertCommand = insertCommandNonReturning;
@@ -606,7 +614,7 @@ public class SqliteCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
                 insertCommand.Transaction = transaction;
 
                 SqliteCommandBuilder.SetInsertParameterValues(
-                    insertCommand, insertProperties, isRecordKeyDatabaseGenerated, record);
+                    insertCommand, _dataInsertProperties, isRecordKeyDatabaseGenerated, record);
 
                 if (isRecordKeyDatabaseGenerated)
                 {
@@ -658,16 +666,14 @@ public class SqliteCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
                 connection,
                 _vectorTableName,
                 _model,
-                data: false,
+                _vectorInsertProperties,
                 isRecordKeyDatabaseGenerated: false);
             vectorInsertCommand.Transaction = transaction;
-
-            var vectorInsertProperties = SqliteCommandBuilder.GetInsertProperties(_model, data: false);
 
             for (int i = 0; i < recordsList.Count; i++)
             {
                 SqliteCommandBuilder.SetInsertParameterValues(
-                    vectorInsertCommand, vectorInsertProperties, isRecordKeyDatabaseGenerated: false,
+                    vectorInsertCommand, _vectorInsertProperties, isRecordKeyDatabaseGenerated: false,
                     recordsList[i], i, generatedEmbeddings);
 
                 await connection.ExecuteWithErrorHandlingAsync(

@@ -115,14 +115,13 @@ internal static class SqliteCommandBuilder
         SqliteConnection connection,
         string tableName,
         CollectionModel model,
-        bool data,
+        IReadOnlyList<PropertyModel> properties,
         bool isRecordKeyDatabaseGenerated,
         bool replaceIfExists = false)
     {
         var sql = new StringBuilder();
         var command = connection.CreateCommand();
 
-        var properties = GetInsertProperties(model, data);
         var keyProperty = model.KeyProperty;
 
         sql.Append("INSERT");
@@ -188,19 +187,20 @@ internal static class SqliteCommandBuilder
         return command;
     }
 
-    public static List<PropertyModel> GetInsertProperties(CollectionModel model, bool data)
-    {
-        return model.KeyProperties
-            .Concat(data ? model.DataProperties : (IEnumerable<PropertyModel>)model.VectorProperties).ToList();
-    }
+    public static IReadOnlyList<PropertyModel> GetDataInsertProperties(CollectionModel model)
+        => [.. model.KeyProperties, .. model.DataProperties];
+
+    public static IReadOnlyList<PropertyModel> GetVectorInsertProperties(CollectionModel model)
+        => [.. model.KeyProperties, .. model.VectorProperties];
 
     public static void SetInsertParameterValues(
-        DbCommand command, List<PropertyModel> properties, bool isRecordKeyDatabaseGenerated,
+        DbCommand command, IReadOnlyList<PropertyModel> properties, bool isRecordKeyDatabaseGenerated,
         object record, int recordIndex = 0,
         Dictionary<VectorPropertyModel, IReadOnlyList<Embedding<float>>>? generatedEmbeddings = null)
     {
-        foreach (var property in properties)
+        for (var i = 0; i < properties.Count; i++)
         {
+            var property = properties[i];
             var value = property.GetValueAsObject(record);
 
             switch (property)

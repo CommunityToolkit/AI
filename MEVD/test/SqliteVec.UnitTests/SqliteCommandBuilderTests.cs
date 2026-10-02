@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.VectorData;
@@ -136,7 +137,7 @@ public sealed class SqliteCommandBuilderTests : IDisposable
             this._connection,
             TableName,
             model,
-            data: true,
+            SqliteCommandBuilder.GetDataInsertProperties(model),
             isRecordKeyDatabaseGenerated: false,
             replaceIfExists: replaceIfExists);
 
@@ -181,7 +182,7 @@ public sealed class SqliteCommandBuilderTests : IDisposable
             this._connection,
             TableName,
             model,
-            data: true,
+            SqliteCommandBuilder.GetDataInsertProperties(model),
             isRecordKeyDatabaseGenerated: true,
             replaceIfExists: replaceIfExists);
 
@@ -208,8 +209,8 @@ public sealed class SqliteCommandBuilderTests : IDisposable
 
         var record = new Dictionary<string, object?> { ["Id"] = "KeyValue", ["Name"] = "NameValue" };
 
-        var command = SqliteCommandBuilder.BuildInsertCommand(this._connection, "TestTable", model, data: true, isRecordKeyDatabaseGenerated: false);
-        var properties = SqliteCommandBuilder.GetInsertProperties(model, data: true);
+        var properties = SqliteCommandBuilder.GetDataInsertProperties(model);
+        var command = SqliteCommandBuilder.BuildInsertCommand(this._connection, "TestTable", model, properties, isRecordKeyDatabaseGenerated: false);
 
         // Act
         SqliteCommandBuilder.SetInsertParameterValues(command, properties, isRecordKeyDatabaseGenerated: false, record);
@@ -232,8 +233,8 @@ public sealed class SqliteCommandBuilderTests : IDisposable
         float[] embeddings = [1f, 2f];
         var record = new Dictionary<string, object?> { ["Id"] = "KeyValue", ["Embedding"] = new ReadOnlyMemory<float>(embeddings) };
 
-        var command = SqliteCommandBuilder.BuildInsertCommand(this._connection, "VectorTable", model, data: false, isRecordKeyDatabaseGenerated: false);
-        var properties = SqliteCommandBuilder.GetInsertProperties(model, data: false);
+        var properties = SqliteCommandBuilder.GetVectorInsertProperties(model);
+        var command = SqliteCommandBuilder.BuildInsertCommand(this._connection, "VectorTable", model, properties, isRecordKeyDatabaseGenerated: false);
 
         // Act
         SqliteCommandBuilder.SetInsertParameterValues(command, properties, isRecordKeyDatabaseGenerated: false, record);
@@ -262,8 +263,8 @@ public sealed class SqliteCommandBuilderTests : IDisposable
             [vectorProperty] = [new(new float[] { 9f, 9f }), new(embeddings)],
         };
 
-        var command = SqliteCommandBuilder.BuildInsertCommand(this._connection, "VectorTable", model, data: false, isRecordKeyDatabaseGenerated: false);
-        var properties = SqliteCommandBuilder.GetInsertProperties(model, data: false);
+        var properties = SqliteCommandBuilder.GetVectorInsertProperties(model);
+        var command = SqliteCommandBuilder.BuildInsertCommand(this._connection, "VectorTable", model, properties, isRecordKeyDatabaseGenerated: false);
 
         // Act
         SqliteCommandBuilder.SetInsertParameterValues(command, properties, isRecordKeyDatabaseGenerated: false, record, recordIndex: 1, generatedEmbeddings);
@@ -284,8 +285,8 @@ public sealed class SqliteCommandBuilderTests : IDisposable
 
         var record = new Dictionary<string, object?> { ["Id"] = Guid.Empty, ["Name"] = "NameValue" };
 
-        var command = SqliteCommandBuilder.BuildInsertCommand(this._connection, "TestTable", model, data: true, isRecordKeyDatabaseGenerated: false);
-        var properties = SqliteCommandBuilder.GetInsertProperties(model, data: true);
+        var properties = SqliteCommandBuilder.GetDataInsertProperties(model);
+        var command = SqliteCommandBuilder.BuildInsertCommand(this._connection, "TestTable", model, properties, isRecordKeyDatabaseGenerated: false);
 
         // Act
         SqliteCommandBuilder.SetInsertParameterValues(command, properties, isRecordKeyDatabaseGenerated: false, record);
@@ -308,8 +309,8 @@ public sealed class SqliteCommandBuilderTests : IDisposable
 
         var record = new Dictionary<string, object?> { ["Id"] = 0, ["Name"] = "NameValue" };
 
-        var command = SqliteCommandBuilder.BuildInsertCommand(this._connection, "TestTable", model, data: true, isRecordKeyDatabaseGenerated: true);
-        var properties = SqliteCommandBuilder.GetInsertProperties(model, data: true);
+        var properties = SqliteCommandBuilder.GetDataInsertProperties(model);
+        var command = SqliteCommandBuilder.BuildInsertCommand(this._connection, "TestTable", model, properties, isRecordKeyDatabaseGenerated: true);
 
         // Act
         SqliteCommandBuilder.SetInsertParameterValues(command, properties, isRecordKeyDatabaseGenerated: true, record);
@@ -500,13 +501,5 @@ public sealed class SqliteCommandBuilderTests : IDisposable
             .BuildDynamic(new() { Properties = properties }, defaultEmbeddingGenerator: null);
 
     private static byte[] FloatToBytes(params float[] values)
-    {
-        var bytes = new byte[values.Length * sizeof(float)];
-        for (var i = 0; i < values.Length; i++)
-        {
-            BitConverter.GetBytes(values[i]).CopyTo(bytes, i * sizeof(float));
-        }
-
-        return bytes;
-    }
+        => MemoryMarshal.AsBytes(values.AsSpan()).ToArray();
 }
