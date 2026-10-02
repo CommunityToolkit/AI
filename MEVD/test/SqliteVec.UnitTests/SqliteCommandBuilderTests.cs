@@ -3,7 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.VectorData;
 using Microsoft.Extensions.VectorData.ProviderServices;
 using CommunityToolkit.VectorData.SqliteVec;
@@ -129,53 +132,33 @@ public sealed class SqliteCommandBuilderTests : IDisposable
             new VectorStoreDataProperty("Address", typeof(string)),
         ]);
 
-        var records = new List<Dictionary<string, object?>>
-        {
-            new() { ["Id"] = 1, ["Name"] = "NameValue1", ["Age"] = "AgeValue1", ["Address"] = "AddressValue1" },
-            new() { ["Id"] = 2, ["Name"] = "NameValue2", ["Age"] = "AgeValue2", ["Address"] = "AddressValue2" },
-        };
-
         // Act
         var command = SqliteCommandBuilder.BuildInsertCommand(
             this._connection,
             TableName,
             model,
-            records,
-            generatedEmbeddings: null,
-            data: true,
+            SqliteCommandBuilder.GetDataInsertProperties(model),
+            isRecordKeyDatabaseGenerated: false,
             replaceIfExists: replaceIfExists);
 
         // Assert
         Assert.Equal(replaceIfExists, command.CommandText.Contains("OR REPLACE"));
 
         Assert.Contains($"INTO \"{TableName}\" (\"Id\", \"Name\", \"Age\", \"Address\")", command.CommandText);
-        Assert.Contains("VALUES (@Id0, @Name0, @Age0, @Address0)", command.CommandText);
-        Assert.Contains("VALUES (@Id1, @Name1, @Age1, @Address1)", command.CommandText);
+        Assert.Contains("VALUES (@Id, @Name, @Age, @Address)", command.CommandText);
         Assert.DoesNotContain("RETURNING", command.CommandText);
 
-        Assert.Equal("@Id0", command.Parameters[0].ParameterName);
-        Assert.Equal(1, command.Parameters[0].Value);
+        Assert.Equal("@Id", command.Parameters[0].ParameterName);
+        Assert.Null(command.Parameters[0].Value);
 
-        Assert.Equal("@Name0", command.Parameters[1].ParameterName);
-        Assert.Equal("NameValue1", command.Parameters[1].Value);
+        Assert.Equal("@Name", command.Parameters[1].ParameterName);
+        Assert.Null(command.Parameters[1].Value);
 
-        Assert.Equal("@Age0", command.Parameters[2].ParameterName);
-        Assert.Equal("AgeValue1", command.Parameters[2].Value);
+        Assert.Equal("@Age", command.Parameters[2].ParameterName);
+        Assert.Null(command.Parameters[2].Value);
 
-        Assert.Equal("@Address0", command.Parameters[3].ParameterName);
-        Assert.Equal("AddressValue1", command.Parameters[3].Value);
-
-        Assert.Equal("@Id1", command.Parameters[4].ParameterName);
-        Assert.Equal(2, command.Parameters[4].Value);
-
-        Assert.Equal("@Name1", command.Parameters[5].ParameterName);
-        Assert.Equal("NameValue2", command.Parameters[5].Value);
-
-        Assert.Equal("@Age1", command.Parameters[6].ParameterName);
-        Assert.Equal("AgeValue2", command.Parameters[6].Value);
-
-        Assert.Equal("@Address1", command.Parameters[7].ParameterName);
-        Assert.Equal("AddressValue2", command.Parameters[7].Value);
+        Assert.Equal("@Address", command.Parameters[3].ParameterName);
+        Assert.Null(command.Parameters[3].Value);
     }
 
     [Theory]
@@ -194,35 +177,149 @@ public sealed class SqliteCommandBuilderTests : IDisposable
             new VectorStoreDataProperty("Address", typeof(string)),
         ]);
 
-        var records = new List<Dictionary<string, object?>>
-        {
-            new() { ["Id"] = default(int), ["Name"] = "NameValue1", ["Age"] = "AgeValue1", ["Address"] = "AddressValue1" },
-            new() { ["Id"] = default(int), ["Name"] = "NameValue2", ["Age"] = "AgeValue2", ["Address"] = "AddressValue2" },
-        };
-
         // Act
         var command = SqliteCommandBuilder.BuildInsertCommand(
             this._connection,
             TableName,
             model,
-            records,
-            generatedEmbeddings: null,
-            data: true,
+            SqliteCommandBuilder.GetDataInsertProperties(model),
+            isRecordKeyDatabaseGenerated: true,
             replaceIfExists: replaceIfExists);
 
         // Assert
         Assert.DoesNotContain("OR REPLACE", command.CommandText);
 
         Assert.Contains($"INTO \"{TableName}\" (\"Name\", \"Age\", \"Address\")", command.CommandText);
-        Assert.Contains("VALUES (@Name0, @Age0, @Address0)", command.CommandText);
-        Assert.Contains("VALUES (@Name1, @Age1, @Address1)", command.CommandText);
+        Assert.Contains("VALUES (@Name, @Age, @Address)", command.CommandText);
         Assert.Contains("RETURNING \"Id\"", command.CommandText);
 
-        Assert.Equal("@Name0", command.Parameters[0].ParameterName);
-        Assert.Equal("NameValue1", command.Parameters[0].Value);
+        Assert.Equal("@Name", command.Parameters[0].ParameterName);
+        Assert.Null(command.Parameters[0].Value);
+    }
 
-        Assert.Equal("@Name1", command.Parameters[3].ParameterName);
-        Assert.Equal("NameValue2", command.Parameters[3].Value);
+    [Fact]
+    public void ItSetsInsertParameterValues_for_data_properties()
+    {
+        // Arrange
+        var model = BuildModel(
+        [
+            new VectorStoreKeyProperty("Id", typeof(string)),
+            new VectorStoreDataProperty("Name", typeof(string)),
+        ]);
+
+        var record = new Dictionary<string, object?> { ["Id"] = "KeyValue", ["Name"] = "NameValue" };
+
+        var properties = SqliteCommandBuilder.GetDataInsertProperties(model);
+        var command = SqliteCommandBuilder.BuildInsertCommand(this._connection, "TestTable", model, properties, isRecordKeyDatabaseGenerated: false);
+
+        // Act
+        SqliteCommandBuilder.SetInsertParameterValues(command, properties, isRecordKeyDatabaseGenerated: false, record);
+
+        // Assert
+        Assert.Equal("KeyValue", command.Parameters["@Id"].Value);
+        Assert.Equal("NameValue", command.Parameters["@Name"].Value);
+    }
+
+    [Fact]
+    public void ItSetsInsertParameterValues_converts_vectors_to_blobs()
+    {
+        // Arrange
+        var model = BuildModel(
+        [
+            new VectorStoreKeyProperty("Id", typeof(string)),
+            new VectorStoreVectorProperty("Embedding", typeof(ReadOnlyMemory<float>), 2),
+        ]);
+
+        float[] embeddings = [1f, 2f];
+        var record = new Dictionary<string, object?> { ["Id"] = "KeyValue", ["Embedding"] = new ReadOnlyMemory<float>(embeddings) };
+
+        var properties = SqliteCommandBuilder.GetVectorInsertProperties(model);
+        var command = SqliteCommandBuilder.BuildInsertCommand(this._connection, "VectorTable", model, properties, isRecordKeyDatabaseGenerated: false);
+
+        // Act
+        SqliteCommandBuilder.SetInsertParameterValues(command, properties, isRecordKeyDatabaseGenerated: false, record);
+
+        // Assert
+        Assert.Equal(FloatToBytes(embeddings), (byte[])command.Parameters["@Embedding"].Value!);
+    }
+
+    [Fact]
+    public void ItSetsInsertParameterValues_uses_generated_embeddings_by_record_index()
+    {
+        // Arrange
+        var model = BuildModel(
+        [
+            new VectorStoreKeyProperty("Id", typeof(string)),
+            new VectorStoreVectorProperty("Embedding", typeof(ReadOnlyMemory<float>), 2),
+        ]);
+
+        var record = new Dictionary<string, object?> { ["Id"] = "Key2", ["Embedding"] = new ReadOnlyMemory<float>([1f, 1f]) };
+
+        var vectorProperty = model.VectorProperties.Single(v => v.StorageName == "Embedding");
+
+        var embeddings = new ReadOnlyMemory<float>([7f, 7f]);
+        var generatedEmbeddings = new Dictionary<VectorPropertyModel, IReadOnlyList<Embedding<float>>>
+        {
+            [vectorProperty] = [new(new float[] { 9f, 9f }), new(embeddings)],
+        };
+
+        var properties = SqliteCommandBuilder.GetVectorInsertProperties(model);
+        var command = SqliteCommandBuilder.BuildInsertCommand(this._connection, "VectorTable", model, properties, isRecordKeyDatabaseGenerated: false);
+
+        // Act
+        SqliteCommandBuilder.SetInsertParameterValues(command, properties, isRecordKeyDatabaseGenerated: false, record, recordIndex: 1, generatedEmbeddings);
+
+        // Assert - The generated embedding at the record's batch index should be used instead of the value in the record's Embedding property.
+        Assert.Equal(SqlitePropertyMapping.MapVectorForStorageModel(embeddings), (byte[])command.Parameters["@Embedding"].Value!);
+    }
+
+    [Fact]
+    public void ItSetsInsertParameterValues_generates_missing_guid_keys()
+    {
+        // Arrange
+        var model = BuildModel(
+        [
+            new VectorStoreKeyProperty("Id", typeof(Guid)),
+            new VectorStoreDataProperty("Name", typeof(string)),
+        ]);
+
+        var record = new Dictionary<string, object?> { ["Id"] = Guid.Empty, ["Name"] = "NameValue" };
+
+        var properties = SqliteCommandBuilder.GetDataInsertProperties(model);
+        var command = SqliteCommandBuilder.BuildInsertCommand(this._connection, "TestTable", model, properties, isRecordKeyDatabaseGenerated: false);
+
+        // Act
+        SqliteCommandBuilder.SetInsertParameterValues(command, properties, isRecordKeyDatabaseGenerated: false, record);
+
+        // Assert
+        var generatedKey = Assert.IsType<Guid>(command.Parameters["@Id"].Value);
+        Assert.NotEqual(Guid.Empty, generatedKey);
+        Assert.Equal(generatedKey, record["Id"]);
+    }
+
+    [Fact]
+    public void ItSetsInsertParameterValues_skips_database_generated_keys()
+    {
+        // Arrange
+        var model = BuildModel(
+        [
+            new VectorStoreKeyProperty("Id", typeof(int)),
+            new VectorStoreDataProperty("Name", typeof(string)),
+        ]);
+
+        var record = new Dictionary<string, object?> { ["Id"] = 0, ["Name"] = "NameValue" };
+
+        var properties = SqliteCommandBuilder.GetDataInsertProperties(model);
+        var command = SqliteCommandBuilder.BuildInsertCommand(this._connection, "TestTable", model, properties, isRecordKeyDatabaseGenerated: true);
+
+        // Act
+        SqliteCommandBuilder.SetInsertParameterValues(command, properties, isRecordKeyDatabaseGenerated: true, record);
+
+        // Assert
+        // The key column is omitted from the statement, so only the data parameters are bound.
+        Assert.Single(command.Parameters);
+        Assert.Equal("NameValue", command.Parameters["@Name"].Value);
+        Assert.Equal(0, record["Id"]);
     }
 
     [Theory]
@@ -402,4 +499,7 @@ public sealed class SqliteCommandBuilderTests : IDisposable
     private static CollectionModel BuildModel(List<VectorStoreProperty> properties)
         => new SqliteModelBuilder()
             .BuildDynamic(new() { Properties = properties }, defaultEmbeddingGenerator: null);
+
+    private static byte[] FloatToBytes(params float[] values)
+        => MemoryMarshal.AsBytes(values.AsSpan()).ToArray();
 }
