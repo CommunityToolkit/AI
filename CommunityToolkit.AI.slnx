@@ -11,6 +11,7 @@
     <Project Path="MEVD/src/AzureAISearch/AzureAISearch.csproj" />
     <Project Path="MEVD/src/AzureCosmosDB/AzureCosmosDB.csproj" />
     <Project Path="MEVD/src/AzureDocumentDB/AzureDocumentDB.csproj" />
+    <Project Path="MEVD/src/Chroma/Chroma.csproj" />
     <Project Path="MEVD/src/InMemory/InMemory.csproj" />
     <Project Path="MEVD/src/PgVector/PgVector.csproj" />
     <Project Path="MEVD/src/Qdrant/Qdrant.csproj" />
@@ -27,6 +28,8 @@
     <Project Path="MEVD/test/AzureCosmosDB.ConformanceTests/AzureCosmosDB.ConformanceTests.csproj" />
     <Project Path="MEVD/test/AzureDocumentDB.UnitTests/AzureDocumentDB.UnitTests.csproj" />
     <Project Path="MEVD/test/AzureDocumentDB.ConformanceTests/AzureDocumentDB.ConformanceTests.csproj" />
+    <Project Path="MEVD/test/Chroma.UnitTests/Chroma.UnitTests.csproj" />
+    <Project Path="MEVD/test/Chroma.ConformanceTests/Chroma.ConformanceTests.csproj" />
     <Project Path="MEVD/test/InMemory.UnitTests/InMemory.UnitTests.csproj" />
     <Project Path="MEVD/test/InMemory.ConformanceTests/InMemory.ConformanceTests.csproj" />
     <Project Path="MEVD/test/PgVector.UnitTests/PgVector.UnitTests.csproj" />

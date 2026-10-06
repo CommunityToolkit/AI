@@ -5,6 +5,7 @@ obj
 *.user
 .azure
 appsettings.*.json
+testsettings.*.json
 *.orig
 test-results
 [Tt]est[Rr]esults
