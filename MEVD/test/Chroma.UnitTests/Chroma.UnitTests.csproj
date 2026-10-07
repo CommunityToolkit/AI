@@ -20,6 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\InMemory.UnitTests\FakeEmbeddingGenerator.cs" Link="FakeEmbeddingGenerator.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Chroma\Chroma.csproj" />
   </ItemGroup>
 </Project>

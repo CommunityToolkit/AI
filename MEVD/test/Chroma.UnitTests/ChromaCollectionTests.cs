@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using ChromaDB.Client;
 using ChromaDB.Client.Models;
 using CommunityToolkit.VectorData.Chroma;
+using InMemory.UnitTests;
 using Microsoft.Extensions.VectorData;
 using Moq;
 using Moq.Protected;
