@@ -173,14 +173,12 @@ internal sealed class SqliteFilterTranslator : FilterTranslatorBase
             case DateTimeOffset dateTimeOffset:
                 _sql.Append('\'').Append(dateTimeOffset.ToString("yyyy-MM-dd HH:mm:ss.FFFFFFFzzz", System.Globalization.CultureInfo.InvariantCulture)).Append('\'');
                 return;
-#if NET
             case DateOnly dateOnly:
                 _sql.Append('\'').Append(dateOnly.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)).Append('\'');
                 return;
             case TimeOnly timeOnly:
                 _sql.Append('\'').Append(timeOnly.ToString("HH:mm:ss.FFFFFFF", System.Globalization.CultureInfo.InvariantCulture)).Append('\'');
                 return;
-#endif
 
             case null:
                 _sql.Append("NULL");
