@@ -17,6 +17,7 @@ The following NuGet packages have been published:
 | [CommunityToolkit.VectorData.AzureAISearch] | ![AzureAISearch Version][v-azureaisearch] | ![AzureAISearch Downloads][d-azureaisearch] |
 | [CommunityToolkit.VectorData.AzureCosmosDB] | ![AzureCosmosDB Version][v-azurecosmosdb] | ![AzureCosmosDB Downloads][d-azurecosmosdb] |
 | [CommunityToolkit.VectorData.AzureDocumentDB] | ![AzureDocumentDB Version][v-azuredocumentdb] | ![AzureDocumentDB Downloads][d-azuredocumentdb] |
+| [CommunityToolkit.VectorData.Chroma] | ![Chroma Version][v-chroma] | ![Chroma Downloads][d-chroma] |
 | [CommunityToolkit.VectorData.InMemory] | ![InMemory Version][v-inmemory] | ![InMemory Downloads][d-inmemory] |
 | [CommunityToolkit.VectorData.PgVector] | ![PgVector Version][v-pgvector] | ![PgVector Downloads][d-pgvector] |
 | [CommunityToolkit.VectorData.Qdrant] | ![Qdrant Version][v-qdrant] | ![Qdrant Downloads][d-qdrant] |
@@ -54,6 +55,7 @@ The Vector Data connectors in this toolkit were initially part of the [Semantic 
 [CommunityToolkit.VectorData.AzureAISearch]: https://www.nuget.org/packages/CommunityToolkit.VectorData.AzureAISearch
 [CommunityToolkit.VectorData.AzureCosmosDB]: https://www.nuget.org/packages/CommunityToolkit.VectorData.AzureCosmosDB
 [CommunityToolkit.VectorData.AzureDocumentDB]: https://www.nuget.org/packages/CommunityToolkit.VectorData.AzureDocumentDB
+[CommunityToolkit.VectorData.Chroma]: https://www.nuget.org/packages/CommunityToolkit.VectorData.Chroma
 [CommunityToolkit.VectorData.InMemory]: https://www.nuget.org/packages/CommunityToolkit.VectorData.InMemory
 [CommunityToolkit.VectorData.PgVector]: https://www.nuget.org/packages/CommunityToolkit.VectorData.PgVector
 [CommunityToolkit.VectorData.Qdrant]: https://www.nuget.org/packages/CommunityToolkit.VectorData.Qdrant
@@ -66,6 +68,7 @@ The Vector Data connectors in this toolkit were initially part of the [Semantic 
 [v-azureaisearch]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.AzureAISearch
 [v-azurecosmosdb]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.AzureCosmosDB
 [v-azuredocumentdb]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.AzureDocumentDB
+[v-chroma]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.Chroma
 [v-inmemory]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.InMemory
 [v-pgvector]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.PgVector
 [v-qdrant]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.Qdrant
@@ -78,6 +81,7 @@ The Vector Data connectors in this toolkit were initially part of the [Semantic 
 [d-azureaisearch]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.AzureAISearch
 [d-azurecosmosdb]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.AzureCosmosDB
 [d-azuredocumentdb]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.AzureDocumentDB
+[d-chroma]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.Chroma
 [d-inmemory]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.InMemory
 [d-pgvector]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.PgVector
 [d-qdrant]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.Qdrant
