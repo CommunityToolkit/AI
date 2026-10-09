@@ -34,11 +34,7 @@ internal class SqliteModelBuilder() : CollectionModelBuilder(s_modelBuildingOpti
 
     protected override bool IsDataPropertyTypeValid(Type type, [NotNullWhen(false)] out string? supportedTypes)
     {
-        supportedTypes = "int, long, short, string, bool, float, double, byte[], Guid, DateTime, DateTimeOffset"
-#if NET
-            + ", DateOnly, TimeOnly"
-#endif
-            ;
+        supportedTypes = "int, long, short, string, bool, float, double, byte[], Guid, DateTime, DateTimeOffset, DateOnly, TimeOnly";
 
         if (Nullable.GetUnderlyingType(type) is Type underlyingType)
         {
@@ -56,10 +52,8 @@ internal class SqliteModelBuilder() : CollectionModelBuilder(s_modelBuildingOpti
             || type == typeof(Guid)
             || type == typeof(DateTime)
             || type == typeof(DateTimeOffset)
-#if NET
             || type == typeof(DateOnly)
             || type == typeof(TimeOnly)
-#endif
             ;
     }
 
