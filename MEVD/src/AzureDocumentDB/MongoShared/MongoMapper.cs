@@ -27,6 +27,22 @@ internal sealed class MongoMapper<TRecord> : IMongoMapper<TRecord>
     /// <summary>A key property name of the data model.</summary>
     private readonly string _keyPropertyModelName;
 
+    static MongoMapper()
+    {
+        // ConventionRegistry is process-wide and every Register call adds a new entry,
+        // so the conventions are registered once per record type instead of once per instance.
+        var conventionPack = new ConventionPack
+        {
+            new IgnoreExtraElementsConvention(ignoreExtraElements: true),
+            new GuidStandardRepresentationConvention()
+        };
+
+        ConventionRegistry.Register(
+            nameof(MongoMapper<TRecord>),
+            conventionPack,
+            type => type == typeof(TRecord));
+    }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="MongoMapper{TRecord}"/> class.
     /// </summary>
@@ -38,17 +54,6 @@ internal sealed class MongoMapper<TRecord> : IMongoMapper<TRecord>
         var keyProperty = model.KeyProperty;
         this._keyPropertyModelName = keyProperty.ModelName;
         this._keyClrProperty = keyProperty.PropertyInfo;
-
-        var conventionPack = new ConventionPack
-        {
-            new IgnoreExtraElementsConvention(ignoreExtraElements: true),
-            new GuidStandardRepresentationConvention()
-        };
-
-        ConventionRegistry.Register(
-            nameof(MongoMapper<TRecord>),
-            conventionPack,
-            type => type == typeof(TRecord));
     }
 
     public BsonDocument MapFromDataToStorageModel(TRecord dataModel, int recordIndex, IReadOnlyList<Embedding>?[]? generatedEmbeddings)

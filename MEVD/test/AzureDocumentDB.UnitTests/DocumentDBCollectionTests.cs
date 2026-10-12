@@ -12,6 +12,7 @@ using CommunityToolkit.VectorData.AzureDocumentDB;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using Moq;
 using Xunit;
@@ -70,6 +71,28 @@ public sealed class DocumentDBCollectionTests
 
         // Assert
         Assert.NotNull(collection);
+    }
+
+    [Fact]
+    public void ConstructorRegistersConventionsOncePerRecordType()
+    {
+        // Arrange
+        using var firstCollection = new DocumentDBCollection<string, ConventionTestModel>(
+            this._mockMongoDatabase.Object,
+            "collection");
+
+        var conventionCount = ConventionRegistry.Lookup(typeof(ConventionTestModel)).Conventions.Count();
+
+        // Act
+        for (var i = 0; i < 3; i++)
+        {
+            using var collection = new DocumentDBCollection<string, ConventionTestModel>(
+                this._mockMongoDatabase.Object,
+                "collection");
+        }
+
+        // Assert
+        Assert.Equal(conventionCount, ConventionRegistry.Lookup(typeof(ConventionTestModel)).Conventions.Count());
     }
 
     [Theory]
@@ -707,6 +730,15 @@ public sealed class DocumentDBCollectionTests
         [BsonElement("test_embedding_2")]
         [VectorStoreVector(dimensions: 4, DistanceFunction = DistanceFunction.CosineDistance, IndexKind = IndexKind.IvfFlat)]
         public ReadOnlyMemory<float> TestEmbedding2 { get; set; }
+    }
+
+    private sealed class ConventionTestModel
+    {
+        [VectorStoreKey]
+        public string? Id { get; set; }
+
+        [VectorStoreData]
+        public string? HotelName { get; set; }
     }
 #pragma warning restore CA1812
 
