@@ -7,11 +7,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.AI;
 
-namespace InMemory.UnitTests;
+namespace CommunityToolkit.VectorData.UnitTests;
 
 internal sealed class FakeEmbeddingGenerator : IEmbeddingGenerator<string, Embedding<float>>
 {
     public int CallCount { get; private set; }
+
+    public List<string> Inputs { get; } = [];
 
     public Task<GeneratedEmbeddings<Embedding<float>>> GenerateAsync(
         IEnumerable<string> values,
@@ -23,6 +25,7 @@ internal sealed class FakeEmbeddingGenerator : IEmbeddingGenerator<string, Embed
 
         foreach (string value in values)
         {
+            this.Inputs.Add(value);
             results.Add(new Embedding<float>(new float[] { 0.1f, 0.2f, 0.3f }));
         }
 

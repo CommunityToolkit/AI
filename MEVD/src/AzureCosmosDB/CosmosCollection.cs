@@ -641,10 +641,15 @@ public class CosmosCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         const string OperationName = "VectorizedSearch";
         const string ScorePropertyName = "SimilarityScore";
 
-        this.VerifyVectorType(searchValue);
+        Throw.IfNull(searchValue);
         Throw.IfLessThan(top, 1);
 
         options ??= s_defaultKeywordVectorizedHybridSearchOptions;
+        if (options.IncludeVectors && this._model.EmbeddingGenerationRequired)
+        {
+            throw new NotSupportedException(VectorDataStrings.IncludeVectorsNotSupportedWithEmbeddingGeneration);
+        }
+
         var vectorProperty = this._model.GetVectorPropertyOrSingle<TRecord>(new() { VectorProperty = options.VectorProperty });
         object vector = await GetSearchVectorAsync(searchValue, vectorProperty, cancellationToken).ConfigureAwait(false);
         var textProperty = this._model.GetFullTextDataPropertyOrSingle(options.AdditionalProperty);
@@ -685,19 +690,6 @@ public class CosmosCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
     }
 
     #region private
-
-    private void VerifyVectorType<TVector>(TVector? vector)
-    {
-        Throw.IfNull(vector);
-
-        var vectorType = vector!.GetType();
-
-        if (!CosmosModelBuilder.IsVectorPropertyTypeValidCore(vectorType, out var supportedTypes))
-        {
-            throw new NotSupportedException(
-                $"The provided vector type {vectorType.FullName} is not supported by the Azure Cosmos NoSQL connector. Supported types are: {supportedTypes}");
-        }
-    }
 
     private Task<T> RunOperationAsync<T>(string operationName, Func<Task<T>> operation)
         => VectorStoreErrorHandler.RunOperationAsync<T, CosmosException>(

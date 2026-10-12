@@ -19,6 +19,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Moq" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Shared\FakeEmbeddingGenerator.cs" Link="FakeEmbeddingGenerator.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\AzureCosmosDB\AzureCosmosDB.csproj" />
   </ItemGroup>
 </Project>
