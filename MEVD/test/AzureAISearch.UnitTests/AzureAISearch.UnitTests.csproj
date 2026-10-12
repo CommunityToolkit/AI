@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <Compile Include="../Shared/AssertExtensions.cs" Link="%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="../Shared/FakeEmbeddingGenerator.cs" Link="%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
   
   <ItemGroup>
