@@ -24,6 +24,8 @@
   <ItemGroup>
     <Compile Include="../Shared/HttpMessageHandlerStub.cs"
              Link="%(RecursiveDir)%(Filename)%(Extension)"/>
+    <Compile Include="../Shared/FakeEmbeddingGenerator.cs"
+             Link="%(RecursiveDir)%(Filename)%(Extension)"/>
   </ItemGroup>
 
   <ItemGroup>

@@ -669,6 +669,11 @@ public class QdrantCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
 
         // Resolve options.
         options ??= s_defaultKeywordVectorizedHybridSearchOptions;
+        if (options.IncludeVectors && _model.EmbeddingGenerationRequired)
+        {
+            throw new NotSupportedException(VectorDataStrings.IncludeVectorsNotSupportedWithEmbeddingGeneration);
+        }
+
         var vectorProperty = _model.GetVectorPropertyOrSingle<TRecord>(new() { VectorProperty = options.VectorProperty });
         var vectorArray = await GetSearchVectorArrayAsync(searchValue, vectorProperty, cancellationToken).ConfigureAwait(false);
         var textDataProperty = _model.GetFullTextDataPropertyOrSingle(options.AdditionalProperty);

@@ -410,6 +410,11 @@ public class WeaviateCollection<TKey, TRecord> : VectorStoreCollection<TKey, TRe
         Throw.IfLessThan(top, 1);
 
         options ??= s_defaultKeywordVectorizedHybridSearchOptions;
+        if (options.IncludeVectors && _model.EmbeddingGenerationRequired)
+        {
+            throw new NotSupportedException(VectorDataStrings.IncludeVectorsNotSupportedWithEmbeddingGeneration);
+        }
+
         var vectorProperty = _model.GetVectorPropertyOrSingle<TRecord>(new() { VectorProperty = options.VectorProperty });
         var vector = await GetSearchVectorAsync(searchValue, vectorProperty, cancellationToken).ConfigureAwait(false);
         var textDataProperty = _model.GetFullTextDataPropertyOrSingle(options.AdditionalProperty);

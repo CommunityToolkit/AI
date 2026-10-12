@@ -389,6 +389,11 @@ public class AzureAISearchCollection<TKey, TRecord> : VectorStoreCollection<TKey
         Throw.IfLessThan(top, 1);
 
         options ??= s_defaultVectorSearchOptions;
+        if (options.IncludeVectors && _model.EmbeddingGenerationRequired)
+        {
+            throw new NotSupportedException(VectorDataStrings.IncludeVectorsNotSupportedWithEmbeddingGeneration);
+        }
+
         var vectorProperty = _model.GetVectorPropertyOrSingle(options);
         var floatVector = await GetSearchVectorAsync(searchValue, vectorProperty, cancellationToken).ConfigureAwait(false);
 
@@ -429,6 +434,11 @@ public class AzureAISearchCollection<TKey, TRecord> : VectorStoreCollection<TKey
 
         // Resolve options.
         options ??= s_defaultKeywordVectorizedHybridSearchOptions;
+        if (options.IncludeVectors && _model.EmbeddingGenerationRequired)
+        {
+            throw new NotSupportedException(VectorDataStrings.IncludeVectorsNotSupportedWithEmbeddingGeneration);
+        }
+
         var vectorProperty = _model.GetVectorPropertyOrSingle<TRecord>(new() { VectorProperty = options.VectorProperty });
         var floatVector = await GetSearchVectorAsync(searchValue, vectorProperty, cancellationToken).ConfigureAwait(false);
 
