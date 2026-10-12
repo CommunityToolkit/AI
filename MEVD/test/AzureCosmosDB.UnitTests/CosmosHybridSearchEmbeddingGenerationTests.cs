@@ -35,6 +35,15 @@ public sealed class CosmosHybridSearchEmbeddingGenerationTests
     }
 
     [Fact]
+    public async Task HybridSearchAsync_WithIncludeVectorsAndEmbeddingGeneration_ThrowsNotSupported()
+    {
+        CosmosCollection<string, Record> collection = CreateCollection(new FakeEmbeddingGenerator(), _ => { });
+
+        await Assert.ThrowsAsync<NotSupportedException>(async () =>
+            await collection.HybridSearchAsync("search text", ["keyword"], top: 3, new() { IncludeVectors = true }).ToListAsync());
+    }
+
+    [Fact]
     public async Task HybridSearchAsync_WithStringInputAndNoEmbeddingGenerator_ThrowsNotSupported()
     {
         CosmosCollection<string, RecordWithNativeVector> collection = CreateCollection<RecordWithNativeVector>(generator: null, _ => { });

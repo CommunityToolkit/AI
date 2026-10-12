@@ -645,6 +645,11 @@ public class CosmosCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         Throw.IfLessThan(top, 1);
 
         options ??= s_defaultKeywordVectorizedHybridSearchOptions;
+        if (options.IncludeVectors && this._model.EmbeddingGenerationRequired)
+        {
+            throw new NotSupportedException(VectorDataStrings.IncludeVectorsNotSupportedWithEmbeddingGeneration);
+        }
+
         var vectorProperty = this._model.GetVectorPropertyOrSingle<TRecord>(new() { VectorProperty = options.VectorProperty });
         object vector = await GetSearchVectorAsync(searchValue, vectorProperty, cancellationToken).ConfigureAwait(false);
         var textProperty = this._model.GetFullTextDataPropertyOrSingle(options.AdditionalProperty);
