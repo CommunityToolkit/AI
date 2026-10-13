@@ -44,6 +44,14 @@ internal class ChromaModelBuilder() : CollectionModelBuilder(s_modelBuildingOpti
     {
         base.ValidateProperty(propertyModel, definition);
 
+        // Chroma reserves the metadata keys that start with #, like #id and #document of the Search API: a filter on #id selects
+        // the record with that id.
+        if (propertyModel is DataPropertyModel { StorageName: ['#', ..] })
+        {
+            throw new NotSupportedException(
+                $"Property '{propertyModel.ModelName}' has the storage name '{propertyModel.StorageName}', but Chroma reserves the metadata keys that start with #.");
+        }
+
         switch (propertyModel)
         {
             case VectorPropertyModel vectorProperty:

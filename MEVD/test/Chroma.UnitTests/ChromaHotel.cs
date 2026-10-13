@@ -48,6 +48,18 @@ public sealed class ChromaHotel<TKey>
     public ReadOnlyMemory<float>? Embedding { get; set; }
 }
 
+public sealed class ReservedStorageNameHotel
+{
+    [VectorStoreKey]
+    public string HotelId { get; set; } = default!;
+
+    [VectorStoreData(StorageName = "#id")]
+    public string? HotelName { get; set; }
+
+    [VectorStoreVector(4)]
+    public ReadOnlyMemory<float>? Embedding { get; set; }
+}
+
 public sealed class DatedHotel
 {
     [VectorStoreKey]
