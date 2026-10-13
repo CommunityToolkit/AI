@@ -61,9 +61,13 @@ public class ChromaCollectionTests
     [InlineData("#metadata")]
     [InlineData("#score")]
     [InlineData("#other")]
-    public void RejectsADataPropertyWhoseStorageNameStartsWithAHash(string storageName)
+    [InlineData("$eq")]
+    [InlineData("$and")]
+    [InlineData("$other")]
+    public void RejectsADataPropertyWhoseStorageNameStartsWithAHashOrADollar(string storageName)
     {
-        // Chroma reserves the metadata keys that start with #: a filter on #id would select the record with that id.
+        // Chroma rejects a write with a metadata key that starts with # or $, and reserves the # ones: a filter on #id would
+        // select the record with that id.
         var definition = new VectorStoreCollectionDefinition
         {
             Properties =
@@ -99,15 +103,17 @@ public class ChromaCollectionTests
         Assert.Throws<NotSupportedException>(() => new ChromaDynamicCollection(this._chromaClientMock.Object, TestCollectionName, ownsClient: false, new() { Definition = definition }));
     }
 
-    [Fact]
-    public void AcceptsAHashInsideAStorageName()
+    [Theory]
+    [InlineData("tag#1")]
+    [InlineData("price$usd")]
+    public void AcceptsAHashOrADollarInsideAStorageName(string storageName)
     {
         var definition = new VectorStoreCollectionDefinition
         {
             Properties =
             [
                 new VectorStoreKeyProperty("Key", typeof(string)),
-                new VectorStoreDataProperty("Tag", typeof(string)) { StorageName = "tag#1" },
+                new VectorStoreDataProperty("Tag", typeof(string)) { StorageName = storageName },
                 new VectorStoreVectorProperty("Vector", typeof(ReadOnlyMemory<float>), 4),
             ]
         };
