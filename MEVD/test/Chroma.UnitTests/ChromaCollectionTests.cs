@@ -83,6 +83,23 @@ public class ChromaCollectionTests
     }
 
     [Fact]
+    public void RejectsAnEmptyStorageName()
+    {
+        // Chroma rejects a write with an empty metadata key.
+        var definition = new VectorStoreCollectionDefinition
+        {
+            Properties =
+            [
+                new VectorStoreKeyProperty("Key", typeof(string)),
+                new VectorStoreDataProperty("Tag", typeof(string)) { StorageName = "" },
+                new VectorStoreVectorProperty("Vector", typeof(ReadOnlyMemory<float>), 4),
+            ]
+        };
+
+        Assert.Throws<NotSupportedException>(() => new ChromaDynamicCollection(this._chromaClientMock.Object, TestCollectionName, ownsClient: false, new() { Definition = definition }));
+    }
+
+    [Fact]
     public void RejectsAStorageNameThatStartsWithAHashOnARecordType()
         => Assert.Throws<NotSupportedException>(() => new ChromaCollection<string, ReservedStorageNameHotel>(this._chromaClientMock.Object, TestCollectionName, ownsClient: false));
 
