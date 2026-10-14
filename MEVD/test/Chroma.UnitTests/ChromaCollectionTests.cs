@@ -54,6 +54,91 @@ public class ChromaCollectionTests
     public void RejectsADictionaryRecord()
         => Assert.Throws<NotSupportedException>(() => new ChromaCollection<object, Dictionary<string, object?>>(this._chromaClientMock.Object, TestCollectionName, ownsClient: false));
 
+    [Theory]
+    [InlineData("#id")]
+    [InlineData("#document")]
+    [InlineData("#embedding")]
+    [InlineData("#metadata")]
+    [InlineData("#score")]
+    [InlineData("#other")]
+    [InlineData("$eq")]
+    [InlineData("$and")]
+    [InlineData("$other")]
+    public void RejectsADataPropertyWhoseStorageNameStartsWithAHashOrADollar(string storageName)
+    {
+        // Chroma rejects a write with a metadata key that starts with # or $, and reserves the # ones: a filter on #id would
+        // select the record with that id.
+        var definition = new VectorStoreCollectionDefinition
+        {
+            Properties =
+            [
+                new VectorStoreKeyProperty("Key", typeof(string)),
+                new VectorStoreDataProperty("Tag", typeof(string)) { StorageName = storageName },
+                new VectorStoreVectorProperty("Vector", typeof(ReadOnlyMemory<float>), 4),
+            ]
+        };
+
+        var exception = Assert.Throws<NotSupportedException>(() => new ChromaDynamicCollection(this._chromaClientMock.Object, TestCollectionName, ownsClient: false, new() { Definition = definition }));
+        Assert.Contains($"'{storageName}'", exception.Message);
+    }
+
+    [Fact]
+    public void RejectsAnEmptyStorageName()
+    {
+        // Chroma rejects a write with an empty metadata key.
+        var definition = new VectorStoreCollectionDefinition
+        {
+            Properties =
+            [
+                new VectorStoreKeyProperty("Key", typeof(string)),
+                new VectorStoreDataProperty("Tag", typeof(string)) { StorageName = "" },
+                new VectorStoreVectorProperty("Vector", typeof(ReadOnlyMemory<float>), 4),
+            ]
+        };
+
+        Assert.Throws<NotSupportedException>(() => new ChromaDynamicCollection(this._chromaClientMock.Object, TestCollectionName, ownsClient: false, new() { Definition = definition }));
+    }
+
+    [Fact]
+    public void RejectsAStorageNameThatStartsWithAHashOnARecordType()
+        => Assert.Throws<NotSupportedException>(() => new ChromaCollection<string, ReservedStorageNameHotel>(this._chromaClientMock.Object, TestCollectionName, ownsClient: false));
+
+    [Fact]
+    public void RejectsAFullTextPropertyWhoseStorageNameStartsWithAHash()
+    {
+        // The full-text property stored as the document is also a metadata key: the client copies the document into it.
+        var definition = new VectorStoreCollectionDefinition
+        {
+            Properties =
+            [
+                new VectorStoreKeyProperty("Key", typeof(string)),
+                new VectorStoreDataProperty("Text", typeof(string)) { StorageName = "#document", IsFullTextIndexed = true },
+                new VectorStoreVectorProperty("Vector", typeof(ReadOnlyMemory<float>), 4),
+            ]
+        };
+
+        Assert.Throws<NotSupportedException>(() => new ChromaDynamicCollection(this._chromaClientMock.Object, TestCollectionName, ownsClient: false, new() { Definition = definition }));
+    }
+
+    [Theory]
+    [InlineData("tag#1")]
+    [InlineData("price$usd")]
+    public void AcceptsAHashOrADollarInsideAStorageName(string storageName)
+    {
+        var definition = new VectorStoreCollectionDefinition
+        {
+            Properties =
+            [
+                new VectorStoreKeyProperty("Key", typeof(string)),
+                new VectorStoreDataProperty("Tag", typeof(string)) { StorageName = storageName },
+                new VectorStoreVectorProperty("Vector", typeof(ReadOnlyMemory<float>), 4),
+            ]
+        };
+
+        using var sut = new ChromaDynamicCollection(this._chromaClientMock.Object, TestCollectionName, ownsClient: false, new() { Definition = definition });
+        Assert.Equal(TestCollectionName, sut.Name);
+    }
+
     [Fact]
     public void DynamicCollectionsTakeAClientAndADefinition()
     {

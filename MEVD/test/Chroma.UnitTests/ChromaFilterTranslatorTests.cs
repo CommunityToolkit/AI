@@ -22,6 +22,13 @@ public class ChromaFilterTranslatorTests
         => Assert.Equal("""{"HotelName":{"$nin":["a","b"]}}""", Translate(h => !new[] { "a", "b" }.Contains(h.HotelName)));
 
     [Fact]
+    public void TranslatesContainsOverAnInlineArrayOfANullableType()
+    {
+        // The compiler converts each element of new int?[] { 4, 5 } to int?.
+        Assert.Equal("""{"Rating":{"$in":[4,5]}}""", Translate(h => new int?[] { 4, 5 }.Contains(h.Rating)));
+    }
+
+    [Fact]
     public void TranslatesFalseToNoRecord()
         => Assert.Same(ChromaWhereOperator.None, TranslateFilter(h => false));
 

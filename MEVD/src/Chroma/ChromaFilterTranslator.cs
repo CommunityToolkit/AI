@@ -303,11 +303,12 @@ internal sealed class ChromaFilterTranslator : FilterTranslatorBase
     }
 
     // The elements of an inline array: new[] { "a", "b" }, or none for new string[0], whose only expression is its length.
+    // The compiler converts each element of new int?[] { 1, 2 } to int?, as a constant compared with a nullable property.
     private static object?[] GetInlineArrayElements(NewArrayExpression newArray)
         => newArray switch
         {
             { NodeType: ExpressionType.NewArrayInit } => newArray.Expressions
-                .Select(element => element is ConstantExpression { Value: var value }
+                .Select(element => TryGetConstant(element, out var value)
                     ? value
                     : throw new NotSupportedException("Inline array elements must be constants"))
                 .ToArray(),

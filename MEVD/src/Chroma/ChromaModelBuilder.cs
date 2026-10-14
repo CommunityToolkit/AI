@@ -44,6 +44,14 @@ internal class ChromaModelBuilder() : CollectionModelBuilder(s_modelBuildingOpti
     {
         base.ValidateProperty(propertyModel, definition);
 
+        // Chroma rejects a write with a metadata key that is empty or starts with # or $, and reserves the # ones, like #id and
+        // #document of the Search API: a filter on #id selects the record with that id.
+        if (propertyModel is DataPropertyModel { StorageName: "" or ['#' or '$', ..] })
+        {
+            throw new NotSupportedException(
+                $"Property '{propertyModel.ModelName}' has the storage name '{propertyModel.StorageName}', but Chroma does not accept a metadata key that is empty or starts with # or $.");
+        }
+
         switch (propertyModel)
         {
             case VectorPropertyModel vectorProperty:
