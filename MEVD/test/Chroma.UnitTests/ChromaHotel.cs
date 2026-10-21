@@ -102,6 +102,39 @@ public sealed class TwoFullTextHotel
     public ReadOnlyMemory<float>? Embedding { get; set; }
 }
 
+// Two full-text properties, each with a BM25 index of its own: the key of the first, Description_with_a_long_name_xxx_bm25,
+// has 37 bytes, beyond the 36 of Chroma Cloud; the key of the second, Review_with_a_long_name_xxxxxxx_bm25, has 36.
+public sealed class LongFullTextHotel
+{
+    [VectorStoreKey]
+    public string HotelId { get; set; } = default!;
+
+    [VectorStoreData(IsFullTextIndexed = true, StorageName = "Description_with_a_long_name_xxx")]
+    public string? Description { get; set; }
+
+    [VectorStoreData(IsFullTextIndexed = true, StorageName = "Review_with_a_long_name_xxxxxxx")]
+    public string? Review { get; set; }
+
+    [VectorStoreVector(4)]
+    public ReadOnlyMemory<float>? Embedding { get; set; }
+}
+
+// As LongFullTextHotel, with both keys beyond the 36 bytes of Chroma Cloud.
+public sealed class TooLongFullTextHotel
+{
+    [VectorStoreKey]
+    public string HotelId { get; set; } = default!;
+
+    [VectorStoreData(IsFullTextIndexed = true, StorageName = "Description_with_a_long_name_xxx")]
+    public string? Description { get; set; }
+
+    [VectorStoreData(IsFullTextIndexed = true, StorageName = "Review_with_a_long_name_xxxxxxxx")]
+    public string? Review { get; set; }
+
+    [VectorStoreVector(4)]
+    public ReadOnlyMemory<float>? Embedding { get; set; }
+}
+
 public sealed class FullTextHotel
 {
     [VectorStoreKey]

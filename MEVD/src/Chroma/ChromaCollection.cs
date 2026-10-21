@@ -408,9 +408,7 @@ public class ChromaCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
             async () =>
             {
                 var index = await _records.FindBm25IndexAsync(textProperty.StorageName, cancellationToken).ConfigureAwait(false)
-                    ?? throw new InvalidOperationException(
-                        $"The Chroma collection '{Name}' has no BM25 index on the text of the property '{textProperty.ModelName}', which hybrid search needs. " +
-                        "Only Chroma Cloud has BM25 indexes.");
+                    ?? throw new InvalidOperationException(NoBm25IndexMessage(textProperty));
                 return await _records.SearchAsync(
                     new ChromaSearch
                     {
@@ -492,6 +490,27 @@ public class ChromaCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         }
     }
 
+    // Hybrid search needs the BM25 indexes, which the client creates only on Chroma Cloud, and only with a key it takes.
+    private bool HasBm25IndexChromaCloudTakes
+        => _chromaClient.Client.Options.IsChromaCloud
+            && _bm25Properties.Any(p => ChromaCollectionCreateMapping.FitsChromaCloud(ChromaCollectionCreateMapping.GetBm25IndexKey(p, _mapper.DocumentProperty)));
+
+    // Why the collection has no BM25 index on the property: on Chroma Cloud, the key of the index can be beyond its quota, or
+    // the collection was created without the index.
+    private string NoBm25IndexMessage(DataPropertyModel textProperty)
+    {
+        var message = $"The Chroma collection '{Name}' has no BM25 index on the text of the property '{textProperty.ModelName}', which hybrid search needs. ";
+        if (!_chromaClient.Client.Options.IsChromaCloud)
+        {
+            return message + "Only Chroma Cloud has BM25 indexes.";
+        }
+
+        var key = ChromaCollectionCreateMapping.GetBm25IndexKey(textProperty, _mapper.DocumentProperty);
+        return ChromaCollectionCreateMapping.FitsChromaCloud(key)
+            ? message + "The collection was created without it, for example by another client."
+            : message + $"Its key, '{key}', is beyond the {ChromaCloudQuotas.MaxMetadataKeyBytes} bytes that Chroma Cloud takes for a metadata key, so the collection was created without it. Use a shorter storage name.";
+    }
+
     /// <inheritdoc />
     public override object? GetService(Type serviceType, object? serviceKey = null)
     {
@@ -501,8 +520,7 @@ public class ChromaCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
             serviceKey is not null ? null :
             serviceType == typeof(VectorStoreCollectionMetadata) ? _collectionMetadata :
             serviceType == typeof(ChromaClient) ? _chromaClient.Client :
-            // Hybrid search needs the BM25 indexes, which the client creates only on Chroma Cloud.
-            serviceType == typeof(IKeywordHybridSearchable<TRecord>) ? (_bm25Properties.Count > 0 && _chromaClient.Client.Options.IsChromaCloud ? this : null) :
+            serviceType == typeof(IKeywordHybridSearchable<TRecord>) ? (HasBm25IndexChromaCloudTakes ? this : null) :
             serviceType.IsInstanceOfType(this) ? this :
             null;
     }
