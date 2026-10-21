@@ -121,6 +121,67 @@ public class ChromaCollectionTests
     }
 
     [Theory]
+    [InlineData("chroma:tag")]
+    [InlineData("chroma:document")]
+    [InlineData("chroma:uri")]
+    [InlineData("chroma:")]
+    public void RejectsADataPropertyWhoseStorageNameStartsWithTheChromaPrefix(string storageName)
+    {
+        // Chroma drops the metadata keys that start with chroma: from every read: the property would always read back as null.
+        var definition = new VectorStoreCollectionDefinition
+        {
+            Properties =
+            [
+                new VectorStoreKeyProperty("Key", typeof(string)),
+                new VectorStoreDataProperty("Tag", typeof(string)) { StorageName = storageName },
+                new VectorStoreVectorProperty("Vector", typeof(ReadOnlyMemory<float>), 4),
+            ]
+        };
+
+        var exception = Assert.Throws<NotSupportedException>(() => new ChromaDynamicCollection(this._chromaClientMock.Object, TestCollectionName, ownsClient: false, new() { Definition = definition }));
+        Assert.Contains($"'{storageName}'", exception.Message);
+    }
+
+    [Fact]
+    public void RejectsAFullTextPropertyWhoseStorageNameStartsWithTheChromaPrefix()
+    {
+        // The full-text property stored as the document is also a metadata key: the client copies the document into it.
+        var definition = new VectorStoreCollectionDefinition
+        {
+            Properties =
+            [
+                new VectorStoreKeyProperty("Key", typeof(string)),
+                new VectorStoreDataProperty("Text", typeof(string)) { StorageName = "chroma:document", IsFullTextIndexed = true },
+                new VectorStoreVectorProperty("Vector", typeof(ReadOnlyMemory<float>), 4),
+            ]
+        };
+
+        Assert.Throws<NotSupportedException>(() => new ChromaDynamicCollection(this._chromaClientMock.Object, TestCollectionName, ownsClient: false, new() { Definition = definition }));
+    }
+
+    [Theory]
+    [InlineData("Chroma:tag")]
+    [InlineData("CHROMA:tag")]
+    [InlineData("chroma_tag")]
+    [InlineData("tag:chroma:")]
+    public void AcceptsAStorageNameThatDoesNotStartWithTheChromaPrefix(string storageName)
+    {
+        // Chroma drops only the keys that start with chroma: in lower case.
+        var definition = new VectorStoreCollectionDefinition
+        {
+            Properties =
+            [
+                new VectorStoreKeyProperty("Key", typeof(string)),
+                new VectorStoreDataProperty("Tag", typeof(string)) { StorageName = storageName },
+                new VectorStoreVectorProperty("Vector", typeof(ReadOnlyMemory<float>), 4),
+            ]
+        };
+
+        using var sut = new ChromaDynamicCollection(this._chromaClientMock.Object, TestCollectionName, ownsClient: false, new() { Definition = definition });
+        Assert.Equal(TestCollectionName, sut.Name);
+    }
+
+    [Theory]
     [InlineData("tag#1")]
     [InlineData("price$usd")]
     public void AcceptsAHashOrADollarInsideAStorageName(string storageName)
