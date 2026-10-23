@@ -19,6 +19,7 @@ The following NuGet packages have been published:
 | [CommunityToolkit.VectorData.AzureDocumentDB] | ![AzureDocumentDB Version][v-azuredocumentdb] | ![AzureDocumentDB Downloads][d-azuredocumentdb] |
 | [CommunityToolkit.VectorData.Chroma] | ![Chroma Version][v-chroma] | ![Chroma Downloads][d-chroma] |
 | [CommunityToolkit.VectorData.InMemory] | ![InMemory Version][v-inmemory] | ![InMemory Downloads][d-inmemory] |
+| [CommunityToolkit.VectorData.Milvus] | ![Milvus Version][v-milvus] | ![Milvus Downloads][d-milvus] |
 | [CommunityToolkit.VectorData.PgVector] | ![PgVector Version][v-pgvector] | ![PgVector Downloads][d-pgvector] |
 | [CommunityToolkit.VectorData.Qdrant] | ![Qdrant Version][v-qdrant] | ![Qdrant Downloads][d-qdrant] |
 | [CommunityToolkit.VectorData.Redis] | ![Redis Version][v-redis] | ![Redis Downloads][d-redis] |
@@ -57,6 +58,7 @@ The Vector Data connectors in this toolkit were initially part of the [Semantic 
 [CommunityToolkit.VectorData.AzureDocumentDB]: https://www.nuget.org/packages/CommunityToolkit.VectorData.AzureDocumentDB
 [CommunityToolkit.VectorData.Chroma]: https://www.nuget.org/packages/CommunityToolkit.VectorData.Chroma
 [CommunityToolkit.VectorData.InMemory]: https://www.nuget.org/packages/CommunityToolkit.VectorData.InMemory
+[CommunityToolkit.VectorData.Milvus]: https://www.nuget.org/packages/CommunityToolkit.VectorData.Milvus
 [CommunityToolkit.VectorData.PgVector]: https://www.nuget.org/packages/CommunityToolkit.VectorData.PgVector
 [CommunityToolkit.VectorData.Qdrant]: https://www.nuget.org/packages/CommunityToolkit.VectorData.Qdrant
 [CommunityToolkit.VectorData.Redis]: https://www.nuget.org/packages/CommunityToolkit.VectorData.Redis
@@ -70,6 +72,7 @@ The Vector Data connectors in this toolkit were initially part of the [Semantic 
 [v-azuredocumentdb]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.AzureDocumentDB
 [v-chroma]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.Chroma
 [v-inmemory]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.InMemory
+[v-milvus]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.Milvus
 [v-pgvector]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.PgVector
 [v-qdrant]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.Qdrant
 [v-redis]: https://badgen.net/nuget/v/CommunityToolkit.VectorData.Redis
@@ -83,6 +86,7 @@ The Vector Data connectors in this toolkit were initially part of the [Semantic 
 [d-azuredocumentdb]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.AzureDocumentDB
 [d-chroma]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.Chroma
 [d-inmemory]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.InMemory
+[d-milvus]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.Milvus
 [d-pgvector]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.PgVector
 [d-qdrant]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.Qdrant
 [d-redis]: https://badgen.net/nuget/dt/CommunityToolkit.VectorData.Redis

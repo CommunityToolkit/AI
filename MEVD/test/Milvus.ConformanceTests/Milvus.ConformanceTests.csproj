@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The conformance tests start Milvus 2.6.25 with Testcontainers.Milvus, so Docker must be running.
+    The test container uses plaintext gRPC, which .NET Framework cannot use, so these tests target .NET 10 only.
+    Every shared conformance suite is implemented; the overrides assert that unsupported capabilities are rejected.
+    For local diagnosis, MILVUS_HOST and MILVUS_PORT select an existing unauthenticated Milvus instead of the container.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Milvus.ConformanceTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Testcontainers.Milvus" />
+    <ProjectReference Include="..\..\src\Milvus\Milvus.csproj" />
+    <PackageReference Include="Microsoft.Extensions.VectorData.ConformanceTests" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  
+  <PropertyGroup>
+    <Version>1.0.0-preview</Version>
+    <AssemblyName>CommunityToolkit.VectorData.Milvus</AssemblyName>
+    <RootNamespace>$(AssemblyName)</RootNamespace>
+    <TargetFrameworks>net10.0;net8.0;netstandard2.0;net462</TargetFrameworks>
+
+    <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</IsAotCompatible>
+
+    <Title>Milvus provider for Microsoft.Extensions.VectorData</Title>
+    <Description>Milvus provider for Microsoft.Extensions.VectorData by the .NET Community Toolkit</Description>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="System.Linq.AsyncEnumerable" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" />
+    <PackageReference Include="Milvus.Client" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'net462' ">
+    <PackageReference Include="System.Text.Json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CommunityToolkit.VectorData.Milvus.UnitTests" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+  </ItemGroup>
+
+</Project>

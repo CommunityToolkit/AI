@@ -13,6 +13,7 @@
     <Project Path="MEVD/src/AzureDocumentDB/AzureDocumentDB.csproj" />
     <Project Path="MEVD/src/Chroma/Chroma.csproj" />
     <Project Path="MEVD/src/InMemory/InMemory.csproj" />
+    <Project Path="MEVD/src/Milvus/Milvus.csproj" />
     <Project Path="MEVD/src/PgVector/PgVector.csproj" />
     <Project Path="MEVD/src/Qdrant/Qdrant.csproj" />
     <Project Path="MEVD/src/Redis/Redis.csproj" />
@@ -32,6 +33,8 @@
     <Project Path="MEVD/test/Chroma.ConformanceTests/Chroma.ConformanceTests.csproj" />
     <Project Path="MEVD/test/InMemory.UnitTests/InMemory.UnitTests.csproj" />
     <Project Path="MEVD/test/InMemory.ConformanceTests/InMemory.ConformanceTests.csproj" />
+    <Project Path="MEVD/test/Milvus.UnitTests/Milvus.UnitTests.csproj" />
+    <Project Path="MEVD/test/Milvus.ConformanceTests/Milvus.ConformanceTests.csproj" />
     <Project Path="MEVD/test/PgVector.UnitTests/PgVector.UnitTests.csproj" />
     <Project Path="MEVD/test/PgVector.ConformanceTests/PgVector.ConformanceTests.csproj" />
     <Project Path="MEVD/test/Qdrant.UnitTests/Qdrant.UnitTests.csproj" />
