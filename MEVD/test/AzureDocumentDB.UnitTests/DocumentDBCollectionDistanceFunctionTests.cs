@@ -15,6 +15,7 @@ public sealed class DocumentDBCollectionDistanceFunctionTests
 {
     [Theory]
     [InlineData(DistanceFunction.CosineDistance, "COS")]
+    [InlineData(DistanceFunction.CosineSimilarity, "COS")]
     [InlineData(DistanceFunction.DotProductSimilarity, "IP")]
     [InlineData(DistanceFunction.EuclideanDistance, "L2")]
     [InlineData(null, "COS")]
@@ -31,6 +32,7 @@ public sealed class DocumentDBCollectionDistanceFunctionTests
     [Theory]
     [InlineData(DistanceFunction.CosineDistance, 0.25, 0.75)]
     [InlineData(null, 0.25, 0.75)]
+    [InlineData(DistanceFunction.CosineSimilarity, 0.75, 0.75)]
     [InlineData(DistanceFunction.DotProductSimilarity, 0.75, 0.75)]
     [InlineData(DistanceFunction.EuclideanDistance, 0.75, 0.75)]
     public void ScoreFollowsTheDistanceFunction(string? distanceFunction, double expectedScore, double searchScore)
@@ -39,6 +41,7 @@ public sealed class DocumentDBCollectionDistanceFunctionTests
     [Theory]
     [InlineData(DistanceFunction.CosineDistance, 0.25, "$gte", 0.75)]
     [InlineData(null, 0.25, "$gte", 0.75)]
+    [InlineData(DistanceFunction.CosineSimilarity, 0.75, "$gte", 0.75)]
     [InlineData(DistanceFunction.DotProductSimilarity, 0.75, "$gte", 0.75)]
     [InlineData(DistanceFunction.EuclideanDistance, 0.75, "$lte", 0.75)]
     public void ScoreThresholdFollowsTheDistanceFunction(string? distanceFunction, double scoreThreshold, string expectedOperator, double expectedSearchScore)

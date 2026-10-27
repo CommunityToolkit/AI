@@ -11,7 +11,6 @@ namespace AzureDocumentDB.ConformanceTests;
 public class DocumentDBDistanceFunctionTests(DocumentDBDistanceFunctionTests.Fixture fixture)
     : DistanceFunctionTests<int>(fixture), IClassFixture<DocumentDBDistanceFunctionTests.Fixture>
 {
-    public override Task CosineSimilarity() => Assert.ThrowsAsync<NotSupportedException>(base.CosineSimilarity);
     public override Task EuclideanSquaredDistance() => Assert.ThrowsAsync<NotSupportedException>(base.EuclideanSquaredDistance);
     public override Task NegativeDotProductSimilarity() => Assert.ThrowsAsync<NotSupportedException>(base.NegativeDotProductSimilarity);
     public override Task HammingDistance() => Assert.ThrowsAsync<NotSupportedException>(base.HammingDistance);

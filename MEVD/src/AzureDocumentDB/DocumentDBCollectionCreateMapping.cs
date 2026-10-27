@@ -120,7 +120,7 @@ internal static class DocumentDBCollectionCreateMapping
     private static string GetDistanceFunction(string? distanceFunction, string vectorPropertyName)
         => DocumentDBCollectionSearchMapping.GetVectorPropertyDistanceFunction(distanceFunction) switch
         {
-            DistanceFunction.CosineDistance => "COS",
+            DistanceFunction.CosineDistance or DistanceFunction.CosineSimilarity => "COS",
             DistanceFunction.DotProductSimilarity => "IP",
             DistanceFunction.EuclideanDistance => "L2",
             _ => throw new NotSupportedException($"Distance function '{distanceFunction}' for {nameof(VectorStoreVectorProperty)} '{vectorPropertyName}' is not supported by the Azure DocumentDB VectorStore.")
