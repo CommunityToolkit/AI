@@ -205,8 +205,7 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
     {
         Throw.IfNull(key);
 
-        var records = await GetAsync([key], options, cancellationToken).ToListAsync(cancellationToken).ConfigureAwait(false);
-        return records.FirstOrDefault();
+        return await GetAsync([key], options, cancellationToken).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
