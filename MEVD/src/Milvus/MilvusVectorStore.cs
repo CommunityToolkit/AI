@@ -26,7 +26,7 @@ public sealed class MilvusVectorStore : VectorStore
     private readonly VectorStoreMetadata _metadata;
 
     /// <summary>Milvus client that can be used to manage the collections and records in a Milvus store.</summary>
-    private readonly SharedMilvusClient _milvusClient;
+    private readonly ClientWrapper _clientWrapper;
 
     private readonly IEmbeddingGenerator? _embeddingGenerator;
 
@@ -40,20 +40,20 @@ public sealed class MilvusVectorStore : VectorStore
     /// <param name="ownsClient">A value indicating whether <paramref name="milvusClient"/> is disposed after the vector store and the collections it returns are all disposed.</param>
     /// <param name="options">Optional configuration options for this class.</param>
     public MilvusVectorStore(MilvusClient milvusClient, bool ownsClient, MilvusVectorStoreOptions? options = default)
-        : this(new SharedMilvusClient(milvusClient, ownsClient), options)
+        : this(new ClientWrapper(milvusClient, ownsClient), options)
     {
     }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MilvusVectorStore"/> class.
     /// </summary>
-    /// <param name="milvusClient">Milvus client that can be used to manage the collections and records in a Milvus store.</param>
+    /// <param name="clientWrapper">Milvus client that can be used to manage the collections and records in a Milvus store.</param>
     /// <param name="options">Optional configuration options for this class.</param>
-    internal MilvusVectorStore(SharedMilvusClient milvusClient, MilvusVectorStoreOptions? options = default)
+    internal MilvusVectorStore(ClientWrapper clientWrapper, MilvusVectorStoreOptions? options = default)
     {
-        Throw.IfNull(milvusClient);
+        Throw.IfNull(clientWrapper);
 
-        _milvusClient = milvusClient;
+        _clientWrapper = clientWrapper;
 
         options ??= MilvusVectorStoreOptions.Default;
         _embeddingGenerator = options.EmbeddingGenerator;
@@ -61,7 +61,7 @@ public sealed class MilvusVectorStore : VectorStore
         _metadata = new()
         {
             VectorStoreSystemName = MilvusConstants.VectorStoreSystemName,
-            VectorStoreName = milvusClient.DatabaseName
+            VectorStoreName = clientWrapper.DatabaseName
         };
     }
 
@@ -70,7 +70,7 @@ public sealed class MilvusVectorStore : VectorStore
     {
         if (Interlocked.Exchange(ref _disposed, 1) == 0)
         {
-            _milvusClient.Dispose();
+            _clientWrapper.Dispose();
         }
 
         base.Dispose(disposing);
@@ -87,7 +87,7 @@ public sealed class MilvusVectorStore : VectorStore
 #endif
         => typeof(TRecord) == typeof(Dictionary<string, object?>)
             ? throw new ArgumentException(VectorDataStrings.GetCollectionWithDictionaryNotSupported)
-            : new MilvusCollection<TKey, TRecord>(_milvusClient.Share, name, new()
+            : new MilvusCollection<TKey, TRecord>(_clientWrapper.Share, name, new()
             {
                 Definition = definition,
                 EmbeddingGenerator = _embeddingGenerator
@@ -99,7 +99,7 @@ public sealed class MilvusVectorStore : VectorStore
 #else
     public override VectorStoreCollection<object, Dictionary<string, object?>> GetDynamicCollection(string name, VectorStoreCollectionDefinition definition)
 #endif
-        => new MilvusDynamicCollection(_milvusClient.Share, name, new MilvusCollectionOptions()
+        => new MilvusDynamicCollection(_clientWrapper.Share, name, new MilvusCollectionOptions()
         {
             Definition = definition,
             EmbeddingGenerator = _embeddingGenerator
@@ -112,9 +112,9 @@ public sealed class MilvusVectorStore : VectorStore
         const string OperationName = "ListCollectionNames";
 
         var collections = await MilvusErrorHandler.RunAsync<IReadOnlyList<MilvusCollectionInfo>>(
-            new VectorStoreCollectionMetadata { VectorStoreSystemName = MilvusConstants.VectorStoreSystemName, VectorStoreName = _milvusClient.DatabaseName },
+            new VectorStoreCollectionMetadata { VectorStoreSystemName = MilvusConstants.VectorStoreSystemName, VectorStoreName = _clientWrapper.DatabaseName },
             OperationName,
-            () => _milvusClient.Client.ListCollectionsAsync(cancellationToken: cancellationToken)).ConfigureAwait(false);
+            () => _clientWrapper.Client.ListCollectionsAsync(cancellationToken: cancellationToken)).ConfigureAwait(false);
 
         foreach (var collection in collections)
         {
@@ -144,7 +144,7 @@ public sealed class MilvusVectorStore : VectorStore
         return
             serviceKey is not null ? null :
             serviceType == typeof(VectorStoreMetadata) ? _metadata :
-            serviceType == typeof(MilvusClient) ? _milvusClient.Client :
+            serviceType == typeof(MilvusClient) ? _clientWrapper.Client :
             serviceType.IsInstanceOfType(this) ? this :
             null;
     }

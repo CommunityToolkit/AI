@@ -68,7 +68,7 @@ public static class MilvusServiceCollectionExtensions
             var options = GetStoreOptions(sp, optionsProvider);
 
             // Clients created by host overloads are owned, and their database is known; supplied clients remain caller-owned.
-            return new MilvusVectorStore(new SharedMilvusClient(client, ownsClient, databaseName), options);
+            return new MilvusVectorStore(new ClientWrapper(client, ownsClient, databaseName), options);
         }, lifetime));
 
         services.Add(new ServiceDescriptor(typeof(VectorStore), serviceKey,
@@ -198,7 +198,7 @@ public static class MilvusServiceCollectionExtensions
             var options = GetCollectionOptions(sp, optionsProvider);
 
             // Clients created by host overloads are owned, and their database is known; supplied clients remain caller-owned.
-            return new MilvusCollection<TKey, TRecord>(() => new SharedMilvusClient(client, ownsClient, databaseName), name, options);
+            return new MilvusCollection<TKey, TRecord>(() => new ClientWrapper(client, ownsClient, databaseName), name, options);
         }, lifetime));
 
         services.Add(new ServiceDescriptor(typeof(VectorStoreCollection<TKey, TRecord>), serviceKey,

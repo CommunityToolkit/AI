@@ -10,7 +10,7 @@ namespace CommunityToolkit.VectorData.Milvus;
 /// The <see cref="MilvusClient"/> of a vector store or of a collection. A vector store shares it with the collections it returns,
 /// and the <see cref="MilvusClient"/> it owns is disposed when the last of them is disposed.
 /// </summary>
-internal sealed class SharedMilvusClient : IDisposable
+internal sealed class ClientWrapper : IDisposable
 {
     private readonly MilvusClient? _ownedClient;
     private int _referenceCount = 1;
@@ -27,14 +27,14 @@ internal sealed class SharedMilvusClient : IDisposable
     public string? DatabaseName { get; }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="SharedMilvusClient"/> class.
+    /// Initializes a new instance of the <see cref="ClientWrapper"/> class.
     /// </summary>
     /// <param name="milvusClient">Milvus client that can be used to manage the collections and records in a Milvus store.</param>
     /// <param name="ownsClient">A value indicating whether <paramref name="milvusClient"/> is disposed with the last of the vector store and its collections.</param>
     /// <param name="databaseName">
     /// The database the SDK client connects to, for telemetry: known to the host-based registrations, which create the client.
     /// </param>
-    public SharedMilvusClient(MilvusClient milvusClient, bool ownsClient, string? databaseName = null)
+    public ClientWrapper(MilvusClient milvusClient, bool ownsClient, string? databaseName = null)
     {
         Throw.IfNull(milvusClient);
 
@@ -46,7 +46,7 @@ internal sealed class SharedMilvusClient : IDisposable
     /// <summary>
     /// Gets this client for one more user, a collection of the vector store, which disposes it too.
     /// </summary>
-    public SharedMilvusClient Share()
+    public ClientWrapper Share()
     {
         if (_ownedClient is not null)
         {

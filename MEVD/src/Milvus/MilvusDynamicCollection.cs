@@ -20,11 +20,11 @@ public sealed class MilvusDynamicCollection : MilvusCollection<object, Dictionar
     /// <param name="ownsClient">A value indicating whether <paramref name="milvusClient"/> is disposed when the collection is disposed.</param>
     /// <param name="options">Optional configuration options for this class.</param>
     public MilvusDynamicCollection(MilvusClient milvusClient, string name, bool ownsClient, MilvusCollectionOptions options)
-        : this(() => new SharedMilvusClient(milvusClient, ownsClient), name, options)
+        : this(() => new ClientWrapper(milvusClient, ownsClient), name, options)
     {
     }
 
-    internal MilvusDynamicCollection(Func<SharedMilvusClient> clientFactory, string name, MilvusCollectionOptions options)
+    internal MilvusDynamicCollection(Func<ClientWrapper> clientFactory, string name, MilvusCollectionOptions options)
         : base(
             clientFactory,
             name,

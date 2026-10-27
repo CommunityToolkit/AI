@@ -45,7 +45,7 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
     private readonly VectorStoreCollectionMetadata _collectionMetadata;
 
     /// <summary>Milvus client that can be used to manage the collections and records in a Milvus store.</summary>
-    private readonly SharedMilvusClient _milvusClient;
+    private readonly ClientWrapper _clientWrapper;
 
     /// <summary>Milvus client of the records of the collection.</summary>
     private readonly global::Milvus.Client.MilvusCollection _records;
@@ -79,7 +79,7 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
     [RequiresDynamicCode("This constructor is incompatible with NativeAOT. For dynamic mapping via Dictionary<string, object?>, instantiate MilvusDynamicCollection instead.")]
     [RequiresUnreferencedCode("This constructor is incompatible with trimming. For dynamic mapping via Dictionary<string, object?>, instantiate MilvusDynamicCollection instead")]
     public MilvusCollection(MilvusClient milvusClient, string name, bool ownsClient, MilvusCollectionOptions? options = null)
-        : this(() => new SharedMilvusClient(milvusClient, ownsClient), name, options)
+        : this(() => new ClientWrapper(milvusClient, ownsClient), name, options)
     {
     }
 
@@ -93,7 +93,7 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
     /// <exception cref="ArgumentException">Thrown for any misconfigured options.</exception>
     [RequiresDynamicCode("This constructor is incompatible with NativeAOT. For dynamic mapping via Dictionary<string, object?>, instantiate MilvusDynamicCollection instead.")]
     [RequiresUnreferencedCode("This constructor is incompatible with trimming. For dynamic mapping via Dictionary<string, object?>, instantiate MilvusDynamicCollection instead")]
-    internal MilvusCollection(Func<SharedMilvusClient> clientFactory, string name, MilvusCollectionOptions? options = null)
+    internal MilvusCollection(Func<ClientWrapper> clientFactory, string name, MilvusCollectionOptions? options = null)
         : this(
             clientFactory,
             name,
@@ -104,13 +104,13 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
     {
     }
 
-    internal MilvusCollection(Func<SharedMilvusClient> clientFactory, string name, Func<MilvusCollectionOptions, CollectionModel> modelFactory, MilvusCollectionOptions? options)
+    internal MilvusCollection(Func<ClientWrapper> clientFactory, string name, Func<MilvusCollectionOptions, CollectionModel> modelFactory, MilvusCollectionOptions? options)
     {
         Throw.IfNull(clientFactory);
 
         // The collection holds the client from here: when the rest of the construction throws, it releases the client,
         // so that a client it was to own is disposed, and a client it shares with its vector store is given back.
-        _milvusClient = clientFactory();
+        _clientWrapper = clientFactory();
         try
         {
             Throw.IfNullOrWhitespace(name);
@@ -128,16 +128,16 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         }
         catch
         {
-            _milvusClient.Dispose();
+            _clientWrapper.Dispose();
             throw;
         }
 
-        _records = _milvusClient.Client.GetCollection(name);
+        _records = _clientWrapper.Client.GetCollection(name);
 
         _collectionMetadata = new()
         {
             VectorStoreSystemName = MilvusConstants.VectorStoreSystemName,
-            VectorStoreName = _milvusClient.DatabaseName,
+            VectorStoreName = _clientWrapper.DatabaseName,
             CollectionName = name
         };
     }
@@ -147,7 +147,7 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
     {
         if (Interlocked.Exchange(ref _disposed, 1) == 0)
         {
-            _milvusClient.Dispose();
+            _clientWrapper.Dispose();
         }
 
         base.Dispose(disposing);
@@ -155,7 +155,7 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
 
     /// <inheritdoc />
     public override Task<bool> CollectionExistsAsync(CancellationToken cancellationToken = default)
-        => RunOperationAsync("CollectionExists", () => _milvusClient.Client.HasCollectionAsync(Name, cancellationToken: cancellationToken));
+        => RunOperationAsync("CollectionExists", () => _clientWrapper.Client.HasCollectionAsync(Name, cancellationToken: cancellationToken));
 
     /// <inheritdoc />
     public override Task EnsureCollectionExistsAsync(CancellationToken cancellationToken = default)
@@ -163,9 +163,9 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         {
             // The indexes are created with the collection. Those of an existing collection stay as they are: Milvus rejects
             // an index with other settings on an indexed field, or on a field the collection does not have.
-            if (!await _milvusClient.Client.HasCollectionAsync(Name, cancellationToken: cancellationToken).ConfigureAwait(false))
+            if (!await _clientWrapper.Client.HasCollectionAsync(Name, cancellationToken: cancellationToken).ConfigureAwait(false))
             {
-                await _milvusClient.Client.CreateCollectionAsync(Name, MilvusCollectionCreateMapping.MapCollectionSchema(_model),
+                await _clientWrapper.Client.CreateCollectionAsync(Name, MilvusCollectionCreateMapping.MapCollectionSchema(_model),
                     cancellationToken: cancellationToken).ConfigureAwait(false);
                 foreach (var vector in _model.VectorProperties)
                 {
@@ -194,7 +194,7 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
     public override Task EnsureCollectionDeletedAsync(CancellationToken cancellationToken = default)
         => RunOperationAsync("DeleteCollection", async () =>
         {
-            if (await _milvusClient.Client.HasCollectionAsync(Name, cancellationToken: cancellationToken).ConfigureAwait(false))
+            if (await _clientWrapper.Client.HasCollectionAsync(Name, cancellationToken: cancellationToken).ConfigureAwait(false))
             {
                 await _records.DropAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
             }
@@ -536,7 +536,7 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         return
             serviceKey is not null ? null :
             serviceType == typeof(VectorStoreCollectionMetadata) ? _collectionMetadata :
-            serviceType == typeof(MilvusClient) ? _milvusClient.Client :
+            serviceType == typeof(MilvusClient) ? _clientWrapper.Client :
             serviceType == typeof(IKeywordHybridSearchable<TRecord>) ? (MilvusCollectionCreateMapping.GetFullTextProperties(_model).Any() ? this : null) :
             serviceType.IsInstanceOfType(this) ? this :
             null;
