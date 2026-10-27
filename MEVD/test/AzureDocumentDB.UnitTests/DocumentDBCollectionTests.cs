@@ -561,7 +561,9 @@ public sealed class DocumentDBCollectionTests
         Assert.NotNull(result);
         Assert.Equal("key", result.Record.HotelId);
         Assert.Equal("Test Name", result.Record.HotelName);
-        Assert.Equal(0.99f, result.Score);
+
+        // The model uses CosineDistance: the score is 1 - the cosine similarity that COS returns.
+        Assert.Equal(1 - 0.99f, result.Score!.Value, precision: 6);
     }
 
     public static TheoryData<List<string>, string, bool> CollectionExistsData => new()

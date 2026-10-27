@@ -20,7 +20,5 @@ public class DocumentDBDistanceFunctionTests(DocumentDBDistanceFunctionTests.Fix
     public new class Fixture() : DistanceFunctionTests<int>.Fixture
     {
         public override TestStore TestStore => DocumentDBTestStore.Instance;
-
-        public override bool AssertScores { get; } = false;
     }
 }

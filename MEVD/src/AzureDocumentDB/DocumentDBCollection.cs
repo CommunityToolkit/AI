@@ -415,7 +415,7 @@ public class DocumentDBCollection<TKey, TRecord> : VectorStoreCollection<TKey, T
             () => _mongoCollection.AggregateAsync<BsonDocument>(pipeline, cancellationToken: cancellationToken)).ConfigureAwait(false);
         using var errorHandlingAsyncCursor = new ErrorHandlingAsyncCursor<BsonDocument>(cursor, _collectionMetadata, OperationName);
 
-        await foreach (var result in EnumerateAndMapSearchResultsAsync(errorHandlingAsyncCursor, options, cancellationToken).ConfigureAwait(false))
+        await foreach (var result in EnumerateAndMapSearchResultsAsync(errorHandlingAsyncCursor, options, vectorProperty.DistanceFunction, cancellationToken).ConfigureAwait(false))
         {
             yield return result;
         }
@@ -562,6 +562,7 @@ public class DocumentDBCollection<TKey, TRecord> : VectorStoreCollection<TKey, T
     private async IAsyncEnumerable<VectorSearchResult<TRecord>> EnumerateAndMapSearchResultsAsync(
         ErrorHandlingAsyncCursor<BsonDocument> cursor,
         MEVD.VectorSearchOptions<TRecord> searchOptions,
+        string? distanceFunction,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var skipCounter = 0;
@@ -572,7 +573,7 @@ public class DocumentDBCollection<TKey, TRecord> : VectorStoreCollection<TKey, T
             {
                 if (skipCounter >= searchOptions.Skip)
                 {
-                    var score = response[ScorePropertyName].AsDouble;
+                    var score = DocumentDBCollectionSearchMapping.GetScore(response[ScorePropertyName].AsDouble, distanceFunction);
                     var record = _mapper.MapFromStorageToDataModel(response[DocumentPropertyName].AsBsonDocument, includeVectors: searchOptions.IncludeVectors);
 
                     yield return new VectorSearchResult<TRecord>(record, score);
