@@ -28,7 +28,6 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
     // a record found by both can miss one of the rankings, as when records tie in the vector search, and the fusion ranks it lower.
     private const int HybridSearchCandidates = 10;
 
-    // The most records a Milvus search ranks.
     private const int MaxSearchLimit = 16384;
 
     /// <summary>The name of the upsert operation for telemetry purposes.</summary>
@@ -107,7 +106,6 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
 
     internal MilvusCollection(Func<SharedMilvusClient> clientFactory, string name, Func<MilvusCollectionOptions, CollectionModel> modelFactory, MilvusCollectionOptions? options)
     {
-        // Verify.
         Throw.IfNull(clientFactory);
 
         // The collection holds the client from here: when the rest of the construction throws, it releases the client,
@@ -124,7 +122,6 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
 
             options ??= MilvusCollectionOptions.Default;
 
-            // Assign.
             Name = name;
             _model = modelFactory(options);
             _mapper = new MilvusMapper<TRecord>(_model);
@@ -271,7 +268,6 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
 
         IReadOnlyList<TRecord>? recordsList = null;
 
-        // If an embedding generator is defined, invoke it once per property for all records.
         GeneratedEmbeddings<Embedding<float>>?[]? generatedEmbeddings = null;
 
         var vectorPropertyCount = _model.VectorProperties.Count;
@@ -284,7 +280,6 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
                 continue;
             }
 
-            // We have a vector property whose type isn't natively supported - we need to generate embeddings.
             Debug.Assert(vectorProperty.EmbeddingGenerator is not null);
 
             if (recordsList is null)
@@ -299,8 +294,6 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
                 records = recordsList;
             }
 
-            // TODO: Ideally we'd group together vector properties using the same generator (and with the same input and output properties),
-            // and generate embeddings for them in a single batch. That's some more complexity though.
             generatedEmbeddings ??= new GeneratedEmbeddings<Embedding<float>>?[vectorPropertyCount];
             generatedEmbeddings[i] = (GeneratedEmbeddings<Embedding<float>>)await vectorProperty.GenerateEmbeddingsAsync(records.Select(r => vectorProperty.GetValueAsObject(r)), cancellationToken).ConfigureAwait(false);
         }
@@ -414,7 +407,6 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
             throw new ArgumentException($"Search vector must have {vectorProperty.Dimensions} dimensions.", nameof(searchValue));
         }
 
-        // A vector search and a BM25 search of the keywords, both filtered, fused with Reciprocal Rank Fusion.
         // Milvus has no offset for hybrid search: the skipped records are asked for too, and dropped.
         var limit = top + options.Skip;
         var candidates = Math.Max(limit, HybridSearchCandidates);
@@ -541,7 +533,6 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
             serviceKey is not null ? null :
             serviceType == typeof(VectorStoreCollectionMetadata) ? _collectionMetadata :
             serviceType == typeof(MilvusClient) ? _milvusClient.Client :
-            // Hybrid search needs a full-text indexed property.
             serviceType == typeof(IKeywordHybridSearchable<TRecord>) ? (MilvusCollectionCreateMapping.GetFullTextProperties(_model).Any() ? this : null) :
             serviceType.IsInstanceOfType(this) ? this :
             null;
