@@ -16,6 +16,17 @@ internal sealed class SharedMilvusClient : IDisposable
     private int _referenceCount = 1;
 
     /// <summary>
+    /// Gets the client.
+    /// </summary>
+    public MilvusClient Client { get; }
+
+    /// <summary>
+    /// Gets the database name for telemetry, or <see langword="null"/> for a client created by the caller: the SDK does not
+    /// expose the configured database.
+    /// </summary>
+    public string? DatabaseName { get; }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="SharedMilvusClient"/> class.
     /// </summary>
     /// <param name="milvusClient">Milvus client that can be used to manage the collections and records in a Milvus store.</param>
@@ -31,17 +42,6 @@ internal sealed class SharedMilvusClient : IDisposable
         DatabaseName = databaseName;
         _ownedClient = ownsClient ? milvusClient : null;
     }
-
-    /// <summary>
-    /// Gets the client.
-    /// </summary>
-    public MilvusClient Client { get; }
-
-    /// <summary>
-    /// Gets the database name for telemetry, or <see langword="null"/> for a client created by the caller: the SDK does not
-    /// expose the configured database.
-    /// </summary>
-    public string? DatabaseName { get; }
 
     /// <summary>
     /// Gets this client for one more user, a collection of the vector store, which disposes it too.

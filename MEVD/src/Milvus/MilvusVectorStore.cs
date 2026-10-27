@@ -19,14 +19,14 @@ namespace CommunityToolkit.VectorData.Milvus;
 /// </remarks>
 public sealed class MilvusVectorStore : VectorStore
 {
+    /// <summary>A general purpose definition that can be used to construct a collection when needing to proxy schema agnostic operations.</summary>
+    private static readonly VectorStoreCollectionDefinition s_generalPurposeDefinition = new() { Properties = [new VectorStoreKeyProperty("Key", typeof(string)), new VectorStoreVectorProperty("Vector", typeof(ReadOnlyMemory<float>), 1)] };
+
     /// <summary>Metadata about vector store.</summary>
     private readonly VectorStoreMetadata _metadata;
 
     /// <summary>Milvus client that can be used to manage the collections and records in a Milvus store.</summary>
     private readonly SharedMilvusClient _milvusClient;
-
-    /// <summary>A general purpose definition that can be used to construct a collection when needing to proxy schema agnostic operations.</summary>
-    private static readonly VectorStoreCollectionDefinition s_generalPurposeDefinition = new() { Properties = [new VectorStoreKeyProperty("Key", typeof(string)), new VectorStoreVectorProperty("Vector", typeof(ReadOnlyMemory<float>), 1)] };
 
     private readonly IEmbeddingGenerator? _embeddingGenerator;
 

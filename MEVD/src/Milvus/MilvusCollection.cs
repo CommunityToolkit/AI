@@ -24,14 +24,6 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
     where TRecord : class
 #pragma warning restore CA1711 // Identifiers should not have incorrect suffix
 {
-    /// <summary>Metadata about vector store record collection.</summary>
-    private readonly VectorStoreCollectionMetadata _collectionMetadata;
-
-    /// <summary>The default options for vector search.</summary>
-    private static readonly VectorSearchOptions<TRecord> s_defaultVectorSearchOptions = new();
-
-    private static readonly HybridSearchOptions<TRecord> s_defaultHybridSearchOptions = new();
-
     // The two searches of a hybrid search rank at least this many records each. When they rank only the first top + skip,
     // a record found by both can miss one of the rankings, as when records tie in the vector search, and the fusion ranks it lower.
     private const int HybridSearchCandidates = 10;
@@ -39,16 +31,19 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
     // The most records a Milvus search ranks.
     private const int MaxSearchLimit = 16384;
 
-    // How long EnsureCollectionExistsAsync waits for the collection to load: a little longer than the load timeout of the
-    // server, 600 seconds in the default configuration of Milvus 2.6.25 (queryCoord.loadTimeoutSeconds), so that the
-    // provider does not give up on a load sooner than the server; a load that never ends still stops.
-    internal TimeSpan LoadTimeout { get; set; } = TimeSpan.FromMinutes(11);
-
     /// <summary>The name of the upsert operation for telemetry purposes.</summary>
     private const string UpsertName = "Upsert";
 
     /// <summary>The name of the Delete operation for telemetry purposes.</summary>
     private const string DeleteName = "Delete";
+
+    /// <summary>The default options for vector search.</summary>
+    private static readonly VectorSearchOptions<TRecord> s_defaultVectorSearchOptions = new();
+
+    private static readonly HybridSearchOptions<TRecord> s_defaultHybridSearchOptions = new();
+
+    /// <summary>Metadata about vector store record collection.</summary>
+    private readonly VectorStoreCollectionMetadata _collectionMetadata;
 
     /// <summary>Milvus client that can be used to manage the collections and records in a Milvus store.</summary>
     private readonly SharedMilvusClient _milvusClient;
@@ -64,6 +59,14 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
 
     /// <summary>Whether the collection was disposed: it releases its share of the client only once.</summary>
     private int _disposed;
+
+    /// <inheritdoc />
+    public override string Name { get; }
+
+    // How long EnsureCollectionExistsAsync waits for the collection to load: a little longer than the load timeout of the
+    // server, 600 seconds in the default configuration of Milvus 2.6.25 (queryCoord.loadTimeoutSeconds), so that the
+    // provider does not give up on a load sooner than the server; a load that never ends still stops.
+    internal TimeSpan LoadTimeout { get; set; } = TimeSpan.FromMinutes(11);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MilvusCollection{TKey, TRecord}"/> class.
@@ -152,9 +155,6 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
 
         base.Dispose(disposing);
     }
-
-    /// <inheritdoc />
-    public override string Name { get; }
 
     /// <inheritdoc />
     public override Task<bool> CollectionExistsAsync(CancellationToken cancellationToken = default)

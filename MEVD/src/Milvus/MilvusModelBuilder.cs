@@ -14,6 +14,10 @@ internal sealed class MilvusModelBuilder() : CollectionModelBuilder(new()
     SupportsMultipleVectors = true,
 })
 {
+    internal const string SupportedVectorTypes = "ReadOnlyMemory<float>, Embedding<float>, float[]";
+
+    private const int MaxFieldNameLength = 255;
+
     // Reserved tokens from Milvus 2.6's Plan.g4 grammar cannot be unquoted field names.
     private static readonly HashSet<string> s_reservedNames = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -23,10 +27,6 @@ internal sealed class MilvusModelBuilder() : CollectionModelBuilder(new()
         "array_contains", "array_contains_all", "array_contains_any", "array_length",
         "st_equals", "st_touches", "st_overlaps", "st_crosses", "st_contains", "st_intersects", "st_within", "st_dwithin",
     };
-
-    internal const string SupportedVectorTypes = "ReadOnlyMemory<float>, Embedding<float>, float[]";
-
-    private const int MaxFieldNameLength = 255;
 
     protected override void ValidateKeyProperty(KeyPropertyModel keyProperty)
     {

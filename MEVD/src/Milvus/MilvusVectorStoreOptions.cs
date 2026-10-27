@@ -13,6 +13,11 @@ public sealed class MilvusVectorStoreOptions
     internal static readonly MilvusVectorStoreOptions Default = new();
 
     /// <summary>
+    /// Gets or sets the default embedding generator to use when generating vector embeddings with this vector store.
+    /// </summary>
+    public IEmbeddingGenerator? EmbeddingGenerator { get; set; }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="MilvusVectorStoreOptions"/> class.
     /// </summary>
     public MilvusVectorStoreOptions()
@@ -23,10 +28,4 @@ public sealed class MilvusVectorStoreOptions
     {
         EmbeddingGenerator = source?.EmbeddingGenerator;
     }
-
-
-    /// <summary>
-    /// Gets or sets the default embedding generator to use when generating vector embeddings with this vector store.
-    /// </summary>
-    public IEmbeddingGenerator? EmbeddingGenerator { get; set; }
 }
