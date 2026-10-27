@@ -5,7 +5,9 @@ using Milvus.ConformanceTests.Support;
 using VectorData.ConformanceTests.TypeTests;
 using VectorData.ConformanceTests.Support;
 using Xunit;
+
 namespace Milvus.ConformanceTests.TypeTests;
+
 public class MilvusDataTypeTests(MilvusDataTypeTests.Fixture fixture) : DataTypeTests<Guid, DataTypeTests<Guid>.DefaultRecord>(fixture), IClassFixture<MilvusDataTypeTests.Fixture>
 {
     [Fact]

@@ -6,7 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.VectorData;
 using Milvus.Client;
 using Xunit;
+
 namespace CommunityToolkit.VectorData.Milvus.UnitTests;
+
 public sealed class MilvusDatabaseTests
 {
     [Fact]

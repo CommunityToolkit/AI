@@ -5,7 +5,9 @@ using CommunityToolkit.VectorData.Milvus;
 using Microsoft.Extensions.VectorData;
 using Milvus.ConformanceTests.Support;
 using Xunit;
+
 namespace Milvus.ConformanceTests;
+
 public sealed class MilvusNullComparisonTests : IClassFixture<MilvusFixture>
 {
     [Fact]

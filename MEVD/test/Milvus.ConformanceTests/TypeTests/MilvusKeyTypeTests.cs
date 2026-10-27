@@ -5,7 +5,9 @@ using Milvus.ConformanceTests.Support;
 using VectorData.ConformanceTests.TypeTests;
 using VectorData.ConformanceTests.Support;
 using Xunit;
+
 namespace Milvus.ConformanceTests.TypeTests;
+
 public class MilvusKeyTypeTests(MilvusKeyTypeTests.Fixture fixture) : KeyTypeTests(fixture), IClassFixture<MilvusKeyTypeTests.Fixture>
 {
     [Fact] public Task Long() => Test<long>(42L);

@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using VectorData.ConformanceTests;
+
 namespace Milvus.ConformanceTests;
+
 public class MilvusTestSuiteImplementationTests : TestSuiteImplementationTests
 {
 }

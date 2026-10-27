@@ -6,7 +6,9 @@ using CommunityToolkit.VectorData.Milvus;
 using VectorData.ConformanceTests.ModelTests;
 using VectorData.ConformanceTests.Support;
 using Xunit;
+
 namespace Milvus.ConformanceTests.ModelTests;
+
 public class MilvusNoVectorModelTests(MilvusNoVectorModelTests.Fixture fixture) : NoVectorModelTests<long>(fixture), IClassFixture<MilvusNoVectorModelTests.Fixture>, IAsyncLifetime
 {
     ValueTask IAsyncLifetime.InitializeAsync() => default;

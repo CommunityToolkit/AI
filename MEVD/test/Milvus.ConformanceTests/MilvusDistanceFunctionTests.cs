@@ -5,7 +5,9 @@ using Milvus.ConformanceTests.Support;
 using VectorData.ConformanceTests;
 using VectorData.ConformanceTests.Support;
 using Xunit;
+
 namespace Milvus.ConformanceTests;
+
 public class MilvusDistanceFunctionTests(MilvusDistanceFunctionTests.Fixture fixture) : DistanceFunctionTests<string>(fixture), IClassFixture<MilvusDistanceFunctionTests.Fixture>
 {
     public override Task NegativeDotProductSimilarity() => Assert.ThrowsAsync<NotSupportedException>(base.NegativeDotProductSimilarity);

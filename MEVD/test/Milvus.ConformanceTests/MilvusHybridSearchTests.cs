@@ -6,7 +6,9 @@ using Milvus.ConformanceTests.Support;
 using VectorData.ConformanceTests;
 using VectorData.ConformanceTests.Support;
 using Xunit;
+
 namespace Milvus.ConformanceTests;
+
 public class MilvusHybridSearchTests(MilvusHybridSearchTests.VectorAndStringFixture single, MilvusHybridSearchTests.MultiTextFixture multi)
     : HybridSearchTests<string>(single, multi), IClassFixture<MilvusHybridSearchTests.VectorAndStringFixture>, IClassFixture<MilvusHybridSearchTests.MultiTextFixture>
 {

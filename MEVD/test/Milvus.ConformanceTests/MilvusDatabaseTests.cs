@@ -5,7 +5,9 @@ using Milvus.ConformanceTests.Support;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.VectorData;
 using Xunit;
+
 namespace Milvus.ConformanceTests;
+
 public sealed class MilvusDatabaseTests : IClassFixture<MilvusFixture>
 {
     [Theory]

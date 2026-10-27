@@ -5,7 +5,9 @@ using Milvus.ConformanceTests.Support;
 using VectorData.ConformanceTests;
 using VectorData.ConformanceTests.Support;
 using Xunit;
+
 namespace Milvus.ConformanceTests;
+
 public class MilvusFilterTests(MilvusFilterTests.Fixture fixture) : FilterTests<string>(fixture), IClassFixture<MilvusFilterTests.Fixture>
 {
     public new class Fixture : FilterTests<string>.Fixture

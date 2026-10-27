@@ -5,7 +5,9 @@ using Milvus.ConformanceTests.Support;
 using VectorData.ConformanceTests;
 using VectorData.ConformanceTests.Support;
 using Xunit;
+
 namespace Milvus.ConformanceTests;
+
 public class MilvusIndexKindTests(MilvusIndexKindTests.Fixture fixture) : IndexKindTests<string>(fixture), IClassFixture<MilvusIndexKindTests.Fixture>
 {
     public new class Fixture : IndexKindTests<string>.Fixture
