@@ -115,7 +115,7 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         {
             Throw.IfNullOrWhitespace(name);
 
-            if (typeof(TKey) != typeof(long) && typeof(TKey) != typeof(string) && typeof(TKey) != typeof(Guid) && typeof(TKey) != typeof(object))
+            if (typeof(TKey) != typeof(object) && !MilvusModelBuilder.IsKeyTypeSupported(typeof(TKey)))
             {
                 throw new NotSupportedException("Only long, string and Guid keys are supported.");
             }

@@ -28,10 +28,13 @@ internal sealed class MilvusModelBuilder() : CollectionModelBuilder(new()
         "st_equals", "st_touches", "st_overlaps", "st_crosses", "st_contains", "st_intersects", "st_within", "st_dwithin",
     };
 
+    internal static bool IsKeyTypeSupported(Type type)
+        => type == typeof(long) || type == typeof(string) || type == typeof(Guid);
+
     protected override void ValidateKeyProperty(KeyPropertyModel keyProperty)
     {
         base.ValidateKeyProperty(keyProperty);
-        if (keyProperty.Type != typeof(long) && keyProperty.Type != typeof(string) && keyProperty.Type != typeof(Guid))
+        if (!IsKeyTypeSupported(keyProperty.Type))
         {
             throw new NotSupportedException("Milvus keys must be long, string or Guid.");
         }
