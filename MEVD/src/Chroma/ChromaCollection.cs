@@ -55,6 +55,9 @@ public class ChromaCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
     /// <summary>The properties to create a BM25 index for when the collection is created.</summary>
     private readonly List<DataPropertyModel> _bm25Properties;
 
+    /// <summary>Whether the collection offers hybrid search, computed the first time it is asked.</summary>
+    private bool? _offersHybridSearch;
+
     /// <summary>Whether the collection was disposed: it releases its share of the client only once.</summary>
     private int _disposed;
 
@@ -490,10 +493,10 @@ public class ChromaCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         }
     }
 
-    // Hybrid search needs the BM25 indexes, which the client creates only on Chroma Cloud, and only with a key it takes.
-    private bool HasBm25IndexChromaCloudTakes
-        => _chromaClient.Client.Options.IsChromaCloud
-            && _bm25Properties.Any(p => ChromaCollectionCreateMapping.FitsChromaCloud(ChromaCollectionCreateMapping.GetBm25IndexKey(p, _mapper.DocumentProperty)));
+    // Hybrid search needs the BM25 indexes, which only Chroma Cloud has. An existing collection can have them under keys
+    // that the client did not generate, so a missing index is reported by the hybrid search itself, not here.
+    private bool OffersHybridSearch
+        => _offersHybridSearch ??= _chromaClient.Client.Options.IsChromaCloud && _bm25Properties.Count > 0;
 
     // Why the collection has no BM25 index on the property: on Chroma Cloud, the key of the index can be beyond its quota, or
     // the collection was created without the index.
@@ -520,7 +523,7 @@ public class ChromaCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
             serviceKey is not null ? null :
             serviceType == typeof(VectorStoreCollectionMetadata) ? _collectionMetadata :
             serviceType == typeof(ChromaClient) ? _chromaClient.Client :
-            serviceType == typeof(IKeywordHybridSearchable<TRecord>) ? (HasBm25IndexChromaCloudTakes ? this : null) :
+            serviceType == typeof(IKeywordHybridSearchable<TRecord>) ? (OffersHybridSearch ? this : null) :
             serviceType.IsInstanceOfType(this) ? this :
             null;
     }

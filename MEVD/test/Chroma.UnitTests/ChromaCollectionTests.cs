@@ -280,9 +280,10 @@ public class ChromaCollectionTests
     }
 
     [Fact]
-    public void GetServiceOffersHybridSearchOnlyWithABm25IndexKeyThatChromaCloudTakes()
+    public void GetServiceOffersHybridSearchOnChromaCloudWhateverTheKeyOfTheBm25Index()
     {
-        // Arrange: the client leaves out on Chroma Cloud a BM25 index whose key is beyond 36 bytes.
+        // Arrange: an existing collection can have its BM25 indexes under keys that the client did not generate, so a
+        // generated key beyond 36 bytes does not hide hybrid search; the search itself reports a missing index.
         this._chromaClientMock
             .Setup(x => x.Options)
             .Returns(new ChromaConfigurationOptions("https://api.trychroma.com"));
@@ -291,7 +292,7 @@ public class ChromaCollectionTests
 
         // Act and assert.
         Assert.NotNull(oneFits.GetService(typeof(IKeywordHybridSearchable<LongFullTextHotel>)));
-        Assert.Null(noneFits.GetService(typeof(IKeywordHybridSearchable<TooLongFullTextHotel>)));
+        Assert.NotNull(noneFits.GetService(typeof(IKeywordHybridSearchable<TooLongFullTextHotel>)));
     }
 
     #endregion
