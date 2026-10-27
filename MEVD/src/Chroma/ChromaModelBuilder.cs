@@ -56,7 +56,7 @@ internal class ChromaModelBuilder() : CollectionModelBuilder(s_modelBuildingOpti
         if (propertyModel is DataPropertyModel { StorageName: var storageName } && storageName.StartsWith("chroma:", StringComparison.Ordinal))
         {
             throw new NotSupportedException(
-                $"Property '{propertyModel.ModelName}' has the storage name '{storageName}', but Chroma drops the metadata keys that start with chroma: from every read.");
+                $"Property '{propertyModel.ModelName}' has the storage name '{storageName}', but Chroma drops the metadata keys that start with 'chroma:' from every read.");
         }
 
         switch (propertyModel)
