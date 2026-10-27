@@ -14,7 +14,7 @@ internal static class MilvusCollectionCreateMapping
         var key = model.KeyProperty;
         List<FieldSchema> fields = [key.Type == typeof(long)
             ? FieldSchema.Create<long>(key.StorageName, isPrimaryKey: true)
-            : FieldSchema.CreateVarchar(key.StorageName, 65535, isPrimaryKey: true)];
+            : FieldSchema.CreateVarchar(key.StorageName, MilvusConstants.MaxVarCharLength, isPrimaryKey: true)];
         foreach (var property in model.DataProperties)
         {
             var type = Nullable.GetUnderlyingType(property.Type) ?? property.Type;
@@ -22,18 +22,18 @@ internal static class MilvusCollectionCreateMapping
             if (MilvusFieldMapping.GetElementType(type) is { } element)
             {
                 var name = property.StorageName;
-                var field = element == typeof(string) ? FieldSchema.CreateVarcharArray(name, 4096, 65535, nullable: true)
-                    : element == typeof(bool) ? FieldSchema.CreateArray<bool>(name, 4096, nullable: true)
-                    : element == typeof(int) ? FieldSchema.CreateArray<int>(name, 4096, nullable: true)
-                    : element == typeof(long) ? FieldSchema.CreateArray<long>(name, 4096, nullable: true)
-                    : element == typeof(float) ? FieldSchema.CreateArray<float>(name, 4096, nullable: true)
-                    : element == typeof(double) ? FieldSchema.CreateArray<double>(name, 4096, nullable: true)
+                var field = element == typeof(string) ? FieldSchema.CreateVarcharArray(name, MilvusConstants.DefaultArrayCapacity, MilvusConstants.MaxVarCharLength, nullable: true)
+                    : element == typeof(bool) ? FieldSchema.CreateArray<bool>(name, MilvusConstants.DefaultArrayCapacity, nullable: true)
+                    : element == typeof(int) ? FieldSchema.CreateArray<int>(name, MilvusConstants.DefaultArrayCapacity, nullable: true)
+                    : element == typeof(long) ? FieldSchema.CreateArray<long>(name, MilvusConstants.DefaultArrayCapacity, nullable: true)
+                    : element == typeof(float) ? FieldSchema.CreateArray<float>(name, MilvusConstants.DefaultArrayCapacity, nullable: true)
+                    : element == typeof(double) ? FieldSchema.CreateArray<double>(name, MilvusConstants.DefaultArrayCapacity, nullable: true)
                     : throw new NotSupportedException($"Unsupported Milvus array element type '{element}'.");
                 fields.Add(field);
                 continue;
             }
             fields.Add(type == typeof(string)
-                ? FieldSchema.CreateVarchar(property.StorageName, 65535, nullable: true, enableAnalyzer: property.IsFullTextIndexed)
+                ? FieldSchema.CreateVarchar(property.StorageName, MilvusConstants.MaxVarCharLength, nullable: true, enableAnalyzer: property.IsFullTextIndexed)
                 : FieldSchema.Create(property.StorageName, MilvusFieldMapping.GetDataType(type), nullable: nullable));
         }
         foreach (var vector in model.VectorProperties)

@@ -16,8 +16,6 @@ internal sealed class MilvusModelBuilder() : CollectionModelBuilder(new()
 {
     internal const string SupportedVectorTypes = "ReadOnlyMemory<float>, Embedding<float>, float[]";
 
-    private const int MaxFieldNameLength = 255;
-
     // Reserved tokens from Milvus 2.6's Plan.g4 grammar cannot be unquoted field names.
     private static readonly HashSet<string> s_reservedNames = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -48,7 +46,7 @@ internal sealed class MilvusModelBuilder() : CollectionModelBuilder(new()
     {
         base.ValidateProperty(propertyModel, definition);
         var name = propertyModel.StorageName;
-        if (name.Length == 0 || name.Length > MaxFieldNameLength || !(IsLetter(name[0]) || name[0] == '_')
+        if (name.Length == 0 || name.Length > MilvusConstants.MaxFieldNameLength || !(IsLetter(name[0]) || name[0] == '_')
             || name.Any(c => !(IsLetter(c) || c is >= '0' and <= '9' || c == '_')))
         {
             throw new NotSupportedException($"Invalid Milvus field name '{name}'. Use ASCII letters, digits and underscores, starting with a letter or underscore.");
@@ -69,9 +67,9 @@ internal sealed class MilvusModelBuilder() : CollectionModelBuilder(new()
                 throw new InvalidOperationException($"Property {nameof(VectorStoreDataProperty.IsFullTextIndexed)} on {nameof(VectorStoreDataProperty)} '{dataProperty.ModelName}' is set to true, but the property type is not a string. The Milvus VectorStore supports {nameof(VectorStoreDataProperty.IsFullTextIndexed)} on string properties only.");
             }
             var bm25FieldName = MilvusCollectionCreateMapping.GetBm25FieldName(dataProperty);
-            if (bm25FieldName.Length > MaxFieldNameLength)
+            if (bm25FieldName.Length > MilvusConstants.MaxFieldNameLength)
             {
-                throw new NotSupportedException($"Milvus field name '{name}' is too long for full-text indexing: its BM25 field '{bm25FieldName}' would exceed {MaxFieldNameLength} characters. Configure a shorter StorageName.");
+                throw new NotSupportedException($"Milvus field name '{name}' is too long for full-text indexing: its BM25 field '{bm25FieldName}' would exceed {MilvusConstants.MaxFieldNameLength} characters. Configure a shorter StorageName.");
             }
         }
 

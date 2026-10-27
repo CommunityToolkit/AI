@@ -24,18 +24,6 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
     where TRecord : class
 #pragma warning restore CA1711 // Identifiers should not have incorrect suffix
 {
-    // The two searches of a hybrid search rank at least this many records each. When they rank only the first top + skip,
-    // a record found by both can miss one of the rankings, as when records tie in the vector search, and the fusion ranks it lower.
-    private const int HybridSearchCandidates = 10;
-
-    private const int MaxSearchLimit = 16384;
-
-    /// <summary>The name of the upsert operation for telemetry purposes.</summary>
-    private const string UpsertName = "Upsert";
-
-    /// <summary>The name of the Delete operation for telemetry purposes.</summary>
-    private const string DeleteName = "Delete";
-
     /// <summary>The default options for vector search.</summary>
     private static readonly VectorSearchOptions<TRecord> s_defaultVectorSearchOptions = new();
 
@@ -253,7 +241,7 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
 
         var keyList = keys.ToList();
         return keyList.Count == 0 ? Task.CompletedTask
-            : RunOperationAsync(DeleteName, () => _records.DeleteAsync(KeyFilter(keyList), cancellationToken: cancellationToken));
+            : RunOperationAsync(MilvusConstants.DeleteName, () => _records.DeleteAsync(KeyFilter(keyList), cancellationToken: cancellationToken));
     }
 
     /// <inheritdoc />
@@ -315,7 +303,7 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         }
         if (rows.Count > 0)
         {
-            await RunOperationAsync(UpsertName, () => _records.UpsertAsync(MilvusFieldMapping.CreateColumns(_model, rows), cancellationToken: cancellationToken)).ConfigureAwait(false);
+            await RunOperationAsync(MilvusConstants.UpsertName, () => _records.UpsertAsync(MilvusFieldMapping.CreateColumns(_model, rows), cancellationToken: cancellationToken)).ConfigureAwait(false);
         }
     }
 
@@ -356,7 +344,7 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         }
         if (MilvusCollectionCreateMapping.GetIndexType(vectorProperty) == IndexType.Hnsw)
         {
-            parameters.ExtraParameters["ef"] = Math.Max(64, top + options.Skip).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            parameters.ExtraParameters["ef"] = Math.Max(MilvusConstants.DefaultHnswSearchEf, top + options.Skip).ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
         var results = await RunOperationAsync("Search", () => SearchAllowingEmptyResultsAsync(
             () => _records.SearchAsync<float>(vectorProperty.StorageName, [vector],
@@ -390,10 +378,10 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         Throw.IfLessThan(top, 1);
 
         options ??= s_defaultHybridSearchOptions;
-        if ((long)top + options.Skip > MaxSearchLimit)
+        if ((long)top + options.Skip > MilvusConstants.MaxSearchLimit)
         {
             throw new ArgumentOutOfRangeException(nameof(top),
-                $"Milvus hybrid search ranks at most {MaxSearchLimit} records, the skipped ones included: top + Skip is {(long)top + options.Skip}.");
+                $"Milvus hybrid search ranks at most {MilvusConstants.MaxSearchLimit} records, the skipped ones included: top + Skip is {(long)top + options.Skip}.");
         }
         if (options.IncludeVectors && _model.EmbeddingGenerationRequired)
         {
@@ -412,7 +400,7 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
 
         // Milvus has no offset for hybrid search: the skipped records are asked for too, and dropped.
         var limit = top + options.Skip;
-        var candidates = Math.Max(limit, HybridSearchCandidates);
+        var candidates = Math.Max(limit, MilvusConstants.HybridSearchCandidates);
         var vectorSearch = new VectorAnnSearchRequest<float>(vectorProperty.StorageName, [vector],
             MilvusCollectionCreateMapping.GetMetric(vectorProperty), candidates)
         {
@@ -420,7 +408,7 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         };
         if (MilvusCollectionCreateMapping.GetIndexType(vectorProperty) == IndexType.Hnsw)
         {
-            vectorSearch.ExtraParameters["ef"] = Math.Max(64, candidates).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            vectorSearch.ExtraParameters["ef"] = Math.Max(MilvusConstants.DefaultHnswSearchEf, candidates).ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
         var keywordSearch = new TextAnnSearchRequest(MilvusCollectionCreateMapping.GetBm25FieldName(textProperty),
             [string.Join(" ", keywords)], candidates)
