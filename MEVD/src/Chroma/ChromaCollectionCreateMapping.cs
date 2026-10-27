@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text;
 using ChromaDB.Client;
 using ChromaDB.Client.Models;
 using Microsoft.Extensions.VectorData;
@@ -43,6 +44,23 @@ internal static class ChromaCollectionCreateMapping
     /// <param name="model">The model of the collection.</param>
     public static List<DataPropertyModel> GetBm25Properties(CollectionModel model)
         => model.DataProperties.Where(ChromaFieldMapping.IsFullTextString).ToList();
+
+    /// <summary>
+    /// Get the metadata key of the BM25 index of a property, as the client names it: <c>document_bm25</c> for the property
+    /// stored as the document, else the storage name with <c>_bm25</c>.
+    /// </summary>
+    /// <param name="property">The full-text property.</param>
+    /// <param name="documentProperty">The property stored as the document, or <see langword="null"/>.</param>
+    public static string GetBm25IndexKey(DataPropertyModel property, DataPropertyModel? documentProperty)
+        => property == documentProperty ? "document_bm25" : property.StorageName + "_bm25";
+
+    /// <summary>
+    /// Get a value indicating whether Chroma Cloud takes a metadata key. The client creates no BM25 index whose key is longer
+    /// than that.
+    /// </summary>
+    /// <param name="key">The metadata key.</param>
+    public static bool FitsChromaCloud(string key)
+        => Encoding.UTF8.GetByteCount(key) <= ChromaCloudQuotas.MaxMetadataKeyBytes;
 
     /// <summary>
     /// Get the Chroma distance function, called space, for the given <paramref name="vectorProperty"/>.

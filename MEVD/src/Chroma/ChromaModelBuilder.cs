@@ -52,6 +52,13 @@ internal class ChromaModelBuilder() : CollectionModelBuilder(s_modelBuildingOpti
                 $"Property '{propertyModel.ModelName}' has the storage name '{propertyModel.StorageName}', but Chroma does not accept a metadata key that is empty or starts with # or $.");
         }
 
+        // Chroma drops the metadata keys that start with chroma: from every read: the property would always read back as null.
+        if (propertyModel is DataPropertyModel { StorageName: var storageName } && storageName.StartsWith("chroma:", StringComparison.Ordinal))
+        {
+            throw new NotSupportedException(
+                $"Property '{propertyModel.ModelName}' has the storage name '{storageName}', but Chroma drops the metadata keys that start with 'chroma:' from every read.");
+        }
+
         switch (propertyModel)
         {
             case VectorPropertyModel vectorProperty:

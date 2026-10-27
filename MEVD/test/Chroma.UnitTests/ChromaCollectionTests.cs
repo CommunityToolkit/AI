@@ -121,6 +121,67 @@ public class ChromaCollectionTests
     }
 
     [Theory]
+    [InlineData("chroma:tag")]
+    [InlineData("chroma:document")]
+    [InlineData("chroma:uri")]
+    [InlineData("chroma:")]
+    public void RejectsADataPropertyWhoseStorageNameStartsWithTheChromaPrefix(string storageName)
+    {
+        // Chroma drops the metadata keys that start with chroma: from every read: the property would always read back as null.
+        var definition = new VectorStoreCollectionDefinition
+        {
+            Properties =
+            [
+                new VectorStoreKeyProperty("Key", typeof(string)),
+                new VectorStoreDataProperty("Tag", typeof(string)) { StorageName = storageName },
+                new VectorStoreVectorProperty("Vector", typeof(ReadOnlyMemory<float>), 4),
+            ]
+        };
+
+        var exception = Assert.Throws<NotSupportedException>(() => new ChromaDynamicCollection(this._chromaClientMock.Object, TestCollectionName, ownsClient: false, new() { Definition = definition }));
+        Assert.Contains($"'{storageName}'", exception.Message);
+    }
+
+    [Fact]
+    public void RejectsAFullTextPropertyWhoseStorageNameStartsWithTheChromaPrefix()
+    {
+        // The full-text property stored as the document is also a metadata key: the client copies the document into it.
+        var definition = new VectorStoreCollectionDefinition
+        {
+            Properties =
+            [
+                new VectorStoreKeyProperty("Key", typeof(string)),
+                new VectorStoreDataProperty("Text", typeof(string)) { StorageName = "chroma:document", IsFullTextIndexed = true },
+                new VectorStoreVectorProperty("Vector", typeof(ReadOnlyMemory<float>), 4),
+            ]
+        };
+
+        Assert.Throws<NotSupportedException>(() => new ChromaDynamicCollection(this._chromaClientMock.Object, TestCollectionName, ownsClient: false, new() { Definition = definition }));
+    }
+
+    [Theory]
+    [InlineData("Chroma:tag")]
+    [InlineData("CHROMA:tag")]
+    [InlineData("chroma_tag")]
+    [InlineData("tag:chroma:")]
+    public void AcceptsAStorageNameThatDoesNotStartWithTheChromaPrefix(string storageName)
+    {
+        // Chroma drops only the keys that start with chroma: in lower case.
+        var definition = new VectorStoreCollectionDefinition
+        {
+            Properties =
+            [
+                new VectorStoreKeyProperty("Key", typeof(string)),
+                new VectorStoreDataProperty("Tag", typeof(string)) { StorageName = storageName },
+                new VectorStoreVectorProperty("Vector", typeof(ReadOnlyMemory<float>), 4),
+            ]
+        };
+
+        using var sut = new ChromaDynamicCollection(this._chromaClientMock.Object, TestCollectionName, ownsClient: false, new() { Definition = definition });
+        Assert.Equal(TestCollectionName, sut.Name);
+    }
+
+    [Theory]
     [InlineData("tag#1")]
     [InlineData("price$usd")]
     public void AcceptsAHashOrADollarInsideAStorageName(string storageName)
@@ -216,6 +277,22 @@ public class ChromaCollectionTests
         // Act and assert.
         Assert.Equal(offered, fullText.GetService(typeof(IKeywordHybridSearchable<FullTextHotel>)) is not null);
         Assert.Null(noFullText.GetService(typeof(IKeywordHybridSearchable<ChromaHotel<string>>)));
+    }
+
+    [Fact]
+    public void GetServiceOffersHybridSearchOnChromaCloudWhateverTheKeyOfTheBm25Index()
+    {
+        // Arrange: an existing collection can have its BM25 indexes under keys that the client did not generate, so a
+        // generated key beyond 36 bytes does not hide hybrid search; the search itself reports a missing index.
+        this._chromaClientMock
+            .Setup(x => x.Options)
+            .Returns(new ChromaConfigurationOptions("https://api.trychroma.com"));
+        using var oneFits = this.CreateCollection<string, LongFullTextHotel>();
+        using var noneFits = this.CreateCollection<string, TooLongFullTextHotel>();
+
+        // Act and assert.
+        Assert.NotNull(oneFits.GetService(typeof(IKeywordHybridSearchable<LongFullTextHotel>)));
+        Assert.NotNull(noneFits.GetService(typeof(IKeywordHybridSearchable<TooLongFullTextHotel>)));
     }
 
     #endregion
@@ -400,7 +477,22 @@ public class ChromaCollectionTests
 
         // Act and assert.
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await sut.HybridSearchAsync(new ReadOnlyMemory<float>([1, 2, 3, 4]), ["pool"], top: 1, cancellationToken: this._testCancellationToken).ToListAsync());
-        Assert.Contains("Chroma Cloud", exception.Message);
+        Assert.Contains("Only Chroma Cloud has BM25 indexes.", exception.Message);
+    }
+
+    [Fact]
+    public async Task HybridSearchOnChromaCloudSaysTheCollectionWasCreatedWithoutTheBm25IndexAsync()
+    {
+        // Arrange: Chroma Cloud, with a key that fits but no index, as in a collection that another client created.
+        this._chromaClientMock
+            .Setup(x => x.Options)
+            .Returns(new ChromaConfigurationOptions("https://api.trychroma.com"));
+        using var sut = this.CreateHybridCollection<FullTextHotel>();
+
+        // Act and assert.
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await sut.HybridSearchAsync(new ReadOnlyMemory<float>([1, 2, 3, 4]), ["pool"], top: 1, cancellationToken: this._testCancellationToken).ToListAsync());
+        Assert.Contains("created without it", exception.Message);
+        Assert.DoesNotContain("Only Chroma Cloud", exception.Message);
     }
 
     [Fact]
@@ -412,6 +504,21 @@ public class ChromaCollectionTests
         // Act and assert.
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await sut.HybridSearchAsync(new ReadOnlyMemory<float>([1, 2, 3, 4]), ["great"], top: 1, new() { AdditionalProperty = h => h.Review }, this._testCancellationToken).ToListAsync());
         Assert.Contains("'Review'", exception.Message);
+    }
+
+    [Fact]
+    public async Task HybridSearchSaysWhyChromaCloudHasNoBm25IndexOnALongStorageNameAsync()
+    {
+        // Arrange: Chroma Cloud, with only the index of the property that fits.
+        this._chromaClientMock
+            .Setup(x => x.Options)
+            .Returns(new ChromaConfigurationOptions("https://api.trychroma.com"));
+        using var sut = this.CreateHybridCollection<LongFullTextHotel>(Bm25Index("Review_with_a_long_name_xxxxxxx_bm25", "Review_with_a_long_name_xxxxxxx"));
+
+        // Act and assert.
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await sut.HybridSearchAsync(new ReadOnlyMemory<float>([1, 2, 3, 4]), ["pool"], top: 1, new() { AdditionalProperty = h => h.Description }, this._testCancellationToken).ToListAsync());
+        Assert.Contains("'Description_with_a_long_name_xxx_bm25'", exception.Message);
+        Assert.Contains("36 bytes", exception.Message);
     }
 
     [Fact]
