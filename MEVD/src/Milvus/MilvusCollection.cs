@@ -170,6 +170,10 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
                 foreach (var vector in _model.VectorProperties)
                 {
                     var indexType = MilvusCollectionCreateMapping.GetIndexType(vector);
+                    // M controls graph connectivity (16 neighbors per node); larger values use more memory.
+                    // efConstruction considers 200 candidate neighbors per insertion during index construction;
+                    // larger candidate pools improve index quality but increase build time.
+                    // https://milvus.io/docs/hnsw.md
                     var parameters = indexType == IndexType.Hnsw
                         ? new Dictionary<string, string> { ["M"] = "16", ["efConstruction"] = "200" } : null;
                     await _records.CreateIndexAsync(vector.StorageName, indexType,
