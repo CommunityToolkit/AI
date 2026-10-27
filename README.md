@@ -8,6 +8,8 @@ The AI Community Toolkit is a collection of .NET providers, integrations and ext
 
 Please take a look at the [Microsoft.Extensions.VectorData documentation](https://learn.microsoft.com/en-us/dotnet/ai/vector-stores/overview) on Microsoft Learn.
 
+The providers are also listed among the [.NET community projects](https://learn.microsoft.com/en-us/agent-framework/integrations/community-projects#context-providers) of Microsoft Agent Framework on Microsoft Learn.
+
 ## 📦 NuGet Packages
 
 The following NuGet packages have been published:
