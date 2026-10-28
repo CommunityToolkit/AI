@@ -56,10 +56,8 @@ public sealed class MilvusEnsureCollectionTests
         using var handler = new RecordingHandler { CollectionExists = true, LoadingProgress = 1 };
         using var channel = GrpcChannel.ForAddress("http://localhost", new() { HttpHandler = handler, DisposeHttpClient = true });
         using var client = new MilvusClient(channel);
-        using var collection = new MilvusCollection<string, MilvusHybridSearchTests.TextRecord>(client, "records", ownsClient: false)
-        {
-            LoadTimeout = TimeSpan.FromMilliseconds(100),
-        };
+        using var collection = new MilvusCollection<string, MilvusHybridSearchTests.TextRecord>(client, "records", ownsClient: false,
+            options: new() { LoadTimeout = TimeSpan.FromMilliseconds(100) });
 
         var exception = await Assert.ThrowsAsync<VectorStoreException>(() => collection.EnsureCollectionExistsAsync(TestContext.Current.CancellationToken));
 
@@ -72,10 +70,28 @@ public sealed class MilvusEnsureCollectionTests
     public void WaitsForTheLoadLongerThanMilvusDoes()
     {
         // Milvus 2.6.25 sets queryCoord.loadTimeoutSeconds to 600 in its default configuration.
-        using var client = new MilvusClient("localhost", port: 1);
-        using var collection = new MilvusCollection<string, MilvusHybridSearchTests.TextRecord>(client, "records", ownsClient: false);
+        Assert.Equal(TimeSpan.FromMinutes(11), new MilvusCollectionOptions().LoadTimeout);
+    }
 
-        Assert.Equal(TimeSpan.FromMinutes(11), collection.LoadTimeout);
+    [Fact]
+    public void CopiesLoadTimeout()
+    {
+        var options = new MilvusCollectionOptions { LoadTimeout = TimeSpan.FromSeconds(30) };
+
+        Assert.Equal(options.LoadTimeout, new MilvusCollectionOptions(options).LoadTimeout);
+        Assert.Equal(TimeSpan.FromMinutes(11), new MilvusCollectionOptions(null).LoadTimeout);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void RejectsNonPositiveLoadTimeout(int seconds)
+    {
+        using var client = new MilvusClient("localhost", port: 1);
+        var options = new MilvusCollectionOptions { LoadTimeout = TimeSpan.FromSeconds(seconds) };
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new MilvusCollection<string, MilvusHybridSearchTests.TextRecord>(client, "records", ownsClient: false, options: options));
     }
 
     // Answers each gRPC call of Milvus.Client with an empty status, and records the methods called.

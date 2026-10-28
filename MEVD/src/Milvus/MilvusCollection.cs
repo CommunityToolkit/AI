@@ -41,6 +41,8 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
     /// <summary>The model for this collection.</summary>
     private readonly CollectionModel _model;
 
+    private readonly TimeSpan _loadTimeout;
+
     /// <summary>A mapper to use for converting between Milvus records and consumer models.</summary>
     private readonly MilvusMapper<TRecord> _mapper;
 
@@ -49,11 +51,6 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
 
     /// <inheritdoc />
     public override string Name { get; }
-
-    // How long EnsureCollectionExistsAsync waits for the collection to load: a little longer than the load timeout of the
-    // server, 600 seconds in the default configuration of Milvus 2.6.25 (queryCoord.loadTimeoutSeconds), so that the
-    // provider does not give up on a load sooner than the server; a load that never ends still stops.
-    internal TimeSpan LoadTimeout { get; set; } = TimeSpan.FromMinutes(11);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MilvusCollection{TKey, TRecord}"/> class.
@@ -110,6 +107,12 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
 
             options ??= MilvusCollectionOptions.Default;
 
+            if (options.LoadTimeout <= TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(options), options.LoadTimeout, "LoadTimeout must be positive.");
+            }
+
+            _loadTimeout = options.LoadTimeout;
             Name = name;
             _model = modelFactory(options);
             _mapper = new MilvusMapper<TRecord>(_model);
@@ -175,7 +178,7 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
                 }
             }
             await _records.LoadAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
-            await _records.WaitForCollectionLoadAsync(timeout: LoadTimeout, cancellationToken: cancellationToken).ConfigureAwait(false);
+            await _records.WaitForCollectionLoadAsync(timeout: _loadTimeout, cancellationToken: cancellationToken).ConfigureAwait(false);
         });
 
     /// <inheritdoc />
