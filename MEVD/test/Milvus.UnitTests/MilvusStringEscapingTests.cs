@@ -13,5 +13,4 @@ public sealed class MilvusStringEscapingTests
         Assert.Equal("\"emoji \U0001F600\"", MilvusFieldMapping.Literal("emoji \U0001F600"));
         Assert.Equal("\"a\\\"b\\\\c\\n\\r\\t\"", MilvusFieldMapping.Literal("a\"b\\c\n\r\t"));
     }
-
 }
