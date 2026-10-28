@@ -14,6 +14,8 @@ namespace CommunityToolkit.VectorData.AzureCosmosDB.UnitTests;
 
 public sealed class CosmosServiceCollectionExtensionsTests
 {
+    private const string ConnectionString = "AccountEndpoint=https://localhost:8081;AccountKey=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==";
+
     [Theory]
     [InlineData(ServiceLifetime.Scoped)]
     [InlineData(ServiceLifetime.Transient)]
@@ -22,6 +24,20 @@ public sealed class CosmosServiceCollectionExtensionsTests
         int resolvedGenerators = 0;
         ServiceCollection services = CreateServices(() => resolvedGenerators++);
         services.AddCosmosVectorStore(lifetime: lifetime);
+
+        ResolveInTwoScopes<CosmosVectorStore>(services);
+
+        Assert.Equal(2, resolvedGenerators);
+    }
+
+    [Theory]
+    [InlineData(ServiceLifetime.Scoped)]
+    [InlineData(ServiceLifetime.Transient)]
+    public void VectorStoreWithConnectionStringGetsEmbeddingGeneratorFromEachScope(ServiceLifetime lifetime)
+    {
+        int resolvedGenerators = 0;
+        ServiceCollection services = CreateServices(() => resolvedGenerators++);
+        services.AddCosmosVectorStore(ConnectionString, "database", lifetime: lifetime);
 
         ResolveInTwoScopes<CosmosVectorStore>(services);
 
