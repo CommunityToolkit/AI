@@ -139,6 +139,8 @@ public sealed class MilvusMappingTests
     [Theory]
     [InlineData("like")]
     [InlineData("AND")]
+    [InlineData("minimum_should_match")]
+    [InlineData("MINIMUM_SHOULD_MATCH")]
     [InlineData("Array_Contains")]
     [InlineData("true")]
     [InlineData("bad-name")]

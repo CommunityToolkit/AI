@@ -19,7 +19,7 @@ internal sealed class MilvusModelBuilder() : CollectionModelBuilder(new()
     // Reserved tokens from Milvus 2.6's Plan.g4 grammar cannot be unquoted field names.
     private static readonly HashSet<string> s_reservedNames = new(StringComparer.OrdinalIgnoreCase)
     {
-        "like", "exists", "text_match", "phrase_match", "random_sample", "interval", "iso",
+        "like", "exists", "text_match", "phrase_match", "minimum_should_match", "random_sample", "interval", "iso",
         "and", "or", "not", "in", "true", "false", "null", "is",
         "json_contains", "json_contains_all", "json_contains_any",
         "array_contains", "array_contains_all", "array_contains_any", "array_length",
