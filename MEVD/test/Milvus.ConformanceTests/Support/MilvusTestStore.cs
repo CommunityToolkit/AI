@@ -53,7 +53,7 @@ internal sealed class MilvusTestStore : TestStore
         _client?.Dispose();
         if (_container is not null)
         {
-            await _container.DisposeAsync();
+            await _container.StopAsync();
         }
     }
 }
