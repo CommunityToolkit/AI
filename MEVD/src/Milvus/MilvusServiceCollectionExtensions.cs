@@ -83,7 +83,7 @@ public static class MilvusServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <param name="host">The host to connect to.</param>
     /// <param name="port">The port to connect to. Defaults to 19530.</param>
-    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
+    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>true</c>.</param>
     /// <param name="database">The database to connect to, or null for the default database.</param>
     /// <param name="options">Options to further configure the service.</param>
     /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
@@ -94,7 +94,7 @@ public static class MilvusServiceCollectionExtensions
         this IServiceCollection services,
         string host,
         int port = MilvusConstants.DefaultPort,
-        bool https = false,
+        bool https = true,
         string? database = null,
         MilvusVectorStoreOptions? options = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
@@ -107,7 +107,7 @@ public static class MilvusServiceCollectionExtensions
     /// <param name="serviceKey">The key with which to associate the service.</param>
     /// <param name="host">The host to connect to.</param>
     /// <param name="port">The port to connect to. Defaults to 19530.</param>
-    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
+    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>true</c>.</param>
     /// <param name="database">The database to connect to, or null for the default database.</param>
     /// <param name="options">Options to further configure the service.</param>
     /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
@@ -119,7 +119,7 @@ public static class MilvusServiceCollectionExtensions
         object? serviceKey,
         string host,
         int port = MilvusConstants.DefaultPort,
-        bool https = false,
+        bool https = true,
         string? database = null,
         MilvusVectorStoreOptions? options = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
@@ -137,7 +137,7 @@ public static class MilvusServiceCollectionExtensions
     /// <param name="host">The host to connect to.</param>
     /// <param name="apiKey">The API key to use for authentication.</param>
     /// <param name="port">The port to connect to. Defaults to 19530.</param>
-    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
+    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>true</c>.</param>
     /// <param name="database">The database to connect to, or null for the default database.</param>
     /// <param name="options">Options to further configure the service.</param>
     /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
@@ -149,7 +149,7 @@ public static class MilvusServiceCollectionExtensions
         string host,
         string apiKey,
         int port = MilvusConstants.DefaultPort,
-        bool https = false,
+        bool https = true,
         string? database = null,
         MilvusVectorStoreOptions? options = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
@@ -163,7 +163,7 @@ public static class MilvusServiceCollectionExtensions
     /// <param name="host">The host to connect to.</param>
     /// <param name="apiKey">The API key to use for authentication.</param>
     /// <param name="port">The port to connect to. Defaults to 19530.</param>
-    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
+    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>true</c>.</param>
     /// <param name="database">The database to connect to, or null for the default database.</param>
     /// <param name="options">Options to further configure the service.</param>
     /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
@@ -176,7 +176,7 @@ public static class MilvusServiceCollectionExtensions
         string host,
         string apiKey,
         int port = MilvusConstants.DefaultPort,
-        bool https = false,
+        bool https = true,
         string? database = null,
         MilvusVectorStoreOptions? options = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
@@ -196,7 +196,7 @@ public static class MilvusServiceCollectionExtensions
     /// <param name="username">The authentication username.</param>
     /// <param name="password">The authentication password.</param>
     /// <param name="port">The port to connect to. Defaults to 19530.</param>
-    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
+    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>true</c>.</param>
     /// <param name="database">The database to connect to, or null for the default database.</param>
     /// <param name="options">Options to further configure the service.</param>
     /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
@@ -209,7 +209,7 @@ public static class MilvusServiceCollectionExtensions
         string username,
         string password,
         int port = MilvusConstants.DefaultPort,
-        bool https = false,
+        bool https = true,
         string? database = null,
         MilvusVectorStoreOptions? options = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
@@ -224,7 +224,7 @@ public static class MilvusServiceCollectionExtensions
     /// <param name="username">The authentication username.</param>
     /// <param name="password">The authentication password.</param>
     /// <param name="port">The port to connect to. Defaults to 19530.</param>
-    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
+    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>true</c>.</param>
     /// <param name="database">The database to connect to, or null for the default database.</param>
     /// <param name="options">Options to further configure the service.</param>
     /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
@@ -238,7 +238,7 @@ public static class MilvusServiceCollectionExtensions
         string username,
         string password,
         int port = MilvusConstants.DefaultPort,
-        bool https = false,
+        bool https = true,
         string? database = null,
         MilvusVectorStoreOptions? options = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
@@ -334,7 +334,7 @@ public static class MilvusServiceCollectionExtensions
     /// <param name="name">The name of the collection.</param>
     /// <param name="host">The host to connect to.</param>
     /// <param name="port">The port to connect to. Defaults to 19530.</param>
-    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
+    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>true</c>.</param>
     /// <param name="database">The database to connect to, or null for the default database.</param>
     /// <param name="options">Options to further configure the service.</param>
     /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
@@ -346,7 +346,7 @@ public static class MilvusServiceCollectionExtensions
         string name,
         string host,
         int port = MilvusConstants.DefaultPort,
-        bool https = false,
+        bool https = true,
         string? database = null,
         MilvusCollectionOptions? options = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
@@ -362,7 +362,7 @@ public static class MilvusServiceCollectionExtensions
     /// <param name="name">The name of the collection.</param>
     /// <param name="host">The host to connect to.</param>
     /// <param name="port">The port to connect to. Defaults to 19530.</param>
-    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
+    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>true</c>.</param>
     /// <param name="database">The database to connect to, or null for the default database.</param>
     /// <param name="options">Options to further configure the service.</param>
     /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
@@ -375,7 +375,7 @@ public static class MilvusServiceCollectionExtensions
         string name,
         string host,
         int port = MilvusConstants.DefaultPort,
-        bool https = false,
+        bool https = true,
         string? database = null,
         MilvusCollectionOptions? options = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
@@ -396,7 +396,7 @@ public static class MilvusServiceCollectionExtensions
     /// <param name="host">The host to connect to.</param>
     /// <param name="apiKey">The API key to use for authentication.</param>
     /// <param name="port">The port to connect to. Defaults to 19530.</param>
-    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
+    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>true</c>.</param>
     /// <param name="database">The database to connect to, or null for the default database.</param>
     /// <param name="options">Options to further configure the service.</param>
     /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
@@ -409,7 +409,7 @@ public static class MilvusServiceCollectionExtensions
         string host,
         string apiKey,
         int port = MilvusConstants.DefaultPort,
-        bool https = false,
+        bool https = true,
         string? database = null,
         MilvusCollectionOptions? options = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
@@ -426,7 +426,7 @@ public static class MilvusServiceCollectionExtensions
     /// <param name="host">The host to connect to.</param>
     /// <param name="apiKey">The API key to use for authentication.</param>
     /// <param name="port">The port to connect to. Defaults to 19530.</param>
-    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
+    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>true</c>.</param>
     /// <param name="database">The database to connect to, or null for the default database.</param>
     /// <param name="options">Options to further configure the service.</param>
     /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
@@ -440,7 +440,7 @@ public static class MilvusServiceCollectionExtensions
         string host,
         string apiKey,
         int port = MilvusConstants.DefaultPort,
-        bool https = false,
+        bool https = true,
         string? database = null,
         MilvusCollectionOptions? options = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
@@ -463,7 +463,7 @@ public static class MilvusServiceCollectionExtensions
     /// <param name="username">The authentication username.</param>
     /// <param name="password">The authentication password.</param>
     /// <param name="port">The port to connect to. Defaults to 19530.</param>
-    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
+    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>true</c>.</param>
     /// <param name="database">The database to connect to, or null for the default database.</param>
     /// <param name="options">Options to further configure the service.</param>
     /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
@@ -477,7 +477,7 @@ public static class MilvusServiceCollectionExtensions
         string username,
         string password,
         int port = MilvusConstants.DefaultPort,
-        bool https = false,
+        bool https = true,
         string? database = null,
         MilvusCollectionOptions? options = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
@@ -495,7 +495,7 @@ public static class MilvusServiceCollectionExtensions
     /// <param name="username">The authentication username.</param>
     /// <param name="password">The authentication password.</param>
     /// <param name="port">The port to connect to. Defaults to 19530.</param>
-    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
+    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>true</c>.</param>
     /// <param name="database">The database to connect to, or null for the default database.</param>
     /// <param name="options">Options to further configure the service.</param>
     /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
@@ -510,7 +510,7 @@ public static class MilvusServiceCollectionExtensions
         string username,
         string password,
         int port = MilvusConstants.DefaultPort,
-        bool https = false,
+        bool https = true,
         string? database = null,
         MilvusCollectionOptions? options = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)

@@ -18,6 +18,8 @@ docker run -d --name milvus -p 19530:19530 -e DEPLOY_MODE=STANDALONE -e ETCD_USE
 
 For other setups, see the [standalone installation instructions](https://milvus.io/docs/install_standalone-docker.md).
 
+Host-based dependency injection registrations use HTTPS by default. For the local plaintext container above, explicitly pass `https: false`.
+
 2. Install the NuGet package:
 
 ```bash
@@ -40,7 +42,7 @@ For more information, see the [Microsoft.Extensions.VectorData documentation](ht
 - Collection names must use ASCII letters, digits and underscores, start with a letter or underscore, and have at most 255 characters: Milvus rejects other names, such as `chathistory-local`.
 - For NativeAOT, use dynamic dictionary collections with explicit definitions: the typed collection APIs use reflection. Publishing with trimming or NativeAOT shows the warnings `IL2104` and `IL3053` of the dependency `Milvus.Client`.
 - On .NET Framework, `Milvus.Client` calls Milvus over WinHTTP (`WinHttpHandler`, which `Grpc.Net.Client` brings in). This needs:
-  - A TLS endpoint: `https: true` on the host-based registrations, or `ssl: true` on `MilvusClient`. A plaintext endpoint fails with `Response protocol downgraded to HTTP/1.1`.
+  - A TLS endpoint: `https: true` (the default) on the host-based registrations, or `ssl: true` on `MilvusClient`. A plaintext endpoint fails with `Response protocol downgraded to HTTP/1.1`.
   - A server certificate that Windows trusts. To validate it another way, create the `MilvusClient` on a `GrpcChannel` with a `WinHttpHandler` and pass that client to the provider.
   - Windows 11 or later. Windows Server 2019 and 2022 support gRPC over WinHTTP only partially. See [Microsoft's gRPC requirements for .NET Framework](https://learn.microsoft.com/aspnet/core/grpc/netstandard#net-framework).
 

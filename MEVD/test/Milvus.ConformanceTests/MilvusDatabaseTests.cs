@@ -24,11 +24,11 @@ public sealed class MilvusDatabaseTests : IClassFixture<MilvusFixture>
             var services = new ServiceCollection();
             if (apiKey)
             {
-                services.AddMilvusVectorStore(server.Host, "root:Milvus", server.Port, database: database);
+                services.AddMilvusVectorStore(server.Host, "root:Milvus", server.Port, https: false, database: database);
             }
             else
             {
-                services.AddMilvusVectorStore(server.Host, "root", "Milvus", server.Port, database: database);
+                services.AddMilvusVectorStore(server.Host, "root", "Milvus", server.Port, https: false, database: database);
             }
             using var provider = services.BuildServiceProvider();
             var store = provider.GetRequiredService<MilvusVectorStore>();
