@@ -49,6 +49,49 @@ public sealed class MilvusClientLifetimeTests
         Assert.False(handler.Disposed);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DisposingCollectionRepeatedlyDoesNotReleaseSiblingShare(bool concurrently)
+    {
+        using var client = new MilvusClient("localhost", port: 1);
+        using var store = new MilvusVectorStore(client, ownsClient: true);
+        using var first = store.GetCollection<Guid, MilvusTestRecord>("first");
+        using var second = store.GetCollection<Guid, MilvusTestRecord>("second");
+        store.Dispose();
+
+        if (concurrently)
+        {
+            Parallel.For(0, 32, _ => first.Dispose());
+        }
+        else
+        {
+            first.Dispose();
+            first.Dispose();
+        }
+
+        Assert.IsNotType<ObjectDisposedException>(await CallAsync(client));
+        second.Dispose();
+        Assert.IsType<ObjectDisposedException>(await CallAsync(client));
+    }
+
+    [Fact]
+    public async Task DisposingStoreRepeatedlyDoesNotReleaseCollectionShares()
+    {
+        using var client = new MilvusClient("localhost", port: 1);
+        using var store = new MilvusVectorStore(client, ownsClient: true);
+        using var first = store.GetCollection<Guid, MilvusTestRecord>("first");
+        using var second = store.GetCollection<Guid, MilvusTestRecord>("second");
+
+        store.Dispose();
+        store.Dispose();
+        first.Dispose();
+
+        Assert.IsNotType<ObjectDisposedException>(await CallAsync(client));
+        second.Dispose();
+        Assert.IsType<ObjectDisposedException>(await CallAsync(client));
+    }
+
     [Fact]
     public async Task WrapsGrpcFailuresWithCollectionMetadata()
     {
