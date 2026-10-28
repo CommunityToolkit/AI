@@ -94,6 +94,7 @@ public class MilvusHybridSearchTests(MilvusHybridSearchTests.VectorAndStringFixt
     {
         public override TestStore TestStore => MilvusTestStore.Instance;
     }
+
     public new class MultiTextFixture : HybridSearchTests<string>.MultiTextFixture
     {
         public override TestStore TestStore => MilvusTestStore.Instance;
