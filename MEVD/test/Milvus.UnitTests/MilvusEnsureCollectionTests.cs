@@ -94,10 +94,65 @@ public sealed class MilvusEnsureCollectionTests
             new MilvusCollection<string, MilvusHybridSearchTests.TextRecord>(client, "records", ownsClient: false, options: options));
     }
 
+    [Fact]
+    public void DefaultsAndCopiesHnswSettings()
+    {
+        var defaults = new MilvusCollectionOptions(null);
+        Assert.Equal(16, defaults.HnswM);
+        Assert.Equal(200, defaults.HnswEfConstruction);
+
+        var copy = new MilvusCollectionOptions(new() { HnswM = 32, HnswEfConstruction = 300 });
+        Assert.Equal(32, copy.HnswM);
+        Assert.Equal(300, copy.HnswEfConstruction);
+    }
+
+    [Theory]
+    [InlineData(0, 200)]
+    [InlineData(-1, 200)]
+    [InlineData(16, 0)]
+    [InlineData(16, -1)]
+    public void RejectsNonPositiveHnswSettings(int m, int efConstruction)
+    {
+        using var client = new MilvusClient("localhost", port: 1);
+        var options = new MilvusCollectionOptions { HnswM = m, HnswEfConstruction = efConstruction };
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new MilvusCollection<string, MilvusHybridSearchTests.TextRecord>(client, "records", ownsClient: false, options: options));
+    }
+
+    [Fact]
+    public async Task SendsConfiguredHnswSettingsWhenCreatingIndex()
+    {
+        using var handler = new RecordingHandler();
+        using var channel = GrpcChannel.ForAddress("http://localhost", new() { HttpHandler = handler, DisposeHttpClient = true });
+        using var client = new MilvusClient(channel);
+        using var collection = new MilvusCollection<string, HnswRecord>(client, "records", ownsClient: false,
+            options: new() { HnswM = 32, HnswEfConstruction = 300 });
+
+        await collection.EnsureCollectionExistsAsync();
+
+        var body = Assert.Single(handler.IndexRequests);
+        Assert.Contains("M", body);
+        Assert.Contains("32", body);
+        Assert.Contains("efConstruction", body);
+        Assert.Contains("300", body);
+    }
+
+    public sealed class HnswRecord
+    {
+        [VectorStoreKey]
+        public string Id { get; set; } = string.Empty;
+
+        [VectorStoreVector(3, IndexKind = IndexKind.Hnsw)]
+        public ReadOnlyMemory<float> Vector { get; set; }
+    }
+
     // Answers each gRPC call of Milvus.Client with an empty status, and records the methods called.
     internal sealed class RecordingHandler : HttpMessageHandler
     {
         private readonly List<string> _methods = [];
+
+        public List<string> IndexRequests { get; } = [];
 
         public bool CollectionExists { get; init; }
 
@@ -114,10 +169,15 @@ public sealed class MilvusEnsureCollectionTests
             }
         }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var method = request.RequestUri!.AbsolutePath.Split('/').Last();
+            if (method == "CreateIndex")
+            {
+                var body = await request.Content!.ReadAsByteArrayAsync(cancellationToken);
+                IndexRequests.Add(System.Text.Encoding.UTF8.GetString(body));
+            }
             lock (_methods)
             {
                 _methods.Add(method);
@@ -138,7 +198,7 @@ public sealed class MilvusEnsureCollectionTests
             };
             response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/grpc");
             response.TrailingHeaders.Add("grpc-status", "0");
-            return Task.FromResult(response);
+            return response;
         }
     }
 }

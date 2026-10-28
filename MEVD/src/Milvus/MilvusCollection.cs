@@ -43,6 +43,10 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
 
     private readonly TimeSpan _loadTimeout;
 
+    private readonly int _hnswM;
+
+    private readonly int _hnswEfConstruction;
+
     /// <summary>A mapper to use for converting between Milvus records and consumer models.</summary>
     private readonly MilvusMapper<TRecord> _mapper;
 
@@ -112,6 +116,18 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
                 throw new ArgumentOutOfRangeException(nameof(options), options.LoadTimeout, "LoadTimeout must be positive.");
             }
 
+            if (options.HnswM <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(options), options.HnswM, "HnswM must be positive.");
+            }
+
+            if (options.HnswEfConstruction <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(options), options.HnswEfConstruction, "HnswEfConstruction must be positive.");
+            }
+
+            _hnswM = options.HnswM;
+            _hnswEfConstruction = options.HnswEfConstruction;
             _loadTimeout = options.LoadTimeout;
             Name = name;
             _model = modelFactory(options);
@@ -161,12 +177,12 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
                 foreach (var vector in _model.VectorProperties)
                 {
                     var indexType = MilvusCollectionCreateMapping.GetIndexType(vector);
-                    // M controls graph connectivity (16 neighbors per node); larger values use more memory.
-                    // efConstruction considers 200 candidate neighbors per insertion during index construction;
-                    // larger candidate pools improve index quality but increase build time.
-                    // https://milvus.io/docs/hnsw.md
                     var parameters = indexType == IndexType.Hnsw
-                        ? new Dictionary<string, string> { ["M"] = "16", ["efConstruction"] = "200" } : null;
+                        ? new Dictionary<string, string>
+                        {
+                            ["M"] = _hnswM.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                            ["efConstruction"] = _hnswEfConstruction.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                        } : null;
                     await _records.CreateIndexAsync(vector.StorageName, indexType,
                         MilvusCollectionCreateMapping.GetMetric(vector), extraParams: parameters,
                         cancellationToken: cancellationToken).ConfigureAwait(false);

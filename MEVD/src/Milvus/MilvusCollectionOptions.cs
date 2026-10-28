@@ -23,6 +23,30 @@ public sealed class MilvusCollectionOptions : VectorStoreCollectionOptions
     public TimeSpan LoadTimeout { get; set; } = TimeSpan.FromMinutes(11);
 
     /// <summary>
+    /// Gets or sets the <c>M</c> parameter of the Hierarchical Navigable Small World (HNSW) algorithm.
+    /// </summary>
+    /// <value>A positive number of connections per node. The default is 16.</value>
+    /// <remarks>
+    /// <c>M</c> controls the maximum number of connections per node in the HNSW graph.
+    /// Higher values generally improve recall but increase memory usage and index construction time.
+    /// Applies to HNSW indexes when creating a collection;
+    /// indexes on existing collections are unchanged.
+    /// </remarks>
+    public int HnswM { get; set; } = 16;
+
+    /// <summary>
+    /// Gets or sets the <c>efConstruction</c> parameter of the Hierarchical Navigable Small World (HNSW) algorithm.
+    /// </summary>
+    /// <value>A positive number of candidates. The default is 200.</value>
+    /// <remarks>
+    /// <c>efConstruction</c> controls the size of the candidate-neighbor list maintained while finding connections
+    /// for a new node during index construction. Higher values generally improve index quality but increase build time.
+    /// Applies to HNSW indexes when creating a collection;
+    /// indexes on existing collections are unchanged.
+    /// </remarks>
+    public int HnswEfConstruction { get; set; } = 200;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="MilvusCollectionOptions"/> class.
     /// </summary>
     public MilvusCollectionOptions()
@@ -32,5 +56,7 @@ public sealed class MilvusCollectionOptions : VectorStoreCollectionOptions
     internal MilvusCollectionOptions(MilvusCollectionOptions? source) : base(source)
     {
         LoadTimeout = source?.LoadTimeout ?? LoadTimeout;
+        HnswM = source?.HnswM ?? HnswM;
+        HnswEfConstruction = source?.HnswEfConstruction ?? HnswEfConstruction;
     }
 }
