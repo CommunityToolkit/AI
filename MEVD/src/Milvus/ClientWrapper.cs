@@ -13,6 +13,7 @@ namespace CommunityToolkit.VectorData.Milvus;
 internal sealed class ClientWrapper : IDisposable
 {
     private readonly MilvusClient? _ownedClient;
+
     private int _referenceCount = 1;
 
     /// <summary>

@@ -13,13 +13,20 @@ namespace Milvus.ConformanceTests.Support;
 internal sealed class MilvusTestStore : TestStore
 {
     public static MilvusTestStore Instance { get; } = new();
+
     public override string DefaultIndexKind => IndexKind.Flat;
+
     private readonly MilvusContainer? _container = Environment.GetEnvironmentVariable("MILVUS_HOST") is null
         ? new MilvusBuilder("milvusdb/milvus:v2.6.25").Build() : null;
+
     public string Host { get; private set; } = null!;
+
     public int Port { get; private set; }
+
     private MilvusClient? _client;
+
     public MilvusClient Client => _client ?? throw new InvalidOperationException("Not initialized");
+
     public MilvusVectorStore GetVectorStore(MilvusVectorStoreOptions options) => new(Client, ownsClient: false, options);
 
     private MilvusTestStore()

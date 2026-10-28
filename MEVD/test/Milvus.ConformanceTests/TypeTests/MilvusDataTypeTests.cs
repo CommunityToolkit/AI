@@ -16,6 +16,7 @@ public class MilvusDataTypeTests(MilvusDataTypeTests.Fixture fixture) : DataType
     public new class Fixture : DataTypeTests<Guid, DataTypeTests<Guid>.DefaultRecord>.Fixture
     {
         public override TestStore TestStore => MilvusTestStore.Instance;
+
         public override Type[] UnsupportedDefaultTypes { get; } =
         [ typeof(byte), typeof(short), typeof(decimal), typeof(Guid), typeof(DateTime), typeof(DateTimeOffset),
 #if NET

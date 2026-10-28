@@ -14,7 +14,9 @@ public class MilvusDependencyInjectionTests
     : DependencyInjectionTests<MilvusVectorStore, MilvusCollection<long, DependencyInjectionTests<long>.Record>, long, DependencyInjectionTests<long>.Record>
 {
     private const string Host = "localhost";
+
     private const int Port = 8080;
+
     private const string ApiKey = "fakeKey";
 
     protected override void PopulateConfiguration(ConfigurationManager configuration, object? serviceKey = null)

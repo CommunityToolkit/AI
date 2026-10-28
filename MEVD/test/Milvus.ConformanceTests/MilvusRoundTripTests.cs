@@ -12,7 +12,9 @@ namespace Milvus.ConformanceTests;
 public sealed class MilvusRoundTripTests : IClassFixture<MilvusFixture>
 {
     private readonly MilvusClient _client;
+
     public MilvusRoundTripTests(MilvusFixture fixture) => _client = ((MilvusTestStore)fixture.TestStore).Client;
+
     [Fact]
     public async Task TypedCrudFilteringAndSearch()
     {
@@ -109,10 +111,13 @@ public sealed class MilvusRoundTripTests : IClassFixture<MilvusFixture>
     {
         [VectorStoreKey]
         public string Id { get; set; } = string.Empty;
+
         [VectorStoreData]
         public string? Label { get; set; }
+
         [VectorStoreData]
         public int? Count { get; set; }
+
         [VectorStoreVector(3, IndexKind = IndexKind.Flat)]
         public ReadOnlyMemory<float> Vector { get; set; }
     }

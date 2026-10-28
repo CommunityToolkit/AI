@@ -179,6 +179,7 @@ public sealed class MilvusClientLifetimeTests
     private sealed class MilvusHandler : HttpMessageHandler
     {
         public bool Disposed { get; private set; }
+
         public string GrpcStatus { get; init; } = "0";
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

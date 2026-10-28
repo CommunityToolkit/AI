@@ -64,9 +64,16 @@ public sealed class MilvusArrayFilterTests : IClassFixture<MilvusFixture>
 
     public sealed class Record
     {
-        [VectorStoreKey] public string Id { get; set; } = string.Empty;
-        [VectorStoreData(StorageName = "tags")] public string[]? Tags { get; set; }
-        [VectorStoreData] public List<string>? ListTags { get; set; }
-        [VectorStoreVector(3, IndexKind = IndexKind.Flat)] public ReadOnlyMemory<float> Vector { get; set; } = new float[] { 1, 0, 0 };
+        [VectorStoreKey]
+        public string Id { get; set; } = string.Empty;
+
+        [VectorStoreData(StorageName = "tags")]
+        public string[]? Tags { get; set; }
+
+        [VectorStoreData]
+        public List<string>? ListTags { get; set; }
+
+        [VectorStoreVector(3, IndexKind = IndexKind.Flat)]
+        public ReadOnlyMemory<float> Vector { get; set; } = new float[] { 1, 0, 0 };
     }
 }

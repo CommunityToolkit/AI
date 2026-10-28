@@ -16,6 +16,7 @@ namespace Microsoft.Extensions.DependencyInjection;
 public static class MilvusServiceCollectionExtensions
 {
     private const string DynamicCodeMessage = "This method is incompatible with NativeAOT, consult the documentation for adding collections in a way that's compatible with NativeAOT.";
+
     private const string UnreferencedCodeMessage = "This method is incompatible with trimming, consult the documentation for adding collections in a way that's compatible with NativeAOT.";
 
     /// <summary>
