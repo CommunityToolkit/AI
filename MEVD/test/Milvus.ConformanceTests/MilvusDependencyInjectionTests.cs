@@ -48,9 +48,9 @@ public class MilvusDependencyInjectionTests
 
             yield return (services, serviceKey, name, lifetime) => serviceKey is null
                 ? services.AddMilvusCollection<long, Record>(
-                    name, Host, Port, apiKey: ApiKey, lifetime: lifetime)
+                    name, Host, ApiKey, Port, lifetime: lifetime)
                 : services.AddKeyedMilvusCollection<long, Record>(
-                    serviceKey, name, Host, Port, apiKey: ApiKey, lifetime: lifetime);
+                    serviceKey, name, Host, ApiKey, Port, lifetime: lifetime);
 
             yield return (services, serviceKey, name, lifetime) => serviceKey is null
                 ? services.AddMilvusCollection<long, Record>(
@@ -66,9 +66,9 @@ public class MilvusDependencyInjectionTests
         {
             yield return (services, serviceKey, lifetime) => serviceKey is null
                 ? services.AddMilvusVectorStore(
-                    Host, Port, apiKey: ApiKey, lifetime: lifetime)
+                    Host, ApiKey, Port, lifetime: lifetime)
                 : services.AddKeyedMilvusVectorStore(
-                    serviceKey, Host, Port, apiKey: ApiKey, lifetime: lifetime);
+                    serviceKey, Host, ApiKey, Port, lifetime: lifetime);
 
             yield return (services, serviceKey, lifetime) => serviceKey is null
                 ? services

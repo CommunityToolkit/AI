@@ -35,14 +35,26 @@ public sealed class MilvusDatabaseTests
         Assert.Null(Assert.IsType<VectorStoreCollectionMetadata>(collection.GetService(typeof(VectorStoreCollectionMetadata))).VectorStoreName);
     }
 
-    [Fact]
-    public void HostRegistrationsSupportDatabaseAndBothAuthenticationModes()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void HostRegistrationsSupportDatabaseAndBothAuthenticationModes(bool apiKey)
     {
-        var services = new ServiceCollection()
-            .AddMilvusVectorStore("localhost", database: "catalog", username: "root", password: "password")
-            .AddKeyedMilvusVectorStore("key", "localhost", apiKey: "token", database: "catalog")
-            .AddMilvusCollection<Guid, MilvusTestRecord>("records", "localhost", database: "catalog", username: "root", password: "password")
-            .AddKeyedMilvusCollection<Guid, MilvusTestRecord>("key", "records", "localhost", apiKey: "token", database: "catalog");
+        var services = new ServiceCollection();
+        if (apiKey)
+        {
+            services.AddMilvusVectorStore("localhost", "token", database: "catalog")
+                .AddKeyedMilvusVectorStore("key", "localhost", "token", database: "catalog")
+                .AddMilvusCollection<Guid, MilvusTestRecord>("records", "localhost", "token", database: "catalog")
+                .AddKeyedMilvusCollection<Guid, MilvusTestRecord>("key", "records", "localhost", "token", database: "catalog");
+        }
+        else
+        {
+            services.AddMilvusVectorStore("localhost", "root", "password", database: "catalog")
+                .AddKeyedMilvusVectorStore("key", "localhost", "root", "password", database: "catalog")
+                .AddMilvusCollection<Guid, MilvusTestRecord>("records", "localhost", "root", "password", database: "catalog")
+                .AddKeyedMilvusCollection<Guid, MilvusTestRecord>("key", "records", "localhost", "root", "password", database: "catalog");
+        }
         using var provider = services.BuildServiceProvider();
         var store = provider.GetRequiredService<VectorStore>();
         Assert.Equal("catalog", Assert.IsType<VectorStoreMetadata>(store.GetService(typeof(VectorStoreMetadata))).VectorStoreName);
@@ -64,13 +76,16 @@ public sealed class MilvusDatabaseTests
         Assert.Equal("default", Assert.IsType<VectorStoreCollectionMetadata>(provider.GetRequiredService<VectorStoreCollection<Guid, MilvusTestRecord>>().GetService(typeof(VectorStoreCollectionMetadata))).VectorStoreName);
     }
 
-    [Fact]
-    public void RejectsIncompleteOrConflictingCredentials()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void RejectsEmptyCredentials(string? credential)
     {
         var services = new ServiceCollection();
-        Assert.Throws<ArgumentException>(() => services.AddMilvusVectorStore("localhost", username: "root"));
-        Assert.Throws<ArgumentException>(() => services.AddKeyedMilvusVectorStore("key", "localhost", password: "password"));
-        Assert.Throws<ArgumentException>(() => services.AddMilvusCollection<Guid, MilvusTestRecord>("records", "localhost", apiKey: "token", username: "root", password: "password"));
-        Assert.Throws<ArgumentException>(() => services.AddKeyedMilvusCollection<Guid, MilvusTestRecord>("key", "records", "localhost", username: "root"));
+        Assert.ThrowsAny<ArgumentException>(() => services.AddMilvusVectorStore("localhost", apiKey: credential!));
+        Assert.ThrowsAny<ArgumentException>(() => services.AddKeyedMilvusVectorStore("key", "localhost", username: credential!, password: "password"));
+        Assert.ThrowsAny<ArgumentException>(() => services.AddMilvusCollection<Guid, MilvusTestRecord>("records", "localhost", username: "root", password: credential!));
+        Assert.ThrowsAny<ArgumentException>(() => services.AddKeyedMilvusCollection<Guid, MilvusTestRecord>("key", "records", "localhost", apiKey: credential!));
     }
 }

@@ -78,11 +78,16 @@ public static class MilvusServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registers a <see cref="MilvusVectorStore"/> as <see cref="VectorStore"/>
-    /// with <see cref="MilvusClient"/> created with <paramref name="host"/>, <paramref name="port"/>,
-    /// <paramref name="https"/> and <paramref name="apiKey"/>.
+    /// Registers a <see cref="MilvusVectorStore"/> using a host without authentication.
     /// </summary>
-    /// <inheritdoc cref="AddKeyedMilvusVectorStore(IServiceCollection, object?, Func{IServiceProvider, MilvusClient}, Func{IServiceProvider, MilvusVectorStoreOptions}?, ServiceLifetime)"/>
+    /// <param name="services">The service collection.</param>
+    /// <param name="host">The host to connect to.</param>
+    /// <param name="port">The port to connect to. Defaults to 19530.</param>
+    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
+    /// <param name="database">The database to connect to, or null for the default database.</param>
+    /// <param name="options">Options to further configure the service.</param>
+    /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
+    /// <returns>Service collection.</returns>
     [RequiresUnreferencedCode(UnreferencedCodeMessage)]
     [RequiresDynamicCode(DynamicCodeMessage)]
     public static IServiceCollection AddMilvusVectorStore(
@@ -90,30 +95,22 @@ public static class MilvusServiceCollectionExtensions
         string host,
         int port = MilvusConstants.DefaultPort,
         bool https = false,
-        string? apiKey = default,
         string? database = null,
-        string? username = null,
-        string? password = null,
         MilvusVectorStoreOptions? options = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
-        => AddKeyedMilvusVectorStore(services, serviceKey: null, host, port, https, apiKey, database, username, password, options, lifetime);
+        => AddKeyedMilvusVectorStore(services, serviceKey: null, host, port, https, database, options, lifetime);
 
     /// <summary>
-    /// Registers a keyed <see cref="MilvusVectorStore"/> as <see cref="VectorStore"/>
-    /// with <see cref="MilvusClient"/> created with <paramref name="host"/>, <paramref name="port"/>,
-    /// <paramref name="https"/> and <paramref name="apiKey"/>.
+    /// Registers a keyed <see cref="MilvusVectorStore"/> using a host without authentication.
     /// </summary>
-    /// <param name="services">The <see cref="IServiceCollection"/> to register the <see cref="MilvusVectorStore"/> on.</param>
-    /// <param name="serviceKey">The key with which to associate the vector store.</param>
+    /// <param name="services">The service collection.</param>
+    /// <param name="serviceKey">The key with which to associate the service.</param>
     /// <param name="host">The host to connect to.</param>
     /// <param name="port">The port to connect to. Defaults to 19530.</param>
     /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
-    /// <param name="apiKey">The API key to use. Cannot be combined with username/password credentials.</param>
     /// <param name="database">The database to connect to, or null for the default database.</param>
-    /// <param name="username">The authentication username.</param>
-    /// <param name="password">The authentication password. Required with username.</param>
-    /// <param name="options">Options to further configure the <see cref="MilvusVectorStore"/>.</param>
-    /// <param name="lifetime">The service lifetime for the store. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
+    /// <param name="options">Options to further configure the service.</param>
+    /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
     /// <returns>Service collection.</returns>
     [RequiresUnreferencedCode(UnreferencedCodeMessage)]
     [RequiresDynamicCode(DynamicCodeMessage)]
@@ -123,17 +120,134 @@ public static class MilvusServiceCollectionExtensions
         string host,
         int port = MilvusConstants.DefaultPort,
         bool https = false,
-        string? apiKey = default,
         string? database = null,
-        string? username = null,
-        string? password = null,
         MilvusVectorStoreOptions? options = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
         Throw.IfNullOrWhitespace(host);
 
-        ValidateCredentials(apiKey, username, password);
-        return AddKeyedMilvusVectorStoreCore(services, serviceKey, _ => CreateClient(host, port, https, apiKey, database, username, password), _ => options,
+        return AddKeyedMilvusVectorStoreCore(services, serviceKey, _ => new MilvusClient(host, port, https, database), _ => options,
+            lifetime, ownsClient: true, databaseName: database ?? "default");
+    }
+
+    /// <summary>
+    /// Registers a <see cref="MilvusVectorStore"/> using a host and API-key authentication.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="host">The host to connect to.</param>
+    /// <param name="apiKey">The API key to use for authentication.</param>
+    /// <param name="port">The port to connect to. Defaults to 19530.</param>
+    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
+    /// <param name="database">The database to connect to, or null for the default database.</param>
+    /// <param name="options">Options to further configure the service.</param>
+    /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
+    /// <returns>Service collection.</returns>
+    [RequiresUnreferencedCode(UnreferencedCodeMessage)]
+    [RequiresDynamicCode(DynamicCodeMessage)]
+    public static IServiceCollection AddMilvusVectorStore(
+        this IServiceCollection services,
+        string host,
+        string apiKey,
+        int port = MilvusConstants.DefaultPort,
+        bool https = false,
+        string? database = null,
+        MilvusVectorStoreOptions? options = default,
+        ServiceLifetime lifetime = ServiceLifetime.Singleton)
+        => AddKeyedMilvusVectorStore(services, serviceKey: null, host, apiKey, port, https, database, options, lifetime);
+
+    /// <summary>
+    /// Registers a keyed <see cref="MilvusVectorStore"/> using a host and API-key authentication.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="serviceKey">The key with which to associate the service.</param>
+    /// <param name="host">The host to connect to.</param>
+    /// <param name="apiKey">The API key to use for authentication.</param>
+    /// <param name="port">The port to connect to. Defaults to 19530.</param>
+    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
+    /// <param name="database">The database to connect to, or null for the default database.</param>
+    /// <param name="options">Options to further configure the service.</param>
+    /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
+    /// <returns>Service collection.</returns>
+    [RequiresUnreferencedCode(UnreferencedCodeMessage)]
+    [RequiresDynamicCode(DynamicCodeMessage)]
+    public static IServiceCollection AddKeyedMilvusVectorStore(
+        this IServiceCollection services,
+        object? serviceKey,
+        string host,
+        string apiKey,
+        int port = MilvusConstants.DefaultPort,
+        bool https = false,
+        string? database = null,
+        MilvusVectorStoreOptions? options = default,
+        ServiceLifetime lifetime = ServiceLifetime.Singleton)
+    {
+        Throw.IfNullOrWhitespace(host);
+        Throw.IfNullOrWhitespace(apiKey);
+
+        return AddKeyedMilvusVectorStoreCore(services, serviceKey, _ => new MilvusClient(host, apiKey, port, https, database), _ => options,
+            lifetime, ownsClient: true, databaseName: database ?? "default");
+    }
+
+    /// <summary>
+    /// Registers a <see cref="MilvusVectorStore"/> using a host and username/password authentication.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="host">The host to connect to.</param>
+    /// <param name="username">The authentication username.</param>
+    /// <param name="password">The authentication password.</param>
+    /// <param name="port">The port to connect to. Defaults to 19530.</param>
+    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
+    /// <param name="database">The database to connect to, or null for the default database.</param>
+    /// <param name="options">Options to further configure the service.</param>
+    /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
+    /// <returns>Service collection.</returns>
+    [RequiresUnreferencedCode(UnreferencedCodeMessage)]
+    [RequiresDynamicCode(DynamicCodeMessage)]
+    public static IServiceCollection AddMilvusVectorStore(
+        this IServiceCollection services,
+        string host,
+        string username,
+        string password,
+        int port = MilvusConstants.DefaultPort,
+        bool https = false,
+        string? database = null,
+        MilvusVectorStoreOptions? options = default,
+        ServiceLifetime lifetime = ServiceLifetime.Singleton)
+        => AddKeyedMilvusVectorStore(services, serviceKey: null, host, username, password, port, https, database, options, lifetime);
+
+    /// <summary>
+    /// Registers a keyed <see cref="MilvusVectorStore"/> using a host and username/password authentication.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="serviceKey">The key with which to associate the service.</param>
+    /// <param name="host">The host to connect to.</param>
+    /// <param name="username">The authentication username.</param>
+    /// <param name="password">The authentication password.</param>
+    /// <param name="port">The port to connect to. Defaults to 19530.</param>
+    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
+    /// <param name="database">The database to connect to, or null for the default database.</param>
+    /// <param name="options">Options to further configure the service.</param>
+    /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
+    /// <returns>Service collection.</returns>
+    [RequiresUnreferencedCode(UnreferencedCodeMessage)]
+    [RequiresDynamicCode(DynamicCodeMessage)]
+    public static IServiceCollection AddKeyedMilvusVectorStore(
+        this IServiceCollection services,
+        object? serviceKey,
+        string host,
+        string username,
+        string password,
+        int port = MilvusConstants.DefaultPort,
+        bool https = false,
+        string? database = null,
+        MilvusVectorStoreOptions? options = default,
+        ServiceLifetime lifetime = ServiceLifetime.Singleton)
+    {
+        Throw.IfNullOrWhitespace(host);
+        Throw.IfNullOrWhitespace(username);
+        Throw.IfNullOrWhitespace(password);
+
+        return AddKeyedMilvusVectorStoreCore(services, serviceKey, _ => new MilvusClient(host, username, password, port, https, database), _ => options,
             lifetime, ownsClient: true, databaseName: database ?? "default");
     }
 
@@ -214,11 +328,17 @@ public static class MilvusServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registers a <see cref="MilvusCollection{TKey, TRecord}"/> as <see cref="VectorStoreCollection{TKey, TRecord}"/>
-    /// with <see cref="MilvusClient"/> created with <paramref name="host"/>, <paramref name="port"/>,
-    /// <paramref name="https"/> and <paramref name="apiKey"/>.
+    /// Registers a <see cref="MilvusCollection{TKey, TRecord}"/> using a host without authentication.
     /// </summary>
-    /// <inheritdoc cref="AddKeyedMilvusCollection{TKey, TRecord}(IServiceCollection, object?, string, string, int, bool, string?, string?, string?, string?, MilvusCollectionOptions?, ServiceLifetime)"/>
+    /// <param name="services">The service collection.</param>
+    /// <param name="name">The name of the collection.</param>
+    /// <param name="host">The host to connect to.</param>
+    /// <param name="port">The port to connect to. Defaults to 19530.</param>
+    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
+    /// <param name="database">The database to connect to, or null for the default database.</param>
+    /// <param name="options">Options to further configure the service.</param>
+    /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
+    /// <returns>Service collection.</returns>
     [RequiresUnreferencedCode(UnreferencedCodeMessage)]
     [RequiresDynamicCode(DynamicCodeMessage)]
     public static IServiceCollection AddMilvusCollection<TKey, TRecord>(
@@ -227,33 +347,25 @@ public static class MilvusServiceCollectionExtensions
         string host,
         int port = MilvusConstants.DefaultPort,
         bool https = false,
-        string? apiKey = default,
         string? database = null,
-        string? username = null,
-        string? password = null,
         MilvusCollectionOptions? options = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
         where TKey : notnull
         where TRecord : class
-        => AddKeyedMilvusCollection<TKey, TRecord>(services, serviceKey: null, name, host, port, https, apiKey, database, username, password, options, lifetime);
+        => AddKeyedMilvusCollection<TKey, TRecord>(services, serviceKey: null, name, host, port, https, database, options, lifetime);
 
     /// <summary>
-    /// Registers a keyed <see cref="MilvusCollection{TKey, TRecord}"/> as <see cref="VectorStoreCollection{TKey, TRecord}"/>
-    /// with <see cref="MilvusClient"/> created with <paramref name="host"/>, <paramref name="port"/>,
-    /// <paramref name="https"/> and <paramref name="apiKey"/>.
+    /// Registers a keyed <see cref="MilvusCollection{TKey, TRecord}"/> using a host without authentication.
     /// </summary>
-    /// <param name="services">The <see cref="IServiceCollection"/> to register the <see cref="MilvusCollection{TKey, TRecord}"/> on.</param>
-    /// <param name="serviceKey">The key with which to associate the collection.</param>
+    /// <param name="services">The service collection.</param>
+    /// <param name="serviceKey">The key with which to associate the service.</param>
     /// <param name="name">The name of the collection.</param>
     /// <param name="host">The host to connect to.</param>
     /// <param name="port">The port to connect to. Defaults to 19530.</param>
     /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
-    /// <param name="apiKey">The API key to use. Cannot be combined with username/password credentials.</param>
     /// <param name="database">The database to connect to, or null for the default database.</param>
-    /// <param name="username">The authentication username.</param>
-    /// <param name="password">The authentication password. Required with username.</param>
-    /// <param name="options">Options to further configure the <see cref="MilvusCollection{TKey, TRecord}"/>.</param>
-    /// <param name="lifetime">The service lifetime for the store. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
+    /// <param name="options">Options to further configure the service.</param>
+    /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
     /// <returns>Service collection.</returns>
     [RequiresUnreferencedCode(UnreferencedCodeMessage)]
     [RequiresDynamicCode(DynamicCodeMessage)]
@@ -264,10 +376,7 @@ public static class MilvusServiceCollectionExtensions
         string host,
         int port = MilvusConstants.DefaultPort,
         bool https = false,
-        string? apiKey = default,
         string? database = null,
-        string? username = null,
-        string? password = null,
         MilvusCollectionOptions? options = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
         where TKey : notnull
@@ -275,28 +384,146 @@ public static class MilvusServiceCollectionExtensions
     {
         Throw.IfNullOrWhitespace(host);
 
-        ValidateCredentials(apiKey, username, password);
-        return AddKeyedMilvusCollectionCore<TKey, TRecord>(services, serviceKey, name, _ => CreateClient(host, port, https, apiKey, database, username, password), _ => options,
+        return AddKeyedMilvusCollectionCore<TKey, TRecord>(services, serviceKey, name, _ => new MilvusClient(host, port, https, database), _ => options,
             lifetime, ownsClient: true, databaseName: database ?? "default");
     }
 
-    private static void ValidateCredentials(string? apiKey, string? username, string? password)
+    /// <summary>
+    /// Registers a <see cref="MilvusCollection{TKey, TRecord}"/> using a host and API-key authentication.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="name">The name of the collection.</param>
+    /// <param name="host">The host to connect to.</param>
+    /// <param name="apiKey">The API key to use for authentication.</param>
+    /// <param name="port">The port to connect to. Defaults to 19530.</param>
+    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
+    /// <param name="database">The database to connect to, or null for the default database.</param>
+    /// <param name="options">Options to further configure the service.</param>
+    /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
+    /// <returns>Service collection.</returns>
+    [RequiresUnreferencedCode(UnreferencedCodeMessage)]
+    [RequiresDynamicCode(DynamicCodeMessage)]
+    public static IServiceCollection AddMilvusCollection<TKey, TRecord>(
+        this IServiceCollection services,
+        string name,
+        string host,
+        string apiKey,
+        int port = MilvusConstants.DefaultPort,
+        bool https = false,
+        string? database = null,
+        MilvusCollectionOptions? options = default,
+        ServiceLifetime lifetime = ServiceLifetime.Singleton)
+        where TKey : notnull
+        where TRecord : class
+        => AddKeyedMilvusCollection<TKey, TRecord>(services, serviceKey: null, name, host, apiKey, port, https, database, options, lifetime);
+
+    /// <summary>
+    /// Registers a keyed <see cref="MilvusCollection{TKey, TRecord}"/> using a host and API-key authentication.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="serviceKey">The key with which to associate the service.</param>
+    /// <param name="name">The name of the collection.</param>
+    /// <param name="host">The host to connect to.</param>
+    /// <param name="apiKey">The API key to use for authentication.</param>
+    /// <param name="port">The port to connect to. Defaults to 19530.</param>
+    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
+    /// <param name="database">The database to connect to, or null for the default database.</param>
+    /// <param name="options">Options to further configure the service.</param>
+    /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
+    /// <returns>Service collection.</returns>
+    [RequiresUnreferencedCode(UnreferencedCodeMessage)]
+    [RequiresDynamicCode(DynamicCodeMessage)]
+    public static IServiceCollection AddKeyedMilvusCollection<TKey, TRecord>(
+        this IServiceCollection services,
+        object? serviceKey,
+        string name,
+        string host,
+        string apiKey,
+        int port = MilvusConstants.DefaultPort,
+        bool https = false,
+        string? database = null,
+        MilvusCollectionOptions? options = default,
+        ServiceLifetime lifetime = ServiceLifetime.Singleton)
+        where TKey : notnull
+        where TRecord : class
     {
-        if ((username is null) != (password is null))
-        {
-            throw new ArgumentException("Username and password must be provided together.");
-        }
-        if (apiKey is not null && username is not null)
-        {
-            throw new ArgumentException("API key and username/password authentication cannot be combined.");
-        }
+        Throw.IfNullOrWhitespace(host);
+        Throw.IfNullOrWhitespace(apiKey);
+
+        return AddKeyedMilvusCollectionCore<TKey, TRecord>(services, serviceKey, name, _ => new MilvusClient(host, apiKey, port, https, database), _ => options,
+            lifetime, ownsClient: true, databaseName: database ?? "default");
     }
 
-    private static MilvusClient CreateClient(string host, int port, bool https, string? apiKey,
-        string? database, string? username, string? password)
-        => username is not null ? new MilvusClient(host, username, password!, port, https, database)
-            : apiKey is not null ? new MilvusClient(host, apiKey, port, https, database)
-            : new MilvusClient(host, port, https, database);
+    /// <summary>
+    /// Registers a <see cref="MilvusCollection{TKey, TRecord}"/> using a host and username/password authentication.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="name">The name of the collection.</param>
+    /// <param name="host">The host to connect to.</param>
+    /// <param name="username">The authentication username.</param>
+    /// <param name="password">The authentication password.</param>
+    /// <param name="port">The port to connect to. Defaults to 19530.</param>
+    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
+    /// <param name="database">The database to connect to, or null for the default database.</param>
+    /// <param name="options">Options to further configure the service.</param>
+    /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
+    /// <returns>Service collection.</returns>
+    [RequiresUnreferencedCode(UnreferencedCodeMessage)]
+    [RequiresDynamicCode(DynamicCodeMessage)]
+    public static IServiceCollection AddMilvusCollection<TKey, TRecord>(
+        this IServiceCollection services,
+        string name,
+        string host,
+        string username,
+        string password,
+        int port = MilvusConstants.DefaultPort,
+        bool https = false,
+        string? database = null,
+        MilvusCollectionOptions? options = default,
+        ServiceLifetime lifetime = ServiceLifetime.Singleton)
+        where TKey : notnull
+        where TRecord : class
+        => AddKeyedMilvusCollection<TKey, TRecord>(services, serviceKey: null, name, host, username, password, port, https, database, options, lifetime);
+
+    /// <summary>
+    /// Registers a keyed <see cref="MilvusCollection{TKey, TRecord}"/> using a host and username/password authentication.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="serviceKey">The key with which to associate the service.</param>
+    /// <param name="name">The name of the collection.</param>
+    /// <param name="host">The host to connect to.</param>
+    /// <param name="username">The authentication username.</param>
+    /// <param name="password">The authentication password.</param>
+    /// <param name="port">The port to connect to. Defaults to 19530.</param>
+    /// <param name="https">Whether to encrypt the connection using HTTPS. Defaults to <c>false</c>.</param>
+    /// <param name="database">The database to connect to, or null for the default database.</param>
+    /// <param name="options">Options to further configure the service.</param>
+    /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
+    /// <returns>Service collection.</returns>
+    [RequiresUnreferencedCode(UnreferencedCodeMessage)]
+    [RequiresDynamicCode(DynamicCodeMessage)]
+    public static IServiceCollection AddKeyedMilvusCollection<TKey, TRecord>(
+        this IServiceCollection services,
+        object? serviceKey,
+        string name,
+        string host,
+        string username,
+        string password,
+        int port = MilvusConstants.DefaultPort,
+        bool https = false,
+        string? database = null,
+        MilvusCollectionOptions? options = default,
+        ServiceLifetime lifetime = ServiceLifetime.Singleton)
+        where TKey : notnull
+        where TRecord : class
+    {
+        Throw.IfNullOrWhitespace(host);
+        Throw.IfNullOrWhitespace(username);
+        Throw.IfNullOrWhitespace(password);
+
+        return AddKeyedMilvusCollectionCore<TKey, TRecord>(services, serviceKey, name, _ => new MilvusClient(host, username, password, port, https, database), _ => options,
+            lifetime, ownsClient: true, databaseName: database ?? "default");
+    }
 
     private static MilvusVectorStoreOptions? GetStoreOptions(IServiceProvider sp, Func<IServiceProvider, MilvusVectorStoreOptions?>? optionsProvider)
     {

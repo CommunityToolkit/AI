@@ -21,8 +21,15 @@ public sealed class MilvusDatabaseTests : IClassFixture<MilvusFixture>
         await server.Client.CreateDatabaseAsync(database);
         try
         {
-            var services = new ServiceCollection().AddMilvusVectorStore(server.Host, server.Port, database: database,
-                apiKey: apiKey ? "root:Milvus" : null, username: apiKey ? null : "root", password: apiKey ? null : "Milvus");
+            var services = new ServiceCollection();
+            if (apiKey)
+            {
+                services.AddMilvusVectorStore(server.Host, "root:Milvus", server.Port, database: database);
+            }
+            else
+            {
+                services.AddMilvusVectorStore(server.Host, "root", "Milvus", server.Port, database: database);
+            }
             using var provider = services.BuildServiceProvider();
             var store = provider.GetRequiredService<MilvusVectorStore>();
             using var collection = store.GetCollection<string, MilvusRoundTripTests.Record>(name);
