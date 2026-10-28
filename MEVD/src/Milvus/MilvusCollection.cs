@@ -456,6 +456,8 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         }
     }
 
+    // TODO: Remove this workaround once the SDK fix is available and adopted:
+    // https://github.com/milvus-io/milvus-sdk-csharp/issues/191
     // Milvus.Client 2.6.0 cannot decode untyped output fields in an empty response.
     // Retry without output fields to verify that this really is an empty search;
     // do not hide the SDK error if the retry finds any records.
