@@ -96,18 +96,27 @@ internal static class DocumentDBCollectionSearchMapping
         };
     }
 
+    /// <summary>Returns the score of a result from the search score that Azure DocumentDB returns.</summary>
+    /// <remarks>
+    /// For COS Azure DocumentDB returns the cosine similarity: CosineSimilarity returns it as it is, and CosineDistance returns
+    /// 1 - similarity. IP and L2 return the dot product and the Euclidean distance as they are.
+    /// </remarks>
+    public static double GetScore(double searchScore, string? distanceFunction)
+        => GetVectorPropertyDistanceFunction(distanceFunction) == DistanceFunction.CosineDistance ? 1 - searchScore : searchScore;
+
     /// <summary>Returns a $match stage to filter results by score threshold.</summary>
     /// <remarks>
-    /// For COS and IP Azure DocumentDB returns a similarity score where higher values mean more similar,
-    /// so we filter with $gte. For L2 it returns a distance where lower values mean more similar,
-    /// so we filter with $lte.
+    /// The stage filters the search score that Azure DocumentDB returns. For COS and IP higher values mean more similar,
+    /// so we filter with $gte; for CosineDistance a distance of at most the threshold is a similarity of at least 1 - threshold.
+    /// For L2 it returns a distance where lower values mean more similar, so we filter with $lte.
     /// </remarks>
     public static BsonDocument GetScoreThresholdMatchQuery(string scorePropertyName, double scoreThreshold, string? distanceFunction)
     {
-        var comparisonOperator = GetVectorPropertyDistanceFunction(distanceFunction) switch
+        var (comparisonOperator, searchScore) = GetVectorPropertyDistanceFunction(distanceFunction) switch
         {
-            DistanceFunction.CosineDistance or DistanceFunction.DotProductSimilarity => "$gte",
-            DistanceFunction.EuclideanDistance => "$lte",
+            DistanceFunction.CosineDistance => ("$gte", 1 - scoreThreshold),
+            DistanceFunction.CosineSimilarity or DistanceFunction.DotProductSimilarity => ("$gte", scoreThreshold),
+            DistanceFunction.EuclideanDistance => ("$lte", scoreThreshold),
             _ => throw new NotSupportedException($"Score threshold is not supported for distance function '{distanceFunction}'.")
         };
 
@@ -116,7 +125,7 @@ internal static class DocumentDBCollectionSearchMapping
             {
                 "$match", new BsonDocument
                 {
-                    { scorePropertyName, new BsonDocument { { comparisonOperator, scoreThreshold } } }
+                    { scorePropertyName, new BsonDocument { { comparisonOperator, searchScore } } }
                 }
             }
         };
