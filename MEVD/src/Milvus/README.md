@@ -52,7 +52,7 @@ Host-based registrations accept `database`, `username`/`password`, or `apiKey`. 
 
 ```csharp
 builder.Services.AddMilvusVectorStore("milvus.example.com", https: true,
-    database: "catalog", username: "root", password: password);
+    database: "catalog", username: "some", password: password);
 ```
 
 Host-based registrations report the selected database as `VectorStoreName` in the metadata of the store and of its collections, or `default` when none is selected. An existing `MilvusClient` does not expose the database it uses, so with a supplied client `VectorStoreName` is null. Host-based registrations own their SDK client; supplied clients remain caller-owned:
