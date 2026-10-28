@@ -35,10 +35,10 @@ public static class PostgresServiceCollectionExtensions
         services.Add(new ServiceDescriptor(typeof(PostgresVectorStore), (sp) =>
         {
             var dataSource = sp.GetRequiredService<NpgsqlDataSource>();
-            options = GetStoreOptions(sp, _ => options);
+            var copy = GetStoreOptions(sp, _ => options);
 
             // The data source has been solved from the DI container, so we do not own it.
-            return new PostgresVectorStore(dataSource, ownsDataSource: false, options);
+            return new PostgresVectorStore(dataSource, ownsDataSource: false, copy);
         }, lifetime));
 
         services.Add(new ServiceDescriptor(typeof(VectorStore),
