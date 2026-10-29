@@ -57,9 +57,9 @@ public static class CosmosServiceCollectionExtensions
         services.Add(new ServiceDescriptor(typeof(CosmosVectorStore), serviceKey, (sp, _) =>
         {
             var database = sp.GetRequiredService<Database>();
-            options = GetStoreOptions(sp, _ => options);
+            var copy = GetStoreOptions(sp, _ => options);
 
-            return new CosmosVectorStore(database, options);
+            return new CosmosVectorStore(database, copy);
         }, lifetime));
 
         services.Add(new ServiceDescriptor(typeof(VectorStore), serviceKey,
@@ -110,10 +110,10 @@ public static class CosmosServiceCollectionExtensions
 
         services.Add(new ServiceDescriptor(typeof(CosmosVectorStore), serviceKey, (sp, _) =>
         {
-            options = GetStoreOptions(sp, _ => options);
-            var clientOptions = CreateClientOptions(options?.JsonSerializerOptions);
+            var copy = GetStoreOptions(sp, _ => options);
+            var clientOptions = CreateClientOptions(copy?.JsonSerializerOptions);
 
-            return new CosmosVectorStore(connectionString, databaseName, clientOptions, options);
+            return new CosmosVectorStore(connectionString, databaseName, clientOptions, copy);
         }, lifetime));
 
         services.Add(new ServiceDescriptor(typeof(VectorStore), serviceKey,
@@ -167,9 +167,9 @@ public static class CosmosServiceCollectionExtensions
         services.Add(new ServiceDescriptor(typeof(CosmosCollection<TKey, TRecord>), serviceKey, (sp, _) =>
         {
             var database = sp.GetRequiredService<Database>();
-            options = GetCollectionOptions(sp, _ => options);
+            var copy = GetCollectionOptions(sp, _ => options);
 
-            return new CosmosCollection<TKey, TRecord>(database, name, options);
+            return new CosmosCollection<TKey, TRecord>(database, name, copy);
         }, lifetime));
 
         AddAbstractions<TKey, TRecord>(services, serviceKey, lifetime);

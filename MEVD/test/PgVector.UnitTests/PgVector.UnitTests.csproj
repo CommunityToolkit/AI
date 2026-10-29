@@ -22,6 +22,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Shared\FakeEmbeddingGenerator.cs" Link="FakeEmbeddingGenerator.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\PgVector\PgVector.csproj" />
   </ItemGroup>
 

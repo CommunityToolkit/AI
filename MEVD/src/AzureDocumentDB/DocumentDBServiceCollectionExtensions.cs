@@ -54,9 +54,9 @@ public static class DocumentDBServiceCollectionExtensions
         services.Add(new ServiceDescriptor(typeof(DocumentDBVectorStore), serviceKey, (sp, _) =>
         {
             var database = sp.GetRequiredService<IMongoDatabase>();
-            options = GetStoreOptions(sp, _ => options);
+            var copy = GetStoreOptions(sp, _ => options);
 
-            return new DocumentDBVectorStore(database, options);
+            return new DocumentDBVectorStore(database, copy);
         }, lifetime));
 
         services.Add(new ServiceDescriptor(typeof(VectorStore), serviceKey,
@@ -107,11 +107,11 @@ public static class DocumentDBServiceCollectionExtensions
 
         services.Add(new ServiceDescriptor(typeof(DocumentDBVectorStore), serviceKey, (sp, _) =>
         {
-            options = GetStoreOptions(sp, _ => options);
+            var copy = GetStoreOptions(sp, _ => options);
             MongoClient mongoClient = new(CreateClientSettings(connectionString));
             var database = mongoClient.GetDatabase(databaseName);
 
-            return new DocumentDBVectorStore(database, options);
+            return new DocumentDBVectorStore(database, copy);
         }, lifetime));
 
         services.Add(new ServiceDescriptor(typeof(VectorStore), serviceKey,
@@ -162,9 +162,9 @@ public static class DocumentDBServiceCollectionExtensions
         services.Add(new ServiceDescriptor(typeof(DocumentDBCollection<string, TRecord>), serviceKey, (sp, _) =>
         {
             var database = sp.GetRequiredService<IMongoDatabase>();
-            options = GetCollectionOptions(sp, _ => options);
+            var copy = GetCollectionOptions(sp, _ => options);
 
-            return new DocumentDBCollection<string, TRecord>(database, name, options);
+            return new DocumentDBCollection<string, TRecord>(database, name, copy);
         }, lifetime));
 
         AddAbstractions<string, TRecord>(services, serviceKey, lifetime);
