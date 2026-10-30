@@ -33,6 +33,9 @@ public sealed class SqliteVectorStore : VectorStore
 
     private readonly IEmbeddingGenerator? _embeddingGenerator;
 
+    /// <summary>Optional callback that runs on each connection after it is opened.</summary>
+    private readonly Action<SqliteConnection>? _connectionInitializer;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="SqliteVectorStore"/> class.
     /// </summary>
@@ -47,6 +50,7 @@ public sealed class SqliteVectorStore : VectorStore
         options ??= SqliteVectorStoreOptions.Default;
         _vectorVirtualTableName = options.VectorVirtualTableName;
         _embeddingGenerator = options.EmbeddingGenerator;
+        _connectionInitializer = options.ConnectionInitializer;
 
         var connectionStringBuilder = new SqliteConnectionStringBuilder(connectionString);
 
@@ -71,7 +75,8 @@ public sealed class SqliteVectorStore : VectorStore
                 {
                     Definition = definition,
                     VectorVirtualTableName = _vectorVirtualTableName,
-                    EmbeddingGenerator = _embeddingGenerator
+                    EmbeddingGenerator = _embeddingGenerator,
+                    ConnectionInitializer = _connectionInitializer
                 });
 
     /// <inheritdoc />
@@ -83,7 +88,8 @@ public sealed class SqliteVectorStore : VectorStore
             {
                 Definition = definition,
                 VectorVirtualTableName = _vectorVirtualTableName,
-                EmbeddingGenerator = _embeddingGenerator
+                EmbeddingGenerator = _embeddingGenerator,
+                ConnectionInitializer = _connectionInitializer
             }
         );
 #pragma warning restore IDE0090
@@ -95,8 +101,11 @@ public sealed class SqliteVectorStore : VectorStore
         const string TablePropertyName = "name";
         const string Query = $"SELECT {TablePropertyName} FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';";
 
-        using var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        using var connection = await SqliteConnectionFactory.OpenAsync(
+            _connectionString,
+            _connectionInitializer,
+            loadVector: false,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
         using var command = connection.CreateCommand();
 
         command.CommandText = Query;

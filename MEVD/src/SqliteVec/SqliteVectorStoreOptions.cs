@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.AI;
 
 namespace CommunityToolkit.VectorData.SqliteVec;
@@ -23,6 +24,7 @@ public sealed class SqliteVectorStoreOptions
     {
         VectorVirtualTableName = source?.VectorVirtualTableName;
         EmbeddingGenerator = source?.EmbeddingGenerator;
+        ConnectionInitializer = source?.ConnectionInitializer;
     }
 
     /// <summary>
@@ -37,4 +39,25 @@ public sealed class SqliteVectorStoreOptions
     /// Gets or sets the default embedding generator to use when generating vectors embeddings with this vector store.
     /// </summary>
     public IEmbeddingGenerator? EmbeddingGenerator { get; set; }
+
+    /// <summary>
+    /// Gets or sets a callback that runs on every connection this vector store and the collections created from it open.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// If defined, the callback runs after the connection is opened and, on connections used for collection operations, after the sqlite-vec
+    /// extension is loaded.
+    /// </para>
+    /// <para>
+    /// Use it for per-connection settings that have no connection string equivalent, such as
+    /// <c>PRAGMA synchronous=NORMAL</c>, <c>PRAGMA cache_size</c> or <c>PRAGMA temp_store=MEMORY</c>, or for loading additional extensions.
+    /// </para>
+    /// <para>
+    /// The vector store owns the connection and disposes it when the operation completes. The callback must not close or dispose
+    /// the connection, and must not leave a transaction or a data reader open. If the callback throws, the operation fails and
+    /// the exception is surfaced to the caller. The callback can run on several connections at the same time, so it must be
+    /// thread-safe.
+    /// </para>
+    /// </remarks>
+    public Action<SqliteConnection>? ConnectionInitializer { get; set; }
 }
