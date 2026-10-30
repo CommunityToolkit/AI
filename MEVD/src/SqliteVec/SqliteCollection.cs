@@ -31,6 +31,9 @@ public class SqliteCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
     /// <summary>The connection string for the SQLite database represented by this <see cref="SqliteVectorStore"/>.</summary>
     private readonly string _connectionString;
 
+    /// <summary>Optional callback that runs on each connection after it is opened and the sqlite-vec extension is loaded.</summary>
+    private readonly Action<SqliteConnection>? _connectionInitializer;
+
     /// <summary>The mapper to use when mapping between the consumer data model and the SQLite record.</summary>
     private readonly SqliteMapper<TRecord> _mapper;
 
@@ -102,6 +105,7 @@ public class SqliteCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
 
         // Assign.
         _connectionString = connectionString;
+        _connectionInitializer = options.ConnectionInitializer;
         Name = name;
         _model = modelFactory(options);
 
@@ -389,13 +393,12 @@ public class SqliteCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
 
     #region private
 
-    private async ValueTask<SqliteConnection> GetConnectionAsync(CancellationToken cancellationToken = default)
-    {
-        var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-        connection.LoadVector();
-        return connection;
-    }
+    private ValueTask<SqliteConnection> GetConnectionAsync(CancellationToken cancellationToken = default)
+        => SqliteConnectionFactory.OpenAsync(
+            _connectionString,
+            _connectionInitializer,
+            loadVector: true,
+            cancellationToken: cancellationToken);
 
     private async IAsyncEnumerable<VectorSearchResult<TRecord>> EnumerateAndMapSearchResultsAsync(
         List<SqliteWhereCondition> conditions,
