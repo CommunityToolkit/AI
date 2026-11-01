@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Version>1.0.0-preview.1</Version>
+    <AssemblyName>CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence</AssemblyName>
+    <RootNamespace>$(AssemblyName)</RootNamespace>
+    <TargetFrameworks>net10.0;net8.0</TargetFrameworks>
+    <Title>Azure Document Intelligence document extraction provider</Title>
+    <Description>Azure Document Intelligence extraction for Microsoft.Extensions.DocumentExtraction.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Azure.AI.DocumentIntelligence" />
+    <Compile Include="..\Shared\AzureResponseContent.cs" LinkBase="Shared" />
+    <InternalsVisibleTo Include="$(AssemblyName).UnitTests" />
+  </ItemGroup>
+</Project>

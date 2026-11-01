@@ -21,6 +21,22 @@
     <Project Path="MEVD/src/SqlServer/SqlServer.csproj" />
     <Project Path="MEVD/src/Weaviate/Weaviate.csproj" />
   </Folder>
+  <Folder Name="/DocumentExtraction/src/">
+    <File Path="DocumentExtraction/src/Directory.Build.props" />
+    <Project Path="DocumentExtraction/src/PdfPig/PdfPig.csproj" />
+    <Project Path="DocumentExtraction/src/AzureContentUnderstanding/AzureContentUnderstanding.csproj" />
+    <Project Path="DocumentExtraction/src/AzureDocumentIntelligence/AzureDocumentIntelligence.csproj" />
+    <Project Path="DocumentExtraction/src/Mistral/Mistral.csproj" />
+    <Project Path="DocumentExtraction/src/Vision/Vision.csproj" />
+  </Folder>
+  <Folder Name="/DocumentExtraction/test/">
+    <File Path="DocumentExtraction/test/Directory.Build.props" />
+    <Project Path="DocumentExtraction/test/PdfPig.UnitTests/PdfPig.UnitTests.csproj" />
+    <Project Path="DocumentExtraction/test/AzureContentUnderstanding.UnitTests/AzureContentUnderstanding.UnitTests.csproj" />
+    <Project Path="DocumentExtraction/test/AzureDocumentIntelligence.UnitTests/AzureDocumentIntelligence.UnitTests.csproj" />
+    <Project Path="DocumentExtraction/test/Mistral.UnitTests/Mistral.UnitTests.csproj" />
+    <Project Path="DocumentExtraction/test/Vision.UnitTests/Vision.UnitTests.csproj" />
+  </Folder>
   <Folder Name="/MEVD/test/">
     <File Path="MEVD/test/Directory.Build.props" />
     <Project Path="MEVD/test/AzureAISearch.UnitTests/AzureAISearch.UnitTests.csproj" />

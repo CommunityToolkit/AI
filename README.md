@@ -29,6 +29,15 @@ The following NuGet packages have been published:
 | [CommunityToolkit.VectorData.SqliteVec] | ![SqliteVec Version][v-sqlitevec] | ![SqliteVec Downloads][d-sqlitevec] |
 | [CommunityToolkit.VectorData.Weaviate] | ![Weaviate Version][v-weaviate] | ![Weaviate Downloads][d-weaviate] |
 
+## Preview document extraction providers
+
+The [document extraction providers](DocumentExtraction/README.md) add native
+PdfPig, Azure Content Understanding, Azure Document Intelligence, Mistral OCR,
+and Microsoft.Extensions.AI Vision packages. These are unreleased previews, not
+additions to the published NuGet package table. A pinned public-source bootstrap
+supplies the experimental core prerequisite until feed packages publish. Their
+acceptance tests are offline and require no cloud or model access.
+
 ## Running Live Tests
 
 The majority of tests in the test suite use [Testcontainers](https://testcontainers.com/) so that conformance tests are run against real servers running inside Docker containers. Docker must be running on your machine for this to work.

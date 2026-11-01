@@ -27,6 +27,20 @@
     <PackageVersion Include="sqlite-vec" Version="0.1.7-alpha.2.1" />
   </ItemGroup>
 
+  <ItemGroup Label="DocumentExtraction">
+    <PackageVersion Update="Microsoft.Extensions.AI.Abstractions" Version="10.10.0-review.20261101.2" Condition="'$(DocumentExtractionBuild)' == 'true'" />
+    <PackageVersion Update="System.Text.Json" Version="10.0.12" Condition="'$(DocumentExtractionBuild)' == 'true'" />
+    <PackageVersion Include="Microsoft.Extensions.Documents.Abstractions" Version="10.10.0-review.20261101.2" />
+    <PackageVersion Include="Microsoft.Extensions.DocumentExtraction.Abstractions" Version="10.10.0-review.20261101.2" />
+    <PackageVersion Include="Azure.AI.ContentUnderstanding" Version="1.1.0" />
+    <PackageVersion Include="Azure.AI.DocumentIntelligence" Version="1.0.0" />
+    <PackageVersion Include="Azure.Core" Version="1.53.0" />
+    <PackageVersion Include="PdfPig" Version="0.1.15" />
+    <PackageVersion Include="Docnet.Core" Version="2.6.0" />
+    <PackageVersion Include="SkiaSharp" Version="3.119.0" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.0" />
+  </ItemGroup>
+
   <ItemGroup Label="Build">
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.401" />
   </ItemGroup>

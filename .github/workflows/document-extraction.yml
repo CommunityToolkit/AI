@@ -1,0 +1,96 @@
+name: Document extraction
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'DocumentExtraction/**'
+      - 'Directory.Build.props'
+      - 'Directory.Build.targets'
+      - 'Directory.Packages.props'
+      - 'CommunityToolkit.AI.slnx'
+      - 'global.json'
+      - 'eng/Bootstrap-DocumentExtractionCore.ps1'
+      - 'eng/New-DocumentExtractionNuGetConfig.ps1'
+      - 'nuget.config'
+      - '.github/workflows/document-extraction.yml'
+  pull_request:
+    branches: [main, 'copilot/*']
+    paths:
+      - 'DocumentExtraction/**'
+      - 'Directory.Build.props'
+      - 'Directory.Build.targets'
+      - 'Directory.Packages.props'
+      - 'CommunityToolkit.AI.slnx'
+      - 'global.json'
+      - 'eng/Bootstrap-DocumentExtractionCore.ps1'
+      - 'eng/New-DocumentExtractionNuGetConfig.ps1'
+      - 'nuget.config'
+      - '.github/workflows/document-extraction.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  bootstrap-core:
+    name: Pack pinned public upstream core
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/document-extraction-sdk
+        with:
+          dotnet-version: 10.0.401
+      - name: Pack original owning upstream projects
+        shell: pwsh
+        env:
+          # Match the verified ordinary owning-project recipe rather than
+          # enabling upstream CI-only build defaults.
+          CI: 'false'
+        run: ./eng/Bootstrap-DocumentExtractionCore.ps1 -OutputDirectory "${{ runner.temp }}/document-extraction-core" -DotnetPath "${{ runner.temp }}/document-extraction-sdk/dotnet.exe"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: document-extraction-core-source-packages
+          path: ${{ runner.temp }}/document-extraction-core/*.10.10.0-review.20261101.2.nupkg
+          if-no-files-found: error
+
+  build-test-pack:
+    name: Offline acceptance (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    needs: bootstrap-core
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v7
+        with:
+          name: document-extraction-core-source-packages
+          path: ${{ runner.temp }}/document-extraction-core
+      - name: Configure isolated source-built core feed
+        shell: pwsh
+        run: ./eng/New-DocumentExtractionNuGetConfig.ps1 -CorePackageDirectory "${{ runner.temp }}/document-extraction-core" -OutputPath "${{ runner.temp }}/document-extraction-nuget.config"
+      - name: Restore exact dependencies
+        run: dotnet restore DocumentExtraction/DocumentExtraction.slnf --configfile "${{ runner.temp }}/document-extraction-nuget.config"
+      - name: Build
+        run: dotnet build DocumentExtraction/DocumentExtraction.slnf --no-restore -c Release
+      - name: Offline tests
+        run: dotnet test DocumentExtraction/DocumentExtraction.slnf --no-build --no-restore -c Release
+      - name: Pack preview artifacts
+        run: dotnet pack DocumentExtraction/DocumentExtraction.slnf --no-build --no-restore -c Release --output artifacts/document-extraction
+      - uses: actions/upload-artifact@v6
+        with:
+          name: document-extraction-preview-packages-${{ matrix.os }}
+          path: artifacts/document-extraction/*.nupkg
+          if-no-files-found: error

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;net8.0</TargetFrameworks>
+    <IsTestProject>true</IsTestProject>
+    <AssemblyName>CommunityToolkit.DocumentExtraction.AzureContentUnderstanding.UnitTests</AssemblyName>
+    <DefineConstants>$(DefineConstants);CONTENT_UNDERSTANDING</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/AzureContentUnderstanding/AzureContentUnderstanding.csproj" />
+    <Compile Include="../AzureTestSupport/*.cs" LinkBase="TestSupport" />
+  </ItemGroup>
+</Project>

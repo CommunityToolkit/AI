@@ -24,3 +24,7 @@ examples/perl/**/local/*
 **cpanfile.snapshot
 **/.modules/
 **/*.AppHost.TypeScript/nuget.config
+
+# Private review inputs and local test-generation reports.
+/.review-inputs/
+/.testagent/

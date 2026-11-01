@@ -1,0 +1,32 @@
+# CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence
+
+Preview Azure Document Intelligence adapter for `IDocumentExtractionClient`,
+targeting .NET 8 and .NET 10. This package depends on Documents and Extraction,
+not DataIngestion, and has not been released to NuGet.org.
+
+Construct `AzureDocumentIntelligenceClient` with an endpoint and `TokenCredential`,
+or a borrowed `DocumentIntelligenceClient`. The default extractor is
+`prebuilt-layout`. `ExtractorName` selects the request model; the genuine returned
+`AnalyzeResult.ModelId` is preserved independently in `SourceOutput.ModelId`.
+
+Supported additional properties are `locale` (string), `pages` (string), and
+`features` (`IEnumerable<string>`). Supported feature names are
+`ocrHighResolution`, `languages`, `barcodes`, `formulas`, `keyValuePairs`,
+`fontStyling`, and `queryFields`, case-insensitively. Other explicit options fail.
+Set the constructor's `includeImages` to fetch detached figure bytes; captions
+and figure sources are still mapped when byte retrieval is disabled.
+
+SDK paragraphs, native section pointers, tables, cells, roles, and all polygon
+vertices map directly. Page units and origins are explicit. Structural ancestors
+contain no aggregate text; multi-page elements retain all their sources without
+duplicating their semantic content.
+
+Input streams and supplied SDK clients are borrowed. Final response and figure
+resources are released after original bytes have been detached. Results need no
+disposal. `CaptureRawContent` defaults to `Disabled`; enabled capture distinguishes
+`Retained` (including exact empty bodies) from `Unavailable`. Native observations
+remain inspectable independently; no SDK reserialization is presented as wire bytes.
+
+Acceptance runs the real SDK against an offline replay transport with fake
+credentials, not Azure. See the [component documentation](../../README.md).
+Licensed under the repository's [MIT license](../../../LICENSE).
