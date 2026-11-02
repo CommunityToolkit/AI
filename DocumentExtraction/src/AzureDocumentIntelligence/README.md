@@ -7,7 +7,8 @@ not DataIngestion, and has not been released to NuGet.org.
 Construct `AzureDocumentIntelligenceClient` with an endpoint and `TokenCredential`,
 or a borrowed `DocumentIntelligenceClient`. The default extractor is
 `prebuilt-layout`. `ExtractorName` selects the request model; the genuine returned
-`AnalyzeResult.ModelId` is preserved independently in `SourceOutput.ModelId`.
+`AnalyzeResult.ModelId` remains available on the native result through
+`document.RawRepresentation`, independently of the request selector.
 
 Supported additional properties are `locale` (string), `pages` (string), and
 `features` (`IEnumerable<string>`). Supported feature names are
@@ -22,10 +23,11 @@ contain no aggregate text; multi-page elements retain all their sources without
 duplicating their semantic content.
 
 Input streams and supplied SDK clients are borrowed. Final response and figure
-resources are released after original bytes have been detached. Results need no
-disposal. `CaptureRawContent` defaults to `Disabled`; enabled capture distinguishes
-`Retained` (including exact empty bodies) from `Unavailable`. Native observations
-remain inspectable independently; no SDK reserialization is presented as wire bytes.
+resources are released after semantic figure bytes have been detached. Results
+need no disposal. `document.RawRepresentation` exposes the native `AnalyzeResult`,
+and source references retain native observations. Captions map only to
+`AlternativeText`, not OCR `Text`. There is no shared raw-response capture policy
+or retained wire artifact.
 
 Acceptance runs the real SDK against an offline replay transport with fake
 credentials, not Azure. See the [component documentation](../../README.md).

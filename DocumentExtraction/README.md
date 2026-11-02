@@ -17,15 +17,15 @@ is introduced here.
 
 All package IDs start with `CommunityToolkit.DocumentExtraction.` and target
 `net8.0` and `net10.0`. Versions are centrally managed; the experimental core
-dependencies currently require `10.10.0-review.20261101.2`. These core
+dependencies currently require `10.10.0-review.20261102.1`. These core
 prereleases are not released on a public package feed. Until the upstream
 packages publish, the component uses a temporary, reproducible **public-source
 prerequisite**, linked to [dotnet/extensions#7588](https://github.com/dotnet/extensions/pull/7588).
 
 `eng/Bootstrap-DocumentExtractionCore.ps1` fetches the full, unmodified public
 `https://github.com/luisquintanilla/extensions.git` source at immutable commit
-`e587de895203092a7dbd1c8e13161a9bec6d5a79`, verifies its tree
-`b9b3540e4159e04b92b77015a0ab87b839b4867e`, and packs the four original owning
+`0f69c5cd069e2a8bc53e5bc0021c6825b4d35726`, verifies its tree
+`102a40f1bfb67efc0746bad6b64faa08c65fe169`, and packs the four original owning
 projects with SDK `10.0.401`. It does not replace upstream projects/imports or
 use a moving build DLL. `Features=` disables the upstream debug-determinism
 compiler feature which otherwise removes portable-PDB SourceLink. No extra
@@ -62,18 +62,26 @@ only; no ONNX inference success is claimed.
 
 Content is local `AIContent` within the full document/section/text/image/table/
 cell hierarchy. Documents and structural ancestors do not duplicate child text.
-Source frames are registered explicitly, native observations retain their identity,
+Source frames are ordinary entries in `SourcePages`, native observations retain their identity,
 and polygons retain every vertex in order. SDK section pointers and table cell
 spans are preserved. A missing original page number stays missing.
 
-Callers own input streams and supplied SDK, HTTP, and chat clients. Results and
-artifacts are data-only, non-disposable values. Temporary resources are disposed
-after exact response bytes and image content have been detached. Raw capture
-defaults to false and distinguishes `Disabled`, `Unavailable`, and `Retained`.
-Native observation inspection is independent of response capture and can still
-contain sensitive data. No serialization of mapped or SDK objects is relabeled
-original response content. Request extractor selection does not fabricate a
-returned model identity.
+Callers own input streams and supplied SDK, HTTP, and chat clients. Returned
+documents are data-only, non-disposable values. Temporary resources are disposed
+after semantic image bytes and JSON observations have been detached. Optional
+`document.RawRepresentation` exposes provider-native inspection: a native Azure
+result, cloned Mistral JSON, or one/ordered multiple Vision chat responses.
+PdfPig retains independent native blocks, not its disposed parser. These objects
+are borrowed mutable inspection objects, not durable serialization or deep-clone
+guarantees, and can contain sensitive data. There is no shared raw-response capture
+policy, wire artifact, or operation registry. Request extractor selection does not
+fabricate a returned model identity.
+
+Text elements store text only in `TextContent.Text`; their optional role is
+independent. Image OCR/transcription `Text` is distinct from `AlternativeText`;
+captions and descriptions populate only the latter. Vision retains reported page
+association without claiming measured paragraph polygons. Other providers retain
+their measured source geometry without inventing units, page numbers, or regions.
 
 ## Source attribution
 

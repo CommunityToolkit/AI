@@ -16,13 +16,13 @@ are preserved. Native objects remain available through explicit source inspectio
 Sections are structural, without aggregate Markdown. Paragraphs spanning pages
 appear once with all reported sources; content without a reported source is not
 assigned a fabricated page. The service reports an analyzer identity, not a model
-identity, so `SourceOutput.ModelId` is not filled from the requested analyzer.
+identity; no model identity is inferred from the requested analyzer.
 
 The caller owns its input and supplied SDK client. The result requires no
-disposal. Available original final response bytes are copied before disposing the
-response. Capture defaults to `Disabled`; enabled capture distinguishes exact
-retained bytes (including an empty body) from `Unavailable`. SDK serialization
-is never relabeled original wire content.
+disposal. `document.RawRepresentation` exposes the native `AnalysisResult`;
+source references retain native observations after response resources are released.
+Figure descriptions map only to `AlternativeText`, not OCR `Text`.
+There is no shared raw-response capture policy or retained wire artifact.
 
 Acceptance uses the real SDK with an offline replay transport and fake credential.
 No Azure resource or authentication is required to run those tests. See the

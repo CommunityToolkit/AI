@@ -136,15 +136,10 @@ public sealed class FoundryMistralOcrClient : IDocumentExtractionClient
         byte[] responseBytes = await SendAsync(requestBody, cancellationToken).ConfigureAwait(false);
         using JsonDocument payload = JsonDocument.Parse(responseBytes);
         JsonElement detachedPayload = payload.RootElement.Clone();
-        var output = new ExtractionDocument(identifier);
-            ExtractionDocumentSourceOutput sourceOutput = ProviderAdapterHelpers.CreateSourceOutput(
-                identifier,
-                ProviderName,
-                GetString(payload.RootElement, "model"),
-                normalizedOptions,
-                detachedPayload,
-                responseBytes);
-            output.AddSourceOutput(sourceOutput);
+        var output = new ExtractionDocument(identifier)
+        {
+            RawRepresentation = detachedPayload,
+        };
 
             if (!payload.RootElement.TryGetProperty("pages", out JsonElement responsePages)
                 || responsePages.ValueKind != JsonValueKind.Array)
@@ -176,12 +171,11 @@ public sealed class FoundryMistralOcrClient : IDocumentExtractionClient
                         width,
                         height,
                         width.HasValue ? ExtractionDocumentCoordinateUnit.Pixel : null,
-                        width.HasValue ? ExtractionDocumentCoordinateOrigin.TopLeft : null,
-                        sourceOutput);
+                        width.HasValue ? ExtractionDocumentCoordinateOrigin.TopLeft : null);
                 var pageReference = new ExtractionDocumentSourceReference(sourcePage, rawRepresentation: page.Clone());
                 var section = new ExtractionDocumentSection();
                 section.Sources.Add(pageReference);
-                output.AddSourcePage(sourcePage);
+                output.SourcePages.Add(sourcePage);
                 output.Sections.Add(section);
                 var replacements = new List<(int Start, int Length, ExtractionDocumentTableElement Table)>();
                 var unplacedTables = new List<ExtractionDocumentTableElement>();
@@ -262,7 +256,7 @@ public sealed class FoundryMistralOcrClient : IDocumentExtractionClient
                 {
                     if (!string.IsNullOrWhiteSpace(value))
                     {
-                        ProviderAdapterHelpers.AddElement(section, new ExtractionDocumentTextElement(new TextContent(value), value), [pageReference]);
+                        ProviderAdapterHelpers.AddElement(section, new ExtractionDocumentTextElement(new TextContent(value)), [pageReference]);
                     }
                 }
             }

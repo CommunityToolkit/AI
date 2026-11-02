@@ -38,9 +38,6 @@ public sealed class PdfPigDocumentExtractionClient(
         using var pdfInput = new MemoryStream(buffer.ToArray(), writable: false);
         using PdfDocument pdf = PdfDocument.Open(pdfInput);
         var output = new ExtractionDocument(identifier);
-        ExtractionDocumentSourceOutput sourceOutput = ProviderAdapterHelpers.CreateSourceOutput(
-            identifier, ProviderName, null, request, null);
-        output.AddSourceOutput(sourceOutput);
         IPageSegmenter segmenter = pageSegmenter ?? DefaultPageSegmenter.Instance;
         for (int pageNumber = 1; pageNumber <= pdf.NumberOfPages; pageNumber++)
         {
@@ -48,8 +45,8 @@ public sealed class PdfPigDocumentExtractionClient(
             var page = pdf.GetPage(pageNumber);
             (ExtractionDocumentSourcePage frame, _) = ProviderAdapterHelpers.CreatePageFrame(
                 identifier, ProviderName, pageNumber, page.Width, page.Height,
-                ExtractionDocumentCoordinateUnit.Point, ExtractionDocumentCoordinateOrigin.BottomLeft, sourceOutput);
-            output.AddSourcePage(frame);
+                ExtractionDocumentCoordinateUnit.Point, ExtractionDocumentCoordinateOrigin.BottomLeft);
+            output.SourcePages.Add(frame);
             var section = new ExtractionDocumentSection();
             section.Sources.Add(new ExtractionDocumentSourceReference(frame));
             output.Sections.Add(section);
@@ -63,8 +60,8 @@ public sealed class PdfPigDocumentExtractionClient(
                         new(bounds.Right, bounds.Top), new(bounds.Left, bounds.Top),
                     ], block);
                 ProviderAdapterHelpers.AddElement(section,
-                    new ExtractionDocumentTextElement(new TextContent(block.Text), block.Text,
-                        ProviderAdapterHelpers.NormalizeTextRole(roleResolver?.Invoke(block))), [source]);
+                    new ExtractionDocumentTextElement(new TextContent(block.Text),
+                        role: ProviderAdapterHelpers.NormalizeTextRole(roleResolver?.Invoke(block))), [source]);
             }
         }
 

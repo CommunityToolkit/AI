@@ -14,7 +14,7 @@ using var input = File.OpenRead("document.pdf");
 var document = await extractor.ExtractAsync(input, "document.pdf", "application/pdf");
 ```
 
-Every actual PDF page is registered, including empty pages. Text blocks retain
+Every actual PDF page appears in `SourcePages`, including empty pages. Text blocks retain
 their native observations and four ordered bounding-box vertices in PDF points,
 with a bottom-left origin. The supplied segmenter and word extractor are borrowed;
 an optional `roleResolver` preserves custom roles and normalizes common headings
@@ -27,8 +27,8 @@ not perform OCR, download models, or invoke ONNX. External segmenters can be
 supplied without introducing an inference dependency into this package.
 
 The caller owns its input stream. The returned document is data and requires no
-disposal. `CaptureRawContent` defaults to false (`Disabled`); enabling it yields
-`Unavailable`, because native PDF extraction has no HTTP response body.
+disposal. `document.RawRepresentation` remains null because the parser is disposed;
+independent native text blocks remain inspectable through their source references.
 
 See the [component documentation](../../README.md) for dependency bootstrap,
 offline acceptance, and source attribution. Licensed under the repository's

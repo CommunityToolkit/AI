@@ -24,13 +24,9 @@ public sealed class VisionStructuredAcceptanceTests
         """;
 
     [Theory]
-    [InlineData(null, false)]
-    [InlineData(null, true)]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public async Task ExtractAsync_ValidStructuredImage_PreservesConcretePayloadSourcesModelRawAndSchema(bool? capture, bool explicitRaw)
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExtractAsync_ValidStructuredImage_PreservesPayloadExactResponseRootNativeSourcesAndSchema(bool explicitRaw)
     {
         using var native = JsonDocument.Parse(Valid);
         object raw = native.RootElement.Clone();
@@ -39,7 +35,7 @@ public sealed class VisionStructuredAcceptanceTests
         using var input = new BorrowedInput([137, 80, 78, 71, 11, 22, 33]);
         using var client = new VisionLlmOcrClient(chat, useStructuredOutput: true);
         var result = await client.ExtractAsync(input, "invoice-panels.png", "image/png",
-            capture is null ? null : new() { ExtractorName = "requested-structured-route", CaptureRawContent = capture.Value });
+            new() { ExtractorName = "requested-structured-route" });
 
         Assert.Equal("invoice-panels.png", result.Identifier);
         Assert.Equal(2, result.Sections.Count);
@@ -49,8 +45,8 @@ public sealed class VisionStructuredAcceptanceTests
         var first = result.Sections[0];
         Assert.Equal(3, first.Elements.Count);
         var text = Assert.IsType<ExtractionDocumentTextElement>(first.Elements[0]);
-        Assert.Equal("# Invoice Ω\nOnly prose, not cell text.", text.Text);
-        Assert.Equal(text.Text, Assert.IsType<TextContent>(text.Content).Text);
+        Assert.Equal("# Invoice Ω\nOnly prose, not cell text.", Assert.IsType<TextContent>(text.Content).Text);
+        Assert.Null(text.Role);
         var table = Assert.IsType<ExtractionDocumentTableElement>(first.Elements[1]);
         Assert.Equal(2, table.Cells.RowCount);
         Assert.Equal(2, table.Cells.ColumnCount);
@@ -61,14 +57,14 @@ public sealed class VisionStructuredAcceptanceTests
         Assert.Null(table.Cells[0, 1]);
         var body = table.Cells[1, 0]!;
         Assert.Equal((1, 0, 1, 1), (body.RowIndex, body.ColumnIndex, body.RowSpan, body.ColumnSpan));
-        Assert.Equal("Thé", Assert.IsType<ExtractionDocumentTextElement>(body.Content).Text);
+        Assert.Equal("Thé", Assert.IsType<TextContent>(Assert.IsType<ExtractionDocumentTextElement>(body.Content).Content).Text);
         Assert.Null(body.Role);
         var contentless = table.Cells[1, 1]!;
         Assert.Null(contentless.Content);
         Assert.Equal("stub", contentless.Role);
         Assert.Equal((1, 1, 1, 1), (contentless.RowIndex, contentless.ColumnIndex, contentless.RowSpan, contentless.ColumnSpan));
         var figure = Assert.IsType<ExtractionDocumentImageElement>(first.Elements[2]);
-        Assert.Equal("Figure 1: Revenue €", figure.Text);
+        Assert.Null(figure.Text); // Caption is descriptive metadata, not OCR.
         Assert.Equal("Figure 1: Revenue €", figure.AlternativeText);
         Assert.Null(figure.Content);
         Assert.Null(figure.Source);
@@ -103,21 +99,17 @@ public sealed class VisionStructuredAcceptanceTests
                 Assert.Same(first.Sources[0], Assert.Single(cell.Content.Sources));
             }
         });
-        var output = Assert.Single(result.SourceOutputs);
-        Assert.Equal("vision-llm", output.ProviderName);
-        Assert.Equal("actual-vision-model", output.ModelId);
-        Assert.Same(explicitRaw ? raw : response, output.GetRawRepresentation());
-        Assert.All(result.SourcePages, p => Assert.Same(output, p.SourceOutput));
-        Assert.Equal(capture == true ? "Unavailable" : "Disabled", output.ContentStatus.ToString());
-        Assert.Null(output.GetRawContent()); // JSON text/native object are not an exact provider response body.
-        using var preservedResponse = JsonDocument.Parse(Assert.IsType<ChatResponse>(
-            explicitRaw ? response : output.GetRawRepresentation()).Text);
-        JsonElement preservedNative = explicitRaw ? Assert.IsType<JsonElement>(output.GetRawRepresentation()) : preservedResponse.RootElement;
+        var nativeResponse = Assert.IsType<ChatResponse>(result.RawRepresentation);
+        Assert.Same(response, nativeResponse);
+        Assert.Equal("actual-vision-model", nativeResponse.ModelId);
+        Assert.Same(explicitRaw ? raw : null, nativeResponse.RawRepresentation);
+        using var preservedResponse = JsonDocument.Parse(nativeResponse.Text);
+        JsonElement preservedNative = explicitRaw ? Assert.IsType<JsonElement>(nativeResponse.RawRepresentation) : preservedResponse.RootElement;
         Assert.Equal("fr", preservedNative.GetProperty("pages")[0].GetProperty("language").GetString());
         Assert.Equal(0.875, preservedNative.GetProperty("pages")[0].GetProperty("confidence").GetDouble());
         Assert.Equal(Valid, response.Text);
         var request = Assert.Single(chat.Requests);
-        Assert.Equal(capture is null ? null : "requested-structured-route", request.Options!.ModelId);
+        Assert.Equal("requested-structured-route", request.Options!.ModelId);
         var schema = Assert.IsType<ChatResponseFormatJson>(request.Options.ResponseFormat).Schema!.Value;
         Assert.False(schema.GetProperty("additionalProperties").GetBoolean());
         Assert.Equal("pages", schema.GetProperty("required")[0].GetString());
@@ -150,8 +142,8 @@ public sealed class VisionStructuredAcceptanceTests
         Assert.Equal(count, result.Sections.Count);
         Assert.All(result.SourcePages, p => Assert.Equal(number, p.PageNumber));
         Assert.Empty(result.EnumerateContent());
-        Assert.Null(Assert.Single(result.SourceOutputs).ModelId);
-        Assert.Same(response, result.SourceOutputs[0].GetRawRepresentation());
+        Assert.Null(Assert.IsType<ChatResponse>(result.RawRepresentation).ModelId);
+        Assert.Same(response, result.RawRepresentation);
         Assert.Equal("Use the strict schema.", Assert.IsType<TextContent>(Assert.Single(chat.Requests).Messages[0].Contents[0]).Text);
         Assert.IsType<ChatResponseFormatJson>(chat.Requests[0].Options!.ResponseFormat);
         input.AssertStillReadable(1);
@@ -285,10 +277,13 @@ public sealed class VisionStructuredAcceptanceTests
     [Fact]
     public async Task ExtractAsync_LocalPdfStructured_PreservesNativeImageOrderOriginalFramesAndKnownIndexPrompt()
     {
-        var chat = new RecordingChatClient(
-            RecordingChatClient.Response("""{"pages":[{"index":0,"markdown":"First"}]}"""),
-            RecordingChatClient.Response("""{"pages":[{"markdown":"Blank source page"}]}"""),
-            RecordingChatClient.Response("""{"pages":[{"index":2,"figures":[{"caption":"Red square"}]}]}"""));
+        ChatResponse[] responses =
+        [
+            RecordingChatClient.Response("""{"pages":[{"index":0,"markdown":"First"}]}""", new object()),
+            RecordingChatClient.Response("""{"pages":[{}]}"""),
+            RecordingChatClient.Response("""{"pages":[{"index":2,"figures":[{"caption":"Red square"}]}]}""", new object()),
+        ];
+        var chat = new RecordingChatClient(responses);
         using var input = new BorrowedInput(PdfFixture.Create());
         using var client = new VisionLlmOcrClient(chat, useStructuredOutput: true);
         var result = await client.ExtractAsync(input, "native.pdf", "application/pdf");
@@ -297,13 +292,19 @@ public sealed class VisionStructuredAcceptanceTests
         Assert.Equal(new[] { (300d, 400d), (500d, 600d), (700d, 800d) },
             result.SourcePages.Select(p => (p.Dimensions!.Value.Width, p.Dimensions.Value.Height)));
         Assert.Equal("First", Assert.IsType<TextContent>(result.Sections[0].Elements[0].Content).Text);
-        Assert.Equal("Blank source page", Assert.IsType<TextContent>(result.Sections[1].Elements[0].Content).Text);
+        Assert.Empty(result.Sections[1].Elements);
         Assert.Equal("Red square", Assert.IsType<ExtractionDocumentImageElement>(result.Sections[2].Elements[0]).AlternativeText);
+        Assert.Null(Assert.IsType<ExtractionDocumentImageElement>(result.Sections[2].Elements[0]).Text);
+        var nativeResponses = Assert.IsType<ChatResponse[]>(result.RawRepresentation);
+        Assert.Equal(3, nativeResponses.Length);
         for (int i = 0; i < 3; i++)
         {
             var page = result.SourcePages[i];
-            Assert.Same(result.SourceOutputs[i], page.SourceOutput);
-            Assert.Same(page, Assert.Single(result.Sections[i].Elements[0].Sources).Page);
+            Assert.Same(responses[i], nativeResponses[i]);
+            var source = Assert.Single(result.Sections[i].Sources);
+            Assert.Same(page, source.Page);
+            Assert.Same(responses[i].RawRepresentation ?? responses[i], source.GetRawRepresentation());
+            Assert.All(result.Sections[i].Elements, element => Assert.Same(source, Assert.Single(element.Sources)));
             Assert.Equal(ExtractionDocumentCoordinateUnit.Point, page.CoordinateUnit);
             Assert.Equal(ExtractionDocumentCoordinateOrigin.BottomLeft, page.CoordinateOrigin);
             var request = chat.Requests[i];
@@ -332,6 +333,23 @@ public sealed class VisionStructuredAcceptanceTests
         await Assert.ThrowsAsync<InvalidDataException>(() => client.ExtractAsync(input, "native.pdf", "application/pdf"));
         Assert.IsType<ChatResponseFormatJson>(Assert.Single(chat.Requests).Options!.ResponseFormat);
         Assert.Equal("image/png", Assert.IsType<DataContent>(chat.Requests[0].Messages[0].Contents[1]).MediaType);
+        input.AssertStillReadable((byte)'%');
+        Assert.Equal(0, chat.DisposeCalls);
+    }
+
+    [Fact]
+    public async Task ExtractAsync_ZeroPagePdf_PreservesEmptyResponseArrayWithoutChatOrInventedFrames()
+    {
+        var chat = new RecordingChatClient();
+        using var input = new BorrowedInput(PdfFixture.Create(empty: true));
+        using var client = new VisionLlmOcrClient(chat, useStructuredOutput: true);
+        var result = await client.ExtractAsync(input, "empty.pdf", "application/pdf");
+        Assert.Equal("empty.pdf", result.Identifier);
+        Assert.Empty(Assert.IsType<ChatResponse[]>(result.RawRepresentation));
+        Assert.Empty(result.SourcePages);
+        Assert.Empty(result.Sections);
+        Assert.Empty(chat.Requests);
+        client.Dispose();
         input.AssertStillReadable((byte)'%');
         Assert.Equal(0, chat.DisposeCalls);
     }
@@ -380,7 +398,7 @@ public sealed class VisionStructuredAcceptanceTests
         Assert.Null(table.Content);
         Assert.Equal((0, 0, 2, 1, "rowHeader"), (table.Cells[0, 0]!.RowIndex, table.Cells[0, 0]!.ColumnIndex,
             table.Cells[0, 0]!.RowSpan, table.Cells[0, 0]!.ColumnSpan, table.Cells[0, 0]!.Role));
-        Assert.Equal("North", Assert.IsType<ExtractionDocumentTextElement>(table.Cells[0, 0]!.Content).Text);
+        Assert.Equal("North", Assert.IsType<TextContent>(Assert.IsType<ExtractionDocumentTextElement>(table.Cells[0, 0]!.Content).Content).Text);
         Assert.Null(table.Cells[1, 0]);
         Assert.Null(table.Cells[0, 2]);
         Assert.Equal("€125.50", Assert.IsType<TextContent>(table.Cells[1, 2]!.Content!.Content).Text);

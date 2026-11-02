@@ -23,7 +23,9 @@ table placeholders are replaced in reading order; ambiguous/unplaced tables rema
 separate rather than deleting source text. Image bytes and JSON observations are
 detached before HTTP responses/parsers are disposed.
 
-Capture defaults to `Disabled`. Enabled capture retains the exact response bytes,
-not JSON reserialization. Results require no disposal; caller input stays open.
+`document.RawRepresentation` is a cloned root `JsonElement`, independent of the
+disposed parser. Source observations are cloned as well. This is native JSON
+inspection, not original wire-byte capture or a shared operation envelope.
+Results require no disposal; caller input stays open.
 See the [component documentation](../../README.md) for offline acceptance and
 attribution. Licensed under the repository's [MIT license](../../../LICENSE).

@@ -15,8 +15,8 @@ namespace CommunityToolkit.DocumentExtraction.Mistral.UnitTests;
 
 public sealed class FoundryMistralOcrClientTests
 {
-    // Deliberate property order, spaces, escaped Unicode, and a trailing newline:
-    // expected capture is these bytes, never a serialization of mapped/native objects.
+    // Wire fixture includes Unicode escapes and provider-only usage/model fields
+    // to verify the detached native JSON as well as mapped semantic content.
     private static readonly byte[] s_fidelityResponse = Encoding.UTF8.GetBytes(
         """
         {
@@ -43,16 +43,11 @@ public sealed class FoundryMistralOcrClientTests
         await session.AssertCleanAndBorrowedAsync(1, 1);
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task ExtractAsync_CaptureOptionsMatrix_PreservesExactJsonBytesAndDetachedChildren(bool? capture)
+    [Fact]
+    public async Task ExtractAsync_NativeJsonRootAndChildren_RemainReadableAfterCleanup()
     {
         using var session = new OfflineSession(s_fidelityResponse);
-        var options = capture is null ? null : new DocumentExtractionOptions { CaptureRawContent = capture.Value };
-        ExtractionDocument document = await Extract(session, options);
-        ExtractionDocumentSourceOutput output = Assert.Single(document.SourceOutputs);
+        ExtractionDocument document = await Extract(session);
         ExtractionDocumentSourcePage page = Assert.Single(document.SourcePages);
         ExtractionDocumentSection section = Assert.Single(document.Sections);
         Assert.Equal(["before\n", "<table><tr><th colspan=\"2\">Invoice</th></tr><tr><td></td><td>17.50</td></tr></table>", "\nafter Ω"],
@@ -60,7 +55,6 @@ public sealed class FoundryMistralOcrClientTests
         var table = Assert.IsType<ExtractionDocumentTableElement>(section.Elements[1]);
         var image = Assert.IsType<ExtractionDocumentImageElement>(section.Elements[3]);
         AssertLiteralTable(table);
-        Assert.Same(output, page.SourceOutput);
         Assert.Same(page, Assert.Single(table.Sources).Page);
         Assert.Same(page, Assert.Single(image.Sources).Page);
         Assert.Equal(5, page.PageNumber);
@@ -68,10 +62,11 @@ public sealed class FoundryMistralOcrClientTests
         // Operation's JsonDocument is already disposed; also dispose client/HTTP before native inspection.
         await session.AssertCleanAndBorrowedAsync(1, 1);
         session.Http.Dispose();
-        JsonElement root = Assert.IsType<JsonElement>(output.GetRawRepresentation());
+        JsonElement root = Assert.IsType<JsonElement>(document.RawRepresentation);
         Assert.Equal("genuine-wire-model", root.GetProperty("model").GetString());
         Assert.Equal(1, root.GetProperty("usage_info").GetProperty("pages_processed").GetInt32());
         JsonElement nativePage = Assert.IsType<JsonElement>(Assert.Single(section.Sources).GetRawRepresentation());
+        Assert.Equal(root.GetProperty("pages")[0].GetRawText(), nativePage.GetRawText());
         Assert.Equal("before\n[tbl-0](tbl-0)\nafter Ω", nativePage.GetProperty("markdown").GetString());
         JsonElement nativeTable = Assert.IsType<JsonElement>(Assert.Single(table.Sources).GetRawRepresentation());
         Assert.Equal("html", nativeTable.GetProperty("format").GetString());
@@ -79,32 +74,23 @@ public sealed class FoundryMistralOcrClientTests
         JsonElement nativeImage = Assert.IsType<JsonElement>(Assert.Single(image.Sources).GetRawRepresentation());
         Assert.Equal("img-7", nativeImage.GetProperty("id").GetString());
         Assert.Equal([0, 1, 255, 128], Assert.IsType<DataContent>(image.Content).Data.ToArray());
-        Assert.Equal(capture == true ? ExtractionDocumentRawContentStatus.Retained : ExtractionDocumentRawContentStatus.Disabled,
-            output.ContentStatus);
-        if (capture == true)
-        {
-            ExtractionDocumentArtifact artifact = Assert.IsType<ExtractionDocumentArtifact>(output.GetRawContent());
-            Assert.Equal("application/json", artifact.MediaType);
-            Assert.Equal(s_fidelityResponse, artifact.Content.ToArray());
-            Assert.Null(artifact.Source);
-        }
-        else
-        {
-            Assert.Null(output.GetRawContent());
-        }
     }
 
     [Theory]
     [InlineData("""{"model":"actual-v9","pages":[]}""", "actual-v9")]
     [InlineData("""{"pages":[]}""", null)]
-    public async Task ExtractAsync_ResponseModelDiffersFromExtractorName_UsesActualModelId(string json, string? actual)
+    public async Task ExtractAsync_ResponseModelDiffersFromExtractorName_PreservesWireModelInNativeRoot(string json, string? actual)
     {
         using var session = new OfflineSession(Encoding.UTF8.GetBytes(json));
         ExtractionDocument document = await Extract(session, RequestedOptions());
-        ExtractionDocumentSourceOutput output = Assert.Single(document.SourceOutputs);
-        Assert.Equal(actual, output.ModelId);
-        Assert.Equal("foundry-mistral-ocr", output.ProviderName);
-        Assert.Equal("invoice.pdf:foundry-mistral-ocr:output", output.Identifier);
+        JsonElement root = Assert.IsType<JsonElement>(document.RawRepresentation);
+        Assert.Equal(actual is not null, root.TryGetProperty("model", out JsonElement model));
+        if (actual is not null)
+        {
+            Assert.Equal(actual, model.GetString());
+        }
+        Assert.Empty(root.GetProperty("pages").EnumerateArray());
+        Assert.Empty(document.SourcePages);
         AssertRequest(Assert.Single(session.Handler.Requests));
         await session.AssertCleanAndBorrowedAsync(1, 1);
     }
@@ -232,6 +218,32 @@ public sealed class FoundryMistralOcrClientTests
     }
 
     [Fact]
+    public async Task ExtractAsync_BlankPage_PreservesOriginalFrameAndNativeRootWithoutInventedContent()
+    {
+        using var session = new OfflineSession(Encoding.UTF8.GetBytes(
+            """{"model":"blank-page-model","pages":[{"index":7,"markdown":"","dimensions":{"width":720,"height":900}}]}"""));
+        ExtractionDocument document = await Extract(session);
+        var page = Assert.Single(document.SourcePages);
+        Assert.Equal(8, page.PageNumber);
+        Assert.Equal(new ExtractionDocumentPageDimensions(720, 900), page.Dimensions);
+        Assert.Equal(ExtractionDocumentCoordinateUnit.Pixel, page.CoordinateUnit);
+        Assert.Equal(ExtractionDocumentCoordinateOrigin.TopLeft, page.CoordinateOrigin);
+        var section = Assert.Single(document.Sections);
+        Assert.Empty(section.Elements);
+        Assert.Empty(document.EnumerateContent());
+        var source = Assert.Single(section.Sources);
+        Assert.Same(page, source.Page);
+        Assert.Empty(source.Polygon);
+        await session.AssertCleanAndBorrowedAsync(1, 1);
+        var root = Assert.IsType<JsonElement>(document.RawRepresentation);
+        Assert.Equal("blank-page-model", root.GetProperty("model").GetString());
+        Assert.Equal(7, root.GetProperty("pages")[0].GetProperty("index").GetInt32());
+        var nativePage = Assert.IsType<JsonElement>(source.GetRawRepresentation());
+        Assert.Equal("", nativePage.GetProperty("markdown").GetString());
+        Assert.Equal(root.GetProperty("pages")[0].GetRawText(), nativePage.GetRawText());
+    }
+
+    [Fact]
     public async Task ExtractAsync_PageIndicesAndDimensions_PreserveOriginalPageFrames()
     {
         byte[] bytes = Encoding.UTF8.GetBytes(
@@ -248,7 +260,6 @@ public sealed class FoundryMistralOcrClientTests
         for (int i = 0; i < 2; i++)
         {
             Assert.Same(document.SourcePages[i], Assert.Single(document.Sections[i].Sources).Page);
-            Assert.Same(document.SourceOutputs[0], document.SourcePages[i].SourceOutput);
             Assert.Same(document.SourcePages[i], Assert.Single(document.Sections[i].Elements[0].Sources).Page);
         }
 
@@ -295,9 +306,9 @@ public sealed class FoundryMistralOcrClientTests
         Assert.Equal([3d, 6d, 9d, 12d], session.Delays.Select(d => d.TotalSeconds));
         Assert.All(session.Handler.Requests, AssertRequest);
         AssertFreshRequests(session.Handler.Requests);
-        ExtractionDocumentSourceOutput output = Assert.Single(document.SourceOutputs);
-        Assert.Equal(s_fidelityResponse, output.GetRawContent()!.Content.ToArray());
-        Assert.Equal("genuine-wire-model", output.ModelId);
+        JsonElement root = Assert.IsType<JsonElement>(document.RawRepresentation);
+        Assert.Equal("genuine-wire-model", root.GetProperty("model").GetString());
+        Assert.Equal(1, root.GetProperty("usage_info").GetProperty("pages_processed").GetInt32());
         Assert.Equal(4, Assert.Single(document.Sections).Elements.Count);
         await session.AssertCleanAndBorrowedAsync(5, 5);
     }
@@ -392,7 +403,7 @@ public sealed class FoundryMistralOcrClientTests
     }
 
     [Fact]
-    public async Task ExtractAsync_SnapshotsOptionsBeforeInputCopyAwait_PreservesRequestAndCapturePolicy()
+    public async Task ExtractAsync_SnapshotsOptionsBeforeInputCopyAwait_PreservesRequest()
     {
         var input = new GatedInput(OfflineSession.InputBytes);
         using var session = new OfflineSession(input: input);
@@ -402,14 +413,15 @@ public sealed class FoundryMistralOcrClientTests
         Assert.False(pending.IsCompleted);
         Assert.Empty(session.Handler.Requests);
         options.ExtractorName = "mutated";
-        options.CaptureRawContent = false;
         options.AdditionalProperties["imageLimit"] = 99;
         options.AdditionalProperties["unsupported-later"] = true;
         input.Release();
         ExtractionDocument document = await pending;
         AssertRequest(Assert.Single(session.Handler.Requests));
-        Assert.Equal(ExtractionDocumentRawContentStatus.Retained, Assert.Single(document.SourceOutputs).ContentStatus);
-        Assert.Equal(OfflineSession.EmptyResponse, document.SourceOutputs[0].GetRawContent()!.Content.ToArray());
+        JsonElement root = Assert.IsType<JsonElement>(document.RawRepresentation);
+        Assert.Equal("wire-model", root.GetProperty("model").GetString());
+        Assert.Empty(root.GetProperty("pages").EnumerateArray());
+        Assert.Empty(document.Sections);
         await session.AssertCleanAndBorrowedAsync(1, 1);
     }
 
@@ -534,7 +546,7 @@ public sealed class FoundryMistralOcrClientTests
             httpClient: session.Http))
         {
             ExtractionDocument document = await publicClient.ExtractAsync(session.Input, "public.pdf", "application/pdf");
-            Assert.Equal("wire-model", Assert.Single(document.SourceOutputs).ModelId);
+            Assert.Equal("wire-model", Assert.IsType<JsonElement>(document.RawRepresentation).GetProperty("model").GetString());
             using JsonDocument request = JsonDocument.Parse(Assert.Single(session.Handler.Requests).Body);
             Assert.Equal("mistral-ocr-4-0", request.RootElement.GetProperty("model").GetString());
             publicClient.Dispose();
@@ -629,7 +641,7 @@ public sealed class FoundryMistralOcrClientTests
 
     private static DocumentExtractionOptions RequestedOptions()
     {
-        var options = new DocumentExtractionOptions { ExtractorName = "genuine-request-model", CaptureRawContent = true };
+        var options = new DocumentExtractionOptions { ExtractorName = "genuine-request-model" };
         options.AdditionalProperties["includeImages"] = true;
         options.AdditionalProperties["imageLimit"] = 2;
         options.AdditionalProperties["imageMinSize"] = 40;

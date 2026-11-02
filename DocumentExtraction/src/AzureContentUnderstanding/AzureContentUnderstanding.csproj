@@ -9,7 +9,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Azure.AI.ContentUnderstanding" />
-    <Compile Include="..\Shared\AzureResponseContent.cs" LinkBase="Shared" />
     <InternalsVisibleTo Include="$(AssemblyName).UnitTests" />
   </ItemGroup>
 </Project>

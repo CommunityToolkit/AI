@@ -88,17 +88,10 @@ public sealed class AzureDocumentIntelligenceClient : IDocumentExtractionClient
             .ConfigureAwait(false);
         AnalyzeResult result = operation.Value;
         using Response rawResponse = operation.GetRawResponse();
-        var output = new Microsoft.Extensions.Documents.ExtractionDocument(identifier);
-            ExtractionDocumentSourceOutput sourceOutput = ProviderAdapterHelpers.CreateSourceOutput(
-                identifier,
-                ProviderName,
-                result.ModelId,
-                normalizedOptions,
-                result,
-                normalizedOptions.CaptureRawContent
-                    ? AzureResponseContent.GetBufferedResponseBytes(rawResponse)
-                    : null);
-            output.AddSourceOutput(sourceOutput);
+        var output = new Microsoft.Extensions.Documents.ExtractionDocument(identifier)
+        {
+            RawRepresentation = result,
+        };
             IReadOnlyDictionary<int, PageFrame> frames = result.Pages.ToDictionary(
                 page => page.PageNumber,
                 page =>
@@ -111,8 +104,7 @@ public sealed class AzureDocumentIntelligenceClient : IDocumentExtractionClient
                             page.Width,
                             page.Height,
                             MapUnit(page.Unit),
-                            ExtractionDocumentCoordinateOrigin.TopLeft,
-                            sourceOutput);
+                            ExtractionDocumentCoordinateOrigin.TopLeft);
                     var section = new ExtractionDocumentSection();
                     section.Sources.Add(new ExtractionDocumentSourceReference(sourcePage, rawRepresentation: page));
                     foreach (DocumentSelectionMark mark in page.SelectionMarks ?? [])
@@ -125,7 +117,7 @@ public sealed class AzureDocumentIntelligenceClient : IDocumentExtractionClient
                         section.Sources.Add(ProviderAdapterHelpers.CreateSource(sourcePage, barcode.Polygon, barcode)!);
                     }
 
-                    output.AddSourcePage(sourcePage);
+                    output.SourcePages.Add(sourcePage);
                     output.Sections.Add(section);
                     return new PageFrame(sourcePage, section);
                 });
@@ -149,7 +141,7 @@ public sealed class AzureDocumentIntelligenceClient : IDocumentExtractionClient
                     foreach (DocumentLine line in page.Lines)
                     {
                         ProviderAdapterHelpers.AddElement(frames[page.PageNumber].Section,
-                            new ExtractionDocumentTextElement(new TextContent(line.Content), line.Content),
+                            new ExtractionDocumentTextElement(new TextContent(line.Content)),
                             [ProviderAdapterHelpers.CreateSource(frames[page.PageNumber].SourcePage, line.Polygon, line)]);
                     }
                 }
@@ -173,7 +165,7 @@ public sealed class AzureDocumentIntelligenceClient : IDocumentExtractionClient
                 .Select(region => ProviderAdapterHelpers.CreateSource(
                     frames[region.PageNumber].SourcePage, region.Polygon, paragraph))
                 .ToArray();
-            var element = new ExtractionDocumentTextElement(new TextContent(text), text, ToTextRole(paragraph.Role));
+            var element = new ExtractionDocumentTextElement(new TextContent(text), role: ToTextRole(paragraph.Role));
             elements.Add($"/paragraphs/{index}", element);
             ProviderAdapterHelpers.AddElement(ProviderAdapterHelpers.GetSection(output, sources), element, sources);
         }
@@ -209,7 +201,7 @@ public sealed class AzureDocumentIntelligenceClient : IDocumentExtractionClient
                 }
 
                 ExtractionDocumentTextElement? content = cell.Content is { } text
-                    ? new ExtractionDocumentTextElement(new TextContent(text), text)
+                    ? new ExtractionDocumentTextElement(new TextContent(text))
                     : null;
                 foreach (ExtractionDocumentSourceReference source in cellSources)
                 {

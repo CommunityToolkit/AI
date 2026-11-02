@@ -17,16 +17,16 @@ public sealed class PdfPigDocumentExtractionClientTests
         ExtractionDocument result = await client.ExtractAsync(input, "invoice.pdf", "application/pdf");
         var text = Assert.IsType<ExtractionDocumentTextElement>(Assert.Single(result.EnumerateContent()));
         Assert.Equal("Native invoice 42", Assert.IsType<TextContent>(text.Content).Text);
-        Assert.Equal("Native invoice 42", text.Text);
+        Assert.Null(text.Role);
         var source = Assert.Single(text.Sources);
         var native = Assert.IsType<TextBlock>(source.GetRawRepresentation());
-        Assert.Equal(native.Text, text.Text);
+        Assert.Equal(native.Text, Assert.IsType<TextContent>(text.Content).Text);
         var bounds = native.BoundingBox;
         Assert.Equal(new[] { (bounds.Left, bounds.Bottom), (bounds.Right, bounds.Bottom),
             (bounds.Right, bounds.Top), (bounds.Left, bounds.Top) },
             source.Polygon.Select(point => (point.X, point.Y)));
         Assert.Same(result.SourcePages[0], source.Page);
-        Assert.Same(Assert.Single(result.SourceOutputs), source.Page.SourceOutput);
+        Assert.Null(result.RawRepresentation);
         Assert.Equal(1, source.Page.PageNumber);
         Assert.Equal(ExtractionDocumentCoordinateUnit.Point, source.Page.CoordinateUnit);
         Assert.Equal(ExtractionDocumentCoordinateOrigin.BottomLeft, source.Page.CoordinateOrigin);
@@ -47,23 +47,21 @@ public sealed class PdfPigDocumentExtractionClientTests
         Assert.Single(result.EnumerateContent());
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task ExtractAsync_RawCaptureMatrix_ReportsNativeAvailabilityWithoutInventedPdfObject(bool? capture)
+    [Fact]
+    public async Task ExtractAsync_NullNativeRoot_PreservesIndependentTextBlockAfterClientAndInputDisposal()
     {
         using var input = new MemoryStream(PdfFixture.Create());
         using var client = new PdfPigDocumentExtractionClient();
-        var result = await client.ExtractAsync(input, "capture", "application/pdf",
-            capture.HasValue ? new DocumentExtractionOptions { CaptureRawContent = capture.Value } : null);
-        var output = Assert.Single(result.SourceOutputs);
-        Assert.Equal("pdfpig", output.ProviderName);
-        Assert.Null(output.ModelId);
-        Assert.Null(output.GetRawRepresentation());
-        Assert.Null(output.GetRawContent());
-        Assert.Equal(capture == true ? "Unavailable" : "Disabled", output.ContentStatus.ToString());
-        Assert.IsType<TextBlock>(Assert.Single(Assert.Single(result.EnumerateContent()).Sources).GetRawRepresentation());
+        var result = await client.ExtractAsync(input, "native-root", "application/pdf");
+        client.Dispose();
+        input.Dispose();
+        Assert.Null(result.RawRepresentation);
+        var text = Assert.IsType<ExtractionDocumentTextElement>(Assert.Single(result.EnumerateContent()));
+        var source = Assert.Single(text.Sources);
+        var native = Assert.IsType<TextBlock>(source.GetRawRepresentation());
+        Assert.Equal("Native invoice 42", native.Text);
+        Assert.Equal(native.Text, Assert.IsType<TextContent>(text.Content).Text);
+        Assert.Same(result.SourcePages[0], source.Page);
     }
 
     [Theory]
@@ -119,7 +117,9 @@ public sealed class PdfPigDocumentExtractionClientTests
         client.Dispose();
         using var input = new MemoryStream(PdfFixture.Create());
         var result = await client.ExtractAsync(input, "injected", "application/pdf");
-        Assert.Equal("heading", Assert.IsType<ExtractionDocumentTextElement>(Assert.Single(result.EnumerateContent())).Role);
+        var text = Assert.IsType<ExtractionDocumentTextElement>(Assert.Single(result.EnumerateContent()));
+        Assert.Equal("heading", text.Role);
+        Assert.Equal("Native invoice 42", Assert.IsType<TextContent>(text.Content).Text);
         Assert.Equal(3, segmenter.Calls);
         Assert.True(words.Calls > 0);
         Assert.False(segmenter.Disposed);

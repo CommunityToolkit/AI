@@ -85,17 +85,10 @@ public sealed class ContentUnderstandingClient : IDocumentExtractionClient
         {
             throw new NotSupportedException("This Content Understanding adapter supports document results only.");
         }
-        var output = new Microsoft.Extensions.Documents.ExtractionDocument(identifier);
-            ExtractionDocumentSourceOutput sourceOutput = ProviderAdapterHelpers.CreateSourceOutput(
-                identifier,
-                ProviderName,
-                null,
-                normalizedOptions,
-                result,
-                normalizedOptions.CaptureRawContent
-                    ? AzureResponseContent.GetBufferedResponseBytes(rawResponse)
-                    : null);
-            output.AddSourceOutput(sourceOutput);
+        var output = new Microsoft.Extensions.Documents.ExtractionDocument(identifier)
+        {
+            RawRepresentation = result,
+        };
             DocumentContent[] documentContents = result.Contents.OfType<DocumentContent>().ToArray();
             var frames = new Dictionary<int, PageFrame>();
             foreach (DocumentContent content in documentContents)
@@ -118,8 +111,7 @@ public sealed class ContentUnderstandingClient : IDocumentExtractionClient
                             page.Width,
                             page.Height,
                             unit,
-                            ExtractionDocumentCoordinateOrigin.TopLeft,
-                            sourceOutput);
+                            ExtractionDocumentCoordinateOrigin.TopLeft);
                     var section = new ExtractionDocumentSection();
                     section.Sources.Add(new ExtractionDocumentSourceReference(sourcePage, rawRepresentation: page));
                     frames.Add(page.PageNumber, new PageFrame(sourcePage, section));
@@ -151,7 +143,7 @@ public sealed class ContentUnderstandingClient : IDocumentExtractionClient
 
             foreach (PageFrame frame in frames.Values)
             {
-                output.AddSourcePage(frame.SourcePage);
+                output.SourcePages.Add(frame.SourcePage);
                 output.Sections.Add(frame.Section);
             }
 
@@ -176,7 +168,7 @@ public sealed class ContentUnderstandingClient : IDocumentExtractionClient
                             }
 
                             ProviderAdapterHelpers.AddElement(frames[page.PageNumber].Section,
-                                new ExtractionDocumentTextElement(new TextContent(line.Content), line.Content), sources);
+                                new ExtractionDocumentTextElement(new TextContent(line.Content)), sources);
                         }
                     }
                 }
@@ -197,7 +189,7 @@ public sealed class ContentUnderstandingClient : IDocumentExtractionClient
         {
             IReadOnlyList<ExtractionDocumentSourceReference> regions = ParseSources(paragraph.Source, frames, paragraph);
             string text = paragraph.Content ?? string.Empty;
-            var element = new ExtractionDocumentTextElement(new TextContent(text), text, ToTextRole(paragraph.Role));
+            var element = new ExtractionDocumentTextElement(new TextContent(text), role: ToTextRole(paragraph.Role));
             elements.Add($"/paragraphs/{index}", element);
             ProviderAdapterHelpers.AddElement(ProviderAdapterHelpers.GetSection(output, regions), element, regions);
         }
@@ -218,7 +210,7 @@ public sealed class ContentUnderstandingClient : IDocumentExtractionClient
             {
                 IReadOnlyList<ExtractionDocumentSourceReference> cellSources = ParseSources(cell.Source, frames, cell);
                 ExtractionDocumentTextElement? cellContent = cell.Content is { } text
-                    ? new ExtractionDocumentTextElement(new TextContent(text), text)
+                    ? new ExtractionDocumentTextElement(new TextContent(text))
                     : null;
                 foreach (ExtractionDocumentSourceReference source in cellSources)
                 {
@@ -250,7 +242,7 @@ public sealed class ContentUnderstandingClient : IDocumentExtractionClient
         foreach (var (figure, index) in (content.Figures ?? []).Select((value, index) => (value, index)))
         {
             IReadOnlyList<ExtractionDocumentSourceReference> sources = ParseSources(figure.Source, frames, figure);
-            var element = new ExtractionDocumentImageElement(text: figure.Description)
+            var element = new ExtractionDocumentImageElement()
             {
                 AlternativeText = figure.Description,
             };

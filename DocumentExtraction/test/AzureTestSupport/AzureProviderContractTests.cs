@@ -69,7 +69,7 @@ public sealed class AzureDocumentIntelligenceClientTests
         Assert.Contains(selector ?? (AzureWireFixture.IsContentUnderstanding ? "prebuilt-document" : "prebuilt-layout"),
             transport.Requests[0].Uri.AbsolutePath);
         Assert.True(credential.Calls > 0);
-        Assert.IsType<NativeResult>(Assert.Single(result.SourceOutputs).GetRawRepresentation());
+        Assert.IsType<NativeResult>(result.RawRepresentation);
         Assert.Equal(2, transport.Delivered[^1].DisposeCount);
     }
 
@@ -79,7 +79,7 @@ public sealed class AzureDocumentIntelligenceClientTests
         var transport = Replay(AzureWireFixture.Bytes(AzureWireFixture.Create()));
         using var client = Create(transport, selector: "configured");
         using var input = new MemoryStream([1, 2, 3]);
-        var options = new DocumentExtractionOptions { ExtractorName = "requested", CaptureRawContent = true };
+        var options = new DocumentExtractionOptions { ExtractorName = "requested" };
 #if CONTENT_UNDERSTANDING
         options.AdditionalProperties["processingLocation"] = "DataZone";
 #else
@@ -92,25 +92,22 @@ public sealed class AzureDocumentIntelligenceClientTests
         Assert.Contains("requested", request);
 #if CONTENT_UNDERSTANDING
         Assert.Contains("processingLocation=DataZone", request);
-        Assert.Null(Assert.Single(result.SourceOutputs).ModelId);
+        Assert.IsType<NativeResult>(result.RawRepresentation);
         Assert.Equal("DataZone", options.AdditionalProperties["processingLocation"]);
 #else
         Assert.Contains("locale=fr-FR", request);
         Assert.Contains("pages=3", request);
         Assert.Contains("languages", request);
         Assert.Contains("barcodes", request);
-        Assert.Equal("native-model", Assert.Single(result.SourceOutputs).ModelId);
+        Assert.Equal("native-model", Assert.IsType<NativeResult>(result.RawRepresentation).ModelId);
         Assert.Equal("fr-FR", options.AdditionalProperties["locale"]);
 #endif
         Assert.Equal("requested", options.ExtractorName);
         Assert.Equal(2, transport.Requests.Count);
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task ExtractAsync_AcceptedRunningSucceeded_CaptureMatrixPreservesNativeIdentityAndExactRawBody(bool? capture)
+    [Fact]
+    public async Task ExtractAsync_AcceptedRunningSucceeded_PreservesNativeIdentityAfterCleanup()
     {
         byte[] bytes = AzureWireFixture.Bytes(AzureWireFixture.Create());
         var running = new TrackedResponse(Encoding.UTF8.GetBytes("""{"status":"running","id":"receipt"}"""));
@@ -118,33 +115,17 @@ public sealed class AzureDocumentIntelligenceClientTests
         var transport = new OfflineTransport(TrackedResponse.Accepted(), running, final);
         var client = Create(transport);
         using var input = new MemoryStream([1, 2, 3]);
-        var result = await Extract(client, input,
-            capture.HasValue ? new DocumentExtractionOptions { CaptureRawContent = capture.Value } : null);
+        var result = await Extract(client, input);
         client.Dispose();
-        var output = Assert.Single(result.SourceOutputs);
-        Assert.Equal(capture == true ? "Retained" : "Disabled", output.ContentStatus.ToString());
-        Assert.Equal(AzureWireFixture.IsContentUnderstanding ? "azure-content-understanding" : "azure-document-intelligence",
-            output.ProviderName);
-        if (capture == true)
-        {
-            Assert.Equal(bytes, output.GetRawContent()!.Content.ToArray());
-            Assert.Equal("application/json", output.GetRawContent()!.MediaType);
-        }
-        else
-        {
-            Assert.Null(output.GetRawContent());
-        }
-
-        var native = Assert.IsType<NativeResult>(output.GetRawRepresentation());
+        var native = Assert.IsType<NativeResult>(result.RawRepresentation);
 #if CONTENT_UNDERSTANDING
         var content = Assert.IsType<NativeContent>(Assert.Single(native.Contents));
         object page = content.Pages[0];
         object paragraph = content.Paragraphs[0];
-        Assert.Null(output.ModelId);
 #else
         object page = native.Pages[0];
         object paragraph = native.Paragraphs[0];
-        Assert.Equal(native.ModelId, output.ModelId);
+        Assert.Equal("native-model", native.ModelId);
 #endif
         Assert.Same(page, result.Sections[0].Sources[0].GetRawRepresentation());
         var text = Assert.Single(result.EnumerateContent().OfType<ExtractionDocumentTextElement>());
@@ -171,7 +152,6 @@ public sealed class AzureDocumentIntelligenceClientTests
         Assert.Equal(400, frame.Dimensions.Value.Height);
         Assert.Equal(ExtractionDocumentCoordinateOrigin.TopLeft, frame.CoordinateOrigin);
         Assert.Equal(ExtractionDocumentCoordinateUnit.Pixel, frame.CoordinateUnit);
-        Assert.Same(Assert.Single(result.SourceOutputs), frame.SourceOutput);
         var text = Assert.Single(result.EnumerateContent().OfType<ExtractionDocumentTextElement>());
         Assert.Equal(AzureWireFixture.Points, text.Sources[0].Polygon.Select(point => (point.X, point.Y)));
 #if CONTENT_UNDERSTANDING
@@ -202,18 +182,18 @@ public sealed class AzureDocumentIntelligenceClientTests
         Assert.Null(figure.Content);
         Assert.Same(frame, Assert.Single(figure.Sources).Page);
         Assert.Equal(AzureWireFixture.Points, figure.Sources[0].Polygon.Select(point => (point.X, point.Y)));
-        var native = Assert.IsType<NativeResult>(Assert.Single(result.SourceOutputs).GetRawRepresentation());
+        var native = Assert.IsType<NativeResult>(result.RawRepresentation);
 #if CONTENT_UNDERSTANDING
         var content = Assert.IsType<NativeContent>(Assert.Single(native.Contents));
         Assert.Same(content.Tables[0], table.Sources[0].GetRawRepresentation());
         Assert.Same(content.Tables[0].Cells[0], cell.Sources[0].GetRawRepresentation());
         Assert.Same(content.Figures[0], figure.Sources[0].GetRawRepresentation());
-        Assert.Equal("Revenue chart", figure.Text);
 #else
         Assert.Same(native.Tables[0], table.Sources[0].GetRawRepresentation());
         Assert.Same(native.Tables[0].Cells[0], cell.Sources[0].GetRawRepresentation());
         Assert.Same(native.Figures[0], figure.Sources[0].GetRawRepresentation());
 #endif
+        Assert.Null(figure.Text); // A caption is not OCR/transcription.
         Assert.Equal(2, transport.Requests.Count);
     }
 
@@ -244,7 +224,7 @@ public sealed class AzureDocumentIntelligenceClientTests
         var source = Assert.Single(cell.Sources);
         Assert.Same(Assert.Single(result.SourcePages), source.Page);
         Assert.Equal(AzureWireFixture.Points, source.Polygon.Select(point => (point.X, point.Y)));
-        var native = Assert.IsType<NativeResult>(Assert.Single(result.SourceOutputs).GetRawRepresentation());
+        var native = Assert.IsType<NativeResult>(result.RawRepresentation);
 #if CONTENT_UNDERSTANDING
         var nativeCell = Assert.IsType<NativeContent>(Assert.Single(native.Contents)).Tables[0].Cells[0];
 #else
@@ -259,7 +239,6 @@ public sealed class AzureDocumentIntelligenceClientTests
         else
         {
             var element = Assert.IsType<ExtractionDocumentTextElement>(cell.Content);
-            Assert.Equal("", element.Text);
             Assert.Equal("", Assert.IsType<TextContent>(element.Content).Text);
             Assert.Same(source, Assert.Single(element.Sources));
         }
@@ -286,13 +265,13 @@ public sealed class AzureDocumentIntelligenceClientTests
         var table = Assert.IsType<ExtractionDocumentTableElement>(outer.Elements[0]);
         var inner = Assert.IsType<ExtractionDocumentSection>(outer.Elements[1]);
         Assert.Collection(inner.Elements,
-            element => Assert.Equal("Invoice heading", Assert.IsType<ExtractionDocumentTextElement>(element).Text),
+            element => Assert.Equal("Invoice heading", Assert.IsType<TextContent>(Assert.IsType<ExtractionDocumentTextElement>(element).Content).Text),
             element => Assert.Equal("Revenue chart", Assert.IsType<ExtractionDocumentImageElement>(element).AlternativeText));
         Assert.Equal(new[] { typeof(ExtractionDocumentTableElement), typeof(ExtractionDocumentTextElement), typeof(ExtractionDocumentImageElement) },
             result.EnumerateContent().Select(element => element.GetType()));
         Assert.Same(table, result.EnumerateContent().First());
         Assert.Same(result.SourcePages[0], Assert.Single(inner.Sources).Page);
-        var native = Assert.IsType<NativeResult>(Assert.Single(result.SourceOutputs).GetRawRepresentation());
+        var native = Assert.IsType<NativeResult>(result.RawRepresentation);
 #if CONTENT_UNDERSTANDING
         Assert.Same(Assert.IsType<NativeContent>(Assert.Single(native.Contents)).Sections[0], inner.Sources[0].GetRawRepresentation());
 #else
@@ -360,7 +339,7 @@ public sealed class AzureDocumentIntelligenceClientTests
         Assert.All(lines, line => Assert.Same(result.SourcePages[0], Assert.Single(line.Sources).Page));
         Assert.Equal(AzureWireFixture.Points, lines[0].Sources[0].Polygon.Select(point => (point.X, point.Y)));
         Assert.Empty(lines[1].Sources[0].Polygon);
-        var native = Assert.IsType<NativeResult>(Assert.Single(result.SourceOutputs).GetRawRepresentation());
+        var native = Assert.IsType<NativeResult>(result.RawRepresentation);
 #if CONTENT_UNDERSTANDING
         var page = Assert.IsType<NativeContent>(Assert.Single(native.Contents)).Pages[0];
 #else
@@ -368,6 +347,88 @@ public sealed class AzureDocumentIntelligenceClientTests
 #endif
         Assert.Same(page.Lines[0], lines[0].Sources[0].GetRawRepresentation());
         Assert.Equal(2, result.Sections[0].Elements.Count);
+    }
+
+    [Fact]
+    public async Task ExtractAsync_MultiPageParagraph_PreservesNativeIdentityAndOrderedOriginalFrames()
+    {
+        var root = AzureWireFixture.Create();
+        var content = AzureWireFixture.Content(root);
+        var secondPage = content["pages"]![0]!.DeepClone();
+        secondPage["pageNumber"] = 8;
+        content["pages"]!.AsArray().Add(secondPage);
+        var paragraph = content["paragraphs"]![0]!;
+#if CONTENT_UNDERSTANDING
+        paragraph["source"] = "D(3,1,2,3,2,3,4,2,5,1,4);D(8)";
+#else
+        paragraph["boundingRegions"]!.AsArray().Add(new JsonObject
+        {
+            ["pageNumber"] = 8,
+            ["polygon"] = new JsonArray(),
+        });
+#endif
+        var transport = Replay(AzureWireFixture.Bytes(root));
+        using var client = Create(transport);
+        using var input = new MemoryStream([1, 2, 3]);
+        var result = await Extract(client, input);
+        Assert.Equal(new int?[] { 3, 8 }, result.SourcePages.Select(page => page.PageNumber));
+        var text = Assert.Single(result.EnumerateContent().OfType<ExtractionDocumentTextElement>());
+        Assert.Equal("Invoice heading", Assert.IsType<TextContent>(text.Content).Text);
+        Assert.Equal("heading", text.Role);
+        Assert.Equal(2, text.Sources.Count);
+        var native = Assert.IsType<NativeResult>(result.RawRepresentation);
+#if CONTENT_UNDERSTANDING
+        var nativeParagraph = Assert.Single(Assert.IsType<NativeContent>(Assert.Single(native.Contents)).Paragraphs);
+#else
+        var nativeParagraph = Assert.Single(native.Paragraphs);
+#endif
+        for (int i = 0; i < 2; i++)
+        {
+            Assert.Same(result.SourcePages[i], text.Sources[i].Page);
+            Assert.Same(nativeParagraph, text.Sources[i].GetRawRepresentation());
+        }
+        Assert.Equal(AzureWireFixture.Points, text.Sources[0].Polygon.Select(point => (point.X, point.Y)));
+        Assert.Empty(text.Sources[1].Polygon);
+        Assert.Equal(2, transport.Requests.Count);
+        Assert.Equal(2, transport.Delivered[^1].DisposeCount);
+        input.Position = 0;
+        Assert.Equal(1, input.ReadByte());
+    }
+
+    [Fact]
+    public async Task ExtractAsync_BlankNativePage_PreservesFrameAndNativeAssociationWithoutInventedContent()
+    {
+        var root = AzureWireFixture.Create();
+        var content = AzureWireFixture.Content(root);
+        content["paragraphs"] = new JsonArray();
+        content["tables"] = new JsonArray();
+        content["figures"] = new JsonArray();
+        var transport = Replay(AzureWireFixture.Bytes(root));
+        using var client = Create(transport);
+        using var input = new MemoryStream([1, 2, 3]);
+        var result = await Extract(client, input);
+        var page = Assert.Single(result.SourcePages);
+        Assert.Equal(3, page.PageNumber);
+        Assert.Equal(new ExtractionDocumentPageDimensions(300, 400), page.Dimensions);
+        Assert.Equal(ExtractionDocumentCoordinateUnit.Pixel, page.CoordinateUnit);
+        Assert.Equal(ExtractionDocumentCoordinateOrigin.TopLeft, page.CoordinateOrigin);
+        var section = Assert.Single(result.Sections);
+        Assert.Empty(section.Elements);
+        Assert.Empty(result.EnumerateContent());
+        var native = Assert.IsType<NativeResult>(result.RawRepresentation);
+#if CONTENT_UNDERSTANDING
+        var nativePage = Assert.Single(Assert.IsType<NativeContent>(Assert.Single(native.Contents)).Pages);
+#else
+        var nativePage = Assert.Single(native.Pages);
+#endif
+        var source = Assert.Single(section.Sources);
+        Assert.Same(page, source.Page);
+        Assert.Same(nativePage, source.GetRawRepresentation());
+        Assert.Empty(source.Polygon);
+        Assert.Equal(2, transport.Requests.Count);
+        Assert.Equal(2, transport.Delivered[^1].DisposeCount);
+        input.Position = 0;
+        Assert.Equal(1, input.ReadByte());
     }
 
     [Fact]
@@ -385,7 +446,6 @@ public sealed class AzureDocumentIntelligenceClientTests
         using var input = new MemoryStream([1, 2, 3]);
         var result = await Extract(client, input);
         var text = Assert.Single(result.EnumerateContent().OfType<ExtractionDocumentTextElement>());
-        Assert.Equal("Invoice heading", text.Text);
         Assert.Equal("Invoice heading", Assert.IsType<TextContent>(text.Content).Text);
         Assert.Empty(text.Sources);
         Assert.Single(result.SourcePages);
@@ -620,7 +680,8 @@ public sealed class AzureDocumentIntelligenceClientTests
         var figure = Assert.Single(result.EnumerateContent().OfType<ExtractionDocumentImageElement>());
         Assert.Equal("Revenue chart", figure.AlternativeText);
         Assert.Same(result.SourcePages[0], Assert.Single(figure.Sources).Page);
-        var native = Assert.IsType<NativeResult>(Assert.Single(result.SourceOutputs).GetRawRepresentation());
+        Assert.Null(figure.Text);
+        var native = Assert.IsType<NativeResult>(result.RawRepresentation);
         Assert.Same(native.Figures[0], figure.Sources[0].GetRawRepresentation());
         if (images)
         {
@@ -716,9 +777,9 @@ public sealed class AzureDocumentIntelligenceClientTests
         var transport = Replay(AzureWireFixture.Bytes(root));
         using var client = Create(transport);
         using var input = new MemoryStream([1, 2, 3]);
-        var result = await Extract(client, input, new DocumentExtractionOptions { CaptureRawContent = true });
+        var result = await Extract(client, input);
         Assert.Empty(result.SourcePages);
-        Assert.Equal("Retained", Assert.Single(result.SourceOutputs).ContentStatus.ToString());
+        Assert.IsType<NativeResult>(result.RawRepresentation);
         if (hasText)
         {
             var text = Assert.IsType<ExtractionDocumentTextElement>(Assert.Single(result.EnumerateContent()));

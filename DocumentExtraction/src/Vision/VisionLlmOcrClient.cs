@@ -76,6 +76,7 @@ public sealed class VisionLlmOcrClient : IDocumentExtractionClient
         await document.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
         byte[] bytes = buffer.ToArray();
         var output = new ExtractionDocument(identifier);
+        var responses = new List<ChatResponse>();
         if (isPdf)
         {
             using var pdfInput = new MemoryStream(bytes, writable: false);
@@ -85,20 +86,22 @@ public sealed class VisionLlmOcrClient : IDocumentExtractionClient
                 cancellationToken.ThrowIfCancellationRequested();
                 var page = pdf.GetPage(number);
                 await ExtractPageAsync(output, PdfPageRasterizer.RenderPage(bytes, number),
-                    "image/png", request, number, page.Width, page.Height, cancellationToken).ConfigureAwait(false);
+                    "image/png", request, responses, number, page.Width, page.Height, cancellationToken).ConfigureAwait(false);
             }
         }
         else
         {
-            await ExtractPageAsync(output, bytes, mediaType, request, null, null, null, cancellationToken).ConfigureAwait(false);
+            await ExtractPageAsync(output, bytes, mediaType, request, responses, null, null, null, cancellationToken).ConfigureAwait(false);
         }
 
         cancellationToken.ThrowIfCancellationRequested();
+        output.RawRepresentation = responses.Count == 1 ? responses[0] : responses.ToArray();
         return output;
     }
 
     private async Task ExtractPageAsync(
         ExtractionDocument output, byte[] bytes, string mediaType, DocumentExtractionOptions request,
+        List<ChatResponse> responses,
         int? originalPageNumber, double? width, double? height, CancellationToken cancellationToken)
     {
         var options = new ChatOptions
@@ -115,10 +118,8 @@ public sealed class VisionLlmOcrClient : IDocumentExtractionClient
         var message = new ChatMessage(ChatRole.User, [new TextContent(instruction), new DataContent(bytes, mediaType)]);
         ChatResponse response = await _chatClient.GetResponseAsync([message], options, cancellationToken).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
-        string operationId = $"{output.Identifier}:request:{output.SourceOutputs.Count}";
-        ExtractionDocumentSourceOutput sourceOutput = ProviderAdapterHelpers.CreateSourceOutput(
-            operationId, ProviderName, response.ModelId, request, response.RawRepresentation ?? response);
-        output.AddSourceOutput(sourceOutput);
+        string framePrefix = $"{output.Identifier}:{ProviderName}:response:{responses.Count}";
+        responses.Add(response);
         if (!_useStructuredOutput)
         {
             var (page, reference) = CreateFrame(originalPageNumber, "image");
@@ -219,7 +220,7 @@ public sealed class VisionLlmOcrClient : IDocumentExtractionClient
                     var mappedCell = text is null
                         ? new ExtractionDocumentTableCell(GetInteger(cell, "rowSpan"), GetInteger(cell, "columnSpan"), GetString(cell, "role"))
                         : new ExtractionDocumentTableCell(
-                            new ExtractionDocumentTextElement(new TextContent(text), text),
+                            new ExtractionDocumentTextElement(new TextContent(text)),
                             GetInteger(cell, "rowSpan"), GetInteger(cell, "columnSpan"), GetString(cell, "role"));
                     mappedCell.Sources.Add(reference);
                     mappedCell.Content?.Sources.Add(reference);
@@ -233,18 +234,18 @@ public sealed class VisionLlmOcrClient : IDocumentExtractionClient
             {
                 string? caption = GetString(figure, "caption");
                 ProviderAdapterHelpers.AddElement(section,
-                    new ExtractionDocumentImageElement(text: caption) { AlternativeText = caption }, [reference]);
+                    new ExtractionDocumentImageElement() { AlternativeText = caption }, [reference]);
             }
         }
 
         (ExtractionDocumentSourcePage, ExtractionDocumentSourceReference) CreateFrame(int? number, string name)
         {
             var page = new ExtractionDocumentSourcePage(
-                $"{operationId}:{name}", number,
+                $"{framePrefix}:{name}", number,
                 width is { } w && height is { } h ? new ExtractionDocumentPageDimensions(w, h) : null,
                 width is not null ? ExtractionDocumentCoordinateUnit.Point : null,
-                width is not null ? ExtractionDocumentCoordinateOrigin.BottomLeft : null, sourceOutput);
-            output.AddSourcePage(page);
+                width is not null ? ExtractionDocumentCoordinateOrigin.BottomLeft : null);
+            output.SourcePages.Add(page);
             return (page, new ExtractionDocumentSourceReference(page, rawRepresentation: response.RawRepresentation ?? response));
         }
     }
@@ -253,7 +254,7 @@ public sealed class VisionLlmOcrClient : IDocumentExtractionClient
     {
         if (!string.IsNullOrEmpty(text))
         {
-            ProviderAdapterHelpers.AddElement(section, new ExtractionDocumentTextElement(new TextContent(text), text), [reference]);
+            ProviderAdapterHelpers.AddElement(section, new ExtractionDocumentTextElement(new TextContent(text)), [reference]);
         }
     }
 

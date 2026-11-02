@@ -100,24 +100,6 @@ internal static class ProviderAdapterHelpers
             nameof(options));
     }
 
-    public static ExtractionDocumentSourceOutput CreateSourceOutput(
-        string identifier,
-        string providerName,
-        string? modelId,
-        DocumentExtractionOptions options,
-        object? nativeRepresentation,
-        byte[]? exactResponseBytes = null,
-        string exactResponseMediaType = "application/json")
-        => new(
-            $"{identifier}:{providerName}:output",
-            nativeRepresentation,
-            options.CaptureRawContent && exactResponseBytes is not null
-                ? new ExtractionDocumentArtifact(exactResponseMediaType, exactResponseBytes)
-                : null,
-            contentCaptureDisabled: !options.CaptureRawContent,
-            providerName: providerName,
-            modelId: modelId);
-
     public static (ExtractionDocumentSourcePage SourcePage, ExtractionDocumentSourceReference Reference) CreatePageFrame(
         string identifier,
         string providerName,
@@ -125,8 +107,7 @@ internal static class ProviderAdapterHelpers
         double? width,
         double? height,
         ExtractionDocumentCoordinateUnit? unit,
-        ExtractionDocumentCoordinateOrigin? origin,
-        ExtractionDocumentSourceOutput sourceOutput)
+        ExtractionDocumentCoordinateOrigin? origin)
     {
         var sourcePage = new ExtractionDocumentSourcePage(
             $"{identifier}:{providerName}:page:{pageNumber?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "unnumbered"}",
@@ -134,7 +115,7 @@ internal static class ProviderAdapterHelpers
             width.HasValue && height.HasValue
                 ? new ExtractionDocumentPageDimensions(width.Value, height.Value)
                 : null,
-            unit, origin, sourceOutput);
+            unit, origin);
         return (sourcePage, new ExtractionDocumentSourceReference(sourcePage));
     }
 

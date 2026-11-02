@@ -34,10 +34,12 @@ renderer or required model download.
 The chat client and caller stream remain borrowed, including after adapter
 disposal. Output documents are data; structural ancestors have no aggregate text.
 
-Capture defaults to `Disabled`; when enabled it is `Unavailable`, because
-`IChatClient` does not expose exact original response bytes. Native chat responses
-remain available for explicit inspection; JSON/SDK serialization is not wire
-capture. Offline acceptance uses fake chat clients and native PDF fixtures and
+`document.RawRepresentation` exposes the native `ChatResponse` for a single call,
+or an ordered `ChatResponse[]` for multiple calls. Source references retain the
+corresponding native inspection object. Captions map only to `AlternativeText`,
+not OCR `Text`. Vision reports page association, not measured paragraph polygons.
+There is no shared raw-response capture policy, operation registry, or serialized
+wire artifact. Offline acceptance uses fake chat clients and native PDF fixtures and
 does not call a model, service, or token provider. See the
 [component documentation](../../README.md). Licensed under the repository's
 [MIT license](../../../LICENSE).

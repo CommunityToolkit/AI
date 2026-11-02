@@ -9,13 +9,9 @@ namespace CommunityToolkit.DocumentExtraction.Vision.UnitTests;
 public sealed class VisionFreeformAcceptanceTests
 {
     [Theory]
-    [InlineData(null, false)]
-    [InlineData(null, true)]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public async Task ExtractAsync_NamedImage_PreservesLiteralTextNestedImageSourceModelAndRaw(bool? capture, bool explicitRaw)
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExtractAsync_NamedImage_PreservesLiteralTextImageBytesExactResponseRootAndNativeSource(bool explicitRaw)
     {
         const string literal = "# Invoice Ω\n\n| Item | EUR |\n|---|---|\n| Tea | 12.50 |\n";
         object sentinel = new();
@@ -23,35 +19,31 @@ public sealed class VisionFreeformAcceptanceTests
         var chat = new RecordingChatClient(response);
         using var input = new BorrowedInput([137, 80, 78, 71, 1, 5, 9]);
         using var client = new VisionLlmOcrClient(chat, prompt: "Literal transcription, please.");
-        var options = new DocumentExtractionOptions { ExtractorName = "requested-route", CaptureRawContent = capture == true };
-        var result = await client.ExtractAsync(input, "invoice.scan.png", "IMAGE/PNG",
-            capture is null ? null : options);
+        var options = new DocumentExtractionOptions { ExtractorName = "requested-route" };
+        var result = await client.ExtractAsync(input, "invoice.scan.png", "IMAGE/PNG", options);
 
         Assert.Equal("invoice.scan.png", result.Identifier);
         var section = Assert.Single(result.Sections);
         var text = Assert.IsType<ExtractionDocumentTextElement>(Assert.Single(section.Elements));
         Assert.Equal(literal, Assert.IsType<TextContent>(text.Content).Text);
-        Assert.Equal(literal, text.Text);
         Assert.Null(result.Content);
         Assert.Null(section.Content);
         Assert.Null(text.Role);
         var source = Assert.Single(text.Sources);
         var page = Assert.Single(result.SourcePages);
-        var output = Assert.Single(result.SourceOutputs);
         Assert.Same(page, source.Page);
         Assert.Same(source, Assert.Single(section.Sources));
-        Assert.Same(output, page.SourceOutput);
         Assert.Null(page.PageNumber);
         Assert.Null(page.Dimensions);
         Assert.Null(page.CoordinateUnit);
         Assert.Null(page.CoordinateOrigin);
         Assert.Empty(source.Polygon);
-        Assert.Equal("vision-llm", output.ProviderName);
-        Assert.Equal("actual-vision-model", output.ModelId);
-        Assert.Same(explicitRaw ? sentinel : response, output.GetRawRepresentation());
-        Assert.Same(output.GetRawRepresentation(), source.GetRawRepresentation());
-        Assert.Equal(capture == true ? "Unavailable" : "Disabled", output.ContentStatus.ToString());
-        Assert.Null(output.GetRawContent());
+        var nativeResponse = Assert.IsType<ChatResponse>(result.RawRepresentation);
+        Assert.Same(response, nativeResponse);
+        Assert.Equal("actual-vision-model", nativeResponse.ModelId);
+        Assert.Equal(literal, nativeResponse.Text);
+        Assert.Same(explicitRaw ? sentinel : response, source.GetRawRepresentation());
+        Assert.Same(explicitRaw ? sentinel : null, nativeResponse.RawRepresentation);
 
         var request = Assert.Single(chat.Requests);
         var message = Assert.Single(request.Messages);
@@ -61,7 +53,7 @@ public sealed class VisionFreeformAcceptanceTests
         var image = Assert.IsType<DataContent>(message.Contents[1]);
         Assert.Equal(new byte[] { 137, 80, 78, 71, 1, 5, 9 }, image.Data.ToArray());
         Assert.Equal("IMAGE/PNG", image.MediaType);
-        Assert.Equal(capture is null ? null : "requested-route", request.Options!.ModelId);
+        Assert.Equal("requested-route", request.Options!.ModelId);
         Assert.Null(request.Options.ResponseFormat);
         client.Dispose();
         input.AssertStillReadable(137);
@@ -73,7 +65,8 @@ public sealed class VisionFreeformAcceptanceTests
     [InlineData(" \n")]
     public async Task ExtractAsync_EmptyOrWhitespaceText_DoesNotInventContent(string literal)
     {
-        var chat = new RecordingChatClient(RecordingChatClient.Response(literal, model: null));
+        var response = RecordingChatClient.Response(literal, model: null);
+        var chat = new RecordingChatClient(response);
         using var client = new VisionLlmOcrClient(chat);
         using var input = new BorrowedInput([1, 2, 3]);
         var result = await client.ExtractAsync(input, "empty.png", "image/png", new() { ExtractorName = "not-a-returned-model" });
@@ -87,7 +80,8 @@ public sealed class VisionFreeformAcceptanceTests
             Assert.Equal(literal, Assert.IsType<TextContent>(Assert.Single(section.Elements).Content).Text);
         }
 
-        Assert.Null(Assert.Single(result.SourceOutputs).ModelId);
+        Assert.Same(response, result.RawRepresentation);
+        Assert.Null(Assert.IsType<ChatResponse>(result.RawRepresentation).ModelId);
         Assert.Null(Assert.Single(result.SourcePages).PageNumber);
         Assert.Contains("GitHub-flavored Markdown", Assert.IsType<TextContent>(chat.Requests[0].Messages[0].Contents[0]).Text);
         Assert.Single(chat.Requests);
@@ -189,8 +183,13 @@ public sealed class VisionFreeformAcceptanceTests
     [Fact]
     public async Task ExtractAsync_LocalPdf_SendsNativePngPerOriginalPageAndPreservesFrames()
     {
-        var chat = new RecordingChatClient(
-            RecordingChatClient.Response("# First\n42"), RecordingChatClient.Response(""), RecordingChatClient.Response("Red square"));
+        ChatResponse[] responses =
+        [
+            RecordingChatClient.Response("# First\n42", new object()),
+            RecordingChatClient.Response(""),
+            RecordingChatClient.Response("Red square", new object()),
+        ];
+        var chat = new RecordingChatClient(responses);
         using var input = new BorrowedInput(PdfFixture.Create());
         using var client = new VisionLlmOcrClient(chat);
         var result = await client.ExtractAsync(input, "native.pdf", "APPLICATION/PDF");
@@ -201,11 +200,15 @@ public sealed class VisionFreeformAcceptanceTests
         Assert.Equal(new[] { "# First\n42", "Red square" },
             result.EnumerateContent().Select(e => Assert.IsType<TextContent>(e.Content).Text));
         Assert.Empty(result.Sections[1].Elements);
+        var nativeResponses = Assert.IsType<ChatResponse[]>(result.RawRepresentation);
+        Assert.Equal(3, nativeResponses.Length);
         for (int i = 0; i < 3; i++)
         {
             var page = result.SourcePages[i];
-            Assert.Same(result.SourceOutputs[i], page.SourceOutput);
-            Assert.Same(page, Assert.Single(result.Sections[i].Sources).Page);
+            Assert.Same(responses[i], nativeResponses[i]);
+            var source = Assert.Single(result.Sections[i].Sources);
+            Assert.Same(page, source.Page);
+            Assert.Same(responses[i].RawRepresentation ?? responses[i], source.GetRawRepresentation());
             Assert.Equal(ExtractionDocumentCoordinateUnit.Point, page.CoordinateUnit);
             Assert.Equal(ExtractionDocumentCoordinateOrigin.BottomLeft, page.CoordinateOrigin);
             var image = Assert.IsType<DataContent>(chat.Requests[i].Messages[0].Contents[1]);
@@ -215,6 +218,23 @@ public sealed class VisionFreeformAcceptanceTests
             Assert.Equal((int)page.Dimensions.Value.Height * 2, bitmap.Height);
         }
 
+        input.AssertStillReadable((byte)'%');
+        Assert.Equal(0, chat.DisposeCalls);
+    }
+
+    [Fact]
+    public async Task ExtractAsync_ZeroPagePdf_PreservesEmptyResponseArrayWithoutChatOrInventedFrames()
+    {
+        var chat = new RecordingChatClient();
+        using var input = new BorrowedInput(PdfFixture.Create(empty: true));
+        using var client = new VisionLlmOcrClient(chat);
+        var result = await client.ExtractAsync(input, "empty.pdf", "application/pdf");
+        Assert.Equal("empty.pdf", result.Identifier);
+        Assert.Empty(Assert.IsType<ChatResponse[]>(result.RawRepresentation));
+        Assert.Empty(result.SourcePages);
+        Assert.Empty(result.Sections);
+        Assert.Empty(chat.Requests);
+        client.Dispose();
         input.AssertStillReadable((byte)'%');
         Assert.Equal(0, chat.DisposeCalls);
     }

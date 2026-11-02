@@ -6,9 +6,14 @@ namespace CommunityToolkit.DocumentExtraction.PdfPig.UnitTests;
 internal static class PdfFixture
 {
     // Minimal local PDF: native text, a blank page, and a red image-only page.
-    public static byte[] Create()
+    public static byte[] Create(bool empty = false)
     {
-        string[] objects =
+        string[] objects = empty
+        ? [
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [] /Count 0 >>",
+        ]
+        :
         [
             "<< /Type /Catalog /Pages 2 0 R >>",
             "<< /Type /Pages /Kids [3 0 R 5 0 R 7 0 R] /Count 3 >>",
