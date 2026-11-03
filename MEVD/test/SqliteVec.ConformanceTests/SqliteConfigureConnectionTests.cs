@@ -29,12 +29,12 @@ public sealed class SqliteConfigureConnectionTests : IDisposable
 
                 using var setCommand = connection.CreateCommand();
                 setCommand.CommandText = "PRAGMA synchronous=NORMAL";
-                setCommand.ExecuteNonQuery();
+                await setCommand.ExecuteNonQueryAsync(ct);
 
                 using var getCommand = connection.CreateCommand();
                 getCommand.CommandText = "PRAGMA synchronous";
-                using var reader = getCommand.ExecuteReader();
-                Assert.True(reader.Read());
+                using var reader = await getCommand.ExecuteReaderAsync(ct);
+                Assert.True(await reader.ReadAsync(ct));
                 synchronousValues.Add(reader.GetInt64(0));
             }
         };
@@ -114,7 +114,7 @@ public sealed class SqliteConfigureConnectionTests : IDisposable
             {
                 using var command = connection.CreateCommand();
                 command.CommandText = "SELECT vec_version()";
-                vecVersion = command.ExecuteScalar() as string;
+                vecVersion = await command.ExecuteScalarAsync(ct) as string;
             }
         };
 
@@ -135,7 +135,7 @@ public sealed class SqliteConfigureConnectionTests : IDisposable
             {
                 using var command = connection.CreateCommand();
                 command.CommandText = "SELECT vec_version()";
-                vecVersion = command.ExecuteScalar() as string;
+                vecVersion = await command.ExecuteScalarAsync(ct) as string;
             }
         });
 
