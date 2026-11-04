@@ -57,7 +57,7 @@ jobs:
       - uses: actions/upload-artifact@v6
         with:
           name: document-extraction-core-source-packages
-          path: ${{ runner.temp }}/document-extraction-core/*.10.10.0-review.20261102.1.nupkg
+          path: ${{ runner.temp }}/document-extraction-core/*.10.10.0-review.20261104.4.nupkg
           if-no-files-found: error
 
   build-test-pack:

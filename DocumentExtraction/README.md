@@ -34,26 +34,24 @@ through `GetService` does not replace pipeline invocation.
 
 All package IDs start with `CommunityToolkit.DocumentExtraction.` and target
 `net8.0` and `net10.0`. Versions are centrally managed; the experimental core
-dependencies currently require `10.10.0-review.20261102.1`. These core
+dependencies currently require `10.10.0-review.20261104.4`. These core
 prereleases are not released on a public package feed. Until the upstream
 packages publish, the component uses a temporary, reproducible **public-source
 prerequisite**, linked to [dotnet/extensions#7588](https://github.com/dotnet/extensions/pull/7588).
 
-**Local migration boundary:** The committed pins and public-source bootstrap
-below still provide the older interface-based core, not the abstract root.
-The coordinated migration is validated separately with a private candidate
-override. Public dependency/bootstrap coordination and clean-checkout CI
-acceptance are still pending; the commands below do not yet build this migrated
-source without that override.
-
 `eng/Bootstrap-DocumentExtractionCore.ps1` fetches the full, unmodified public
 `https://github.com/luisquintanilla/extensions.git` source at immutable commit
-`0f69c5cd069e2a8bc53e5bc0021c6825b4d35726`, verifies its tree
-`102a40f1bfb67efc0746bad6b64faa08c65fe169`, and packs the four original owning
+`c03481c76b63c6820e1de6ed9da09d5ff1e9f495`, verifies its tree
+`f2e9d521223db1cf33fa8bcec5667da26b92cc49`, and packs the four original owning
 projects with SDK `10.0.401`. It does not replace upstream projects/imports or
 use a moving build DLL. `Features=` disables the upstream debug-determinism
 compiler feature which otherwise removes portable-PDB SourceLink. No extra
 `ContinuousIntegrationBuild` or `ArtifactsDir` build override is applied.
+This snapshot includes the abstract extraction client and the exact Documents
+prerequisite from [dotnet/extensions#7835](https://github.com/dotnet/extensions/pull/7835)
+at `e08fe2eae1529a763d0d8d2e42a8d1feae153ed6`, including section-valued
+mixed table cells. Source-built `.4` packages are distinct from earlier private
+review archives; no public NuGet release or upstream API approval is implied.
 
 ```powershell
 .\eng\Bootstrap-DocumentExtractionCore.ps1 -DotnetPath C:\path\to\sdk-10.0.401\dotnet.exe

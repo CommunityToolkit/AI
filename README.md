@@ -35,7 +35,7 @@ The [document extraction providers](DocumentExtraction/README.md) add native
 PdfPig, Azure Content Understanding, Azure Document Intelligence, Mistral OCR,
 and Microsoft.Extensions.AI Vision packages. These are unreleased previews, not
 additions to the published NuGet package table. A pinned public-source bootstrap
-supplies the older experimental core prerequisite until feed packages publish. Their
+supplies the experimental core prerequisite until feed packages publish. Their
 acceptance tests are offline and require no cloud or model access.
 
 **Preview breaking change:** All five providers now derive from the abstract
@@ -44,9 +44,9 @@ implementing `IDocumentExtractionClient`. Update interface-typed variables,
 parameters, and service registrations to `DocumentExtractionClient`; custom
 clients must derive from it and override `ExtractAsync`. There is no interface
 compatibility shim. Extraction behavior and borrowed-client ownership are unchanged.
-Local migration acceptance uses a private candidate override; the committed
-dependency/bootstrap pins still target the interface-based core. Public
-dependency coordination and clean-checkout acceptance remain pending.
+The pinned public-source bootstrap includes this abstract root and the locked
+Documents prerequisite. These source-built preview dependencies are not public
+NuGet releases or a claim of upstream API approval.
 
 ## Running Live Tests
 

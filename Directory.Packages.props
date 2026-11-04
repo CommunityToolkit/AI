@@ -28,10 +28,10 @@
   </ItemGroup>
 
   <ItemGroup Label="DocumentExtraction">
-    <PackageVersion Update="Microsoft.Extensions.AI.Abstractions" Version="10.10.0-review.20261102.1" Condition="'$(DocumentExtractionBuild)' == 'true'" />
+    <PackageVersion Update="Microsoft.Extensions.AI.Abstractions" Version="10.10.0-review.20261104.4" Condition="'$(DocumentExtractionBuild)' == 'true'" />
     <PackageVersion Update="System.Text.Json" Version="10.0.12" Condition="'$(DocumentExtractionBuild)' == 'true'" />
-    <PackageVersion Include="Microsoft.Extensions.Documents.Abstractions" Version="10.10.0-review.20261102.1" />
-    <PackageVersion Include="Microsoft.Extensions.DocumentExtraction.Abstractions" Version="10.10.0-review.20261102.1" />
+    <PackageVersion Include="Microsoft.Extensions.Documents.Abstractions" Version="10.10.0-review.20261104.4" />
+    <PackageVersion Include="Microsoft.Extensions.DocumentExtraction.Abstractions" Version="10.10.0-review.20261104.4" />
     <PackageVersion Include="Azure.AI.ContentUnderstanding" Version="1.1.0" />
     <PackageVersion Include="Azure.AI.DocumentIntelligence" Version="1.0.0" />
     <PackageVersion Include="Azure.Core" Version="1.53.0" />

@@ -7,9 +7,9 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$commit = '0f69c5cd069e2a8bc53e5bc0021c6825b4d35726'
-$tree = '102a40f1bfb67efc0746bad6b64faa08c65fe169'
-$version = '10.10.0-review.20261102.1'
+$commit = 'c03481c76b63c6820e1de6ed9da09d5ff1e9f495'
+$tree = 'f2e9d521223db1cf33fa8bcec5667da26b92cc49'
+$version = '10.10.0-review.20261104.4'
 $ids = @(
     'Microsoft.Extensions.AI.Abstractions',
     'Microsoft.Extensions.Documents.Abstractions',
@@ -65,7 +65,7 @@ try {
         $project = Join-Path 'src\Libraries' "$id\$id.csproj"
         Invoke-Checked $DotnetPath @(
             'pack', $project, '--nologo', '--verbosity', 'quiet',
-            "-p:PackageVersion=$version", '-p:VersionSuffix=review.20261102.1',
+            "-p:PackageVersion=$version", '-p:VersionSuffix=review.20261104.4',
             '-p:Features=', "-p:PackageOutputPath=$OutputDirectory"
         )
     }
