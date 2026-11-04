@@ -593,11 +593,18 @@ public sealed class AzureDocumentIntelligenceClientTests
     public void GetService_SelfSdkUnknownAndKeyedLookup_ReturnsContractServices()
     {
         using var client = Create(new OfflineTransport(), borrowed: true);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(Adapter).BaseType);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(Adapter).GetMethod(nameof(client.ExtractAsync))!.GetBaseDefinition().DeclaringType);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(Adapter).GetMethod(nameof(client.GetService))!.GetBaseDefinition().DeclaringType);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(Adapter).GetMethod(nameof(client.Dispose))!.DeclaringType);
         Assert.Same(client, client.GetService(typeof(Adapter)));
-        Assert.Same(client, client.GetService(typeof(IDocumentExtractionClient)));
+        Assert.Same(client, client.GetService(typeof(DocumentExtractionClient)));
+        Assert.Same(client, client.GetService(typeof(object)));
         Assert.IsType<SdkClient>(client.GetService(typeof(SdkClient)));
         Assert.Null(client.GetService(typeof(Stream)));
         Assert.Null(client.GetService(typeof(SdkClient), "key"));
+        Assert.Null(client.GetService(typeof(DocumentExtractionClient), "key"));
+        Assert.Throws<ArgumentNullException>(() => client.GetService(null!));
     }
 
     [Theory]
@@ -833,6 +840,554 @@ public sealed class AzureDocumentIntelligenceClientTests
         client.Dispose();
         Assert.True(cancellation.IsCancellationRequested);
         Assert.Empty(transport.Requests);
+        input.Position = 0;
+        Assert.Equal(1, input.ReadByte());
+    }
+
+    // SYNTHETIC PINNED-SDK REPLAYS: these native cell.Elements combinations test
+    // offline mapping, not live OCR recognition or service emission guarantees.
+    // Geometry and spans deliberately overlap in AzureWireFixture; only explicit
+    // native pointers establish cell ownership. Markdown is never a substitute.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExtractAsync_MixedCell_NativePointersMapExactChildrenInSuppliedOrder(bool reverse)
+    {
+        string[] pointers = reverse
+            ? ["/figures/0", "/paragraphs/0", "/tables/1"]
+            : ["/tables/1", "/paragraphs/0", "/figures/0"];
+        var root = MixedCellReplay(pointers);
+        var content = AzureWireFixture.Content(root);
+        var nested = content["tables"]![0]!.DeepClone();
+        nested["cells"]![0]!.AsObject().Remove("elements");
+        nested["cells"]![0]!["content"] = "Nested cell text";
+        content["tables"]!.AsArray().Add(nested);
+        var transport = Replay(AzureWireFixture.Bytes(root));
+        var client = Create(transport, borrowed: true);
+        var sdk = client.GetService(typeof(SdkClient));
+        using var input = new MemoryStream([1, 2, 3]);
+        var result = await Extract(client, input);
+        client.Dispose();
+        Assert.Same(sdk, client.GetService(typeof(SdkClient)));
+        var page = Assert.Single(result.Sections);
+        var table = Assert.IsType<ExtractionDocumentTableElement>(Assert.Single(page.Elements));
+        var container = AssertMixedCellContainer(result, table);
+        Assert.Equal(3, container.Elements.Count);
+        var nestedTable = Assert.IsType<ExtractionDocumentTableElement>(container.Elements[reverse ? 2 : 0]);
+        var paragraph = Assert.IsType<ExtractionDocumentTextElement>(container.Elements[1]);
+        var figure = Assert.IsType<ExtractionDocumentImageElement>(container.Elements[reverse ? 0 : 2]);
+        Assert.Equal("Invoice heading", Assert.IsType<TextContent>(paragraph.Content).Text);
+        Assert.Equal("heading", paragraph.Role);
+        Assert.Equal("Nested cell text", Assert.IsType<TextContent>(
+            Assert.IsType<ExtractionDocumentTextElement>(nestedTable.Cells[0, 0]!.Content).Content).Text);
+        Assert.Equal("Revenue chart", figure.AlternativeText);
+        Assert.Null(figure.Content);
+        Assert.Null(figure.Text);
+        Assert.Equal(AzureWireFixture.Points, figure.Sources[0].Polygon.Select(point => (point.X, point.Y)));
+        Assert.Equal(AzureWireFixture.Points, paragraph.Sources[0].Polygon.Select(point => (point.X, point.Y)));
+        Assert.All(paragraph.Sources, source => Assert.Same(result.SourcePages[0], source.Page));
+        Assert.Same(result.SourcePages[0], Assert.Single(figure.Sources).Page);
+        var native = Assert.IsType<NativeResult>(result.RawRepresentation);
+#if CONTENT_UNDERSTANDING
+        var nativeContent = Assert.IsType<NativeContent>(Assert.Single(native.Contents));
+#else
+        var nativeContent = native;
+#endif
+        Assert.Equal(pointers, nativeContent.Tables[0].Cells[0].Elements);
+        Assert.Equal("Total amount", nativeContent.Tables[0].Cells[0].Content);
+        Assert.Same(nativeContent.Tables[0], table.Sources[0].GetRawRepresentation());
+        Assert.Same(nativeContent.Tables[0].Cells[0], table.Cells[0, 0]!.Sources[0].GetRawRepresentation());
+        Assert.Same(nativeContent.Tables[1], nestedTable.Sources[0].GetRawRepresentation());
+        Assert.All(paragraph.Sources, source => Assert.Same(nativeContent.Paragraphs[0], source.GetRawRepresentation()));
+        Assert.Same(nativeContent.Figures[0], figure.Sources[0].GetRawRepresentation());
+        // All three mapped children have one structured owner, and no aggregate
+        // native fallback is also synthesized as a local child.
+        Assert.DoesNotContain(container.Elements.OfType<ExtractionDocumentTextElement>(),
+            text => text.Content is TextContent payload && payload.Text == "Total amount");
+        Assert.Equal(2, transport.Requests.Count);
+        Assert.Equal(2, transport.Delivered[1].DisposeCount);
+        AssertMixedCellBorrowedInput(input);
+    }
+
+    [Fact]
+    public async Task ExtractAsync_MixedCell_ActualFigureRefIndependentlyMapsImageAndNativeIdentity()
+    {
+        var root = MixedCellReplay("/figures/0");
+#if CONTENT_UNDERSTANDING
+        var transport = Replay(AzureWireFixture.Bytes(root));
+        using var client = Create(transport);
+#else
+        byte[] imageBytes = [137, 80, 78, 71, 13, 10, 26, 10, 42];
+        var imageResponse = new TrackedResponse(imageBytes);
+        var transport = Replay(AzureWireFixture.Bytes(root), imageResponse);
+        using var client = Create(transport, images: true);
+#endif
+        using var input = new MemoryStream([1, 2, 3]);
+        var result = await Extract(client, input);
+        var page = Assert.Single(result.Sections);
+        var table = Assert.Single(page.Elements.OfType<ExtractionDocumentTableElement>());
+        var container = AssertMixedCellContainer(result, table);
+        var figure = Assert.IsType<ExtractionDocumentImageElement>(Assert.Single(container.Elements));
+        Assert.Equal("Revenue chart", figure.AlternativeText);
+        Assert.Null(figure.Text);
+        Assert.Same(result.SourcePages[0], Assert.Single(figure.Sources).Page);
+        Assert.Equal(AzureWireFixture.Points, figure.Sources[0].Polygon.Select(point => (point.X, point.Y)));
+        Assert.Equal(2, page.Elements.Count); // Unreferenced paragraph remains a root sibling.
+        Assert.Single(page.Elements.OfType<ExtractionDocumentTextElement>());
+        Assert.DoesNotContain(figure, page.Elements);
+        var native = Assert.IsType<NativeResult>(result.RawRepresentation);
+#if CONTENT_UNDERSTANDING
+        var nativeContent = Assert.IsType<NativeContent>(Assert.Single(native.Contents));
+        Assert.Null(figure.Content); // Description/source do not fabricate bytes or a URI.
+        Assert.Equal(2, transport.Requests.Count);
+#else
+        var nativeContent = native;
+        var image = Assert.IsType<DataContent>(figure.Content);
+        Assert.Equal("image/png", image.MediaType);
+        Assert.Equal(imageBytes, image.Data.ToArray());
+        Assert.Contains("output=figures", transport.Requests[0].Uri.Query);
+        Assert.Equal(RequestMethod.Get, transport.Requests[2].Method);
+        Assert.EndsWith("/figures/3.1", transport.Requests[2].Uri.AbsolutePath);
+        Assert.Equal(3, transport.Requests.Count);
+        Assert.Equal(2, imageResponse.DisposeCount);
+#endif
+        Assert.Equal(new[] { "/figures/0" }, nativeContent.Tables[0].Cells[0].Elements);
+        Assert.Same(nativeContent.Figures[0], figure.Sources[0].GetRawRepresentation());
+        Assert.Same(nativeContent.Tables[0].Cells[0], container.Sources[0].GetRawRepresentation());
+        Assert.Equal("Total amount", nativeContent.Tables[0].Cells[0].Content);
+        Assert.Equal(2, transport.Delivered[1].DisposeCount);
+        AssertMixedCellBorrowedInput(input);
+    }
+
+    [Theory]
+    [InlineData(false, null)]
+    [InlineData(false, "")]
+    [InlineData(false, "Total amount")]
+    [InlineData(true, null)]
+    [InlineData(true, "")]
+    [InlineData(true, "Total amount")]
+    public async Task ExtractAsync_MixedCell_AbsentOrEmptyRefsKeepNativeFallbackWithoutInference(bool emptyRefs, string? fallback)
+    {
+        var root = AzureWireFixture.Create();
+        var content = AzureWireFixture.Content(root);
+        var wireCell = content["tables"]![0]!["cells"]![0]!;
+        if (emptyRefs)
+        {
+            wireCell["elements"] = new JsonArray();
+        }
+        if (fallback is null)
+        {
+            wireCell.AsObject().Remove("content");
+        }
+        else
+        {
+            wireCell["content"] = fallback;
+        }
+        // Deliberately misleading Markdown and overlapping fixture geometry must
+        // not create child links absent native cell.Elements.
+        content[AzureWireFixture.IsContentUnderstanding ? "markdown" : "content"] =
+            "| Invoice heading | ![Revenue chart](/figures/0) |";
+        var transport = Replay(AzureWireFixture.Bytes(root));
+        using var client = Create(transport);
+        using var input = new MemoryStream([1, 2, 3]);
+        var result = await Extract(client, input);
+        var page = Assert.Single(result.Sections);
+        Assert.Equal(3, page.Elements.Count);
+        Assert.Single(page.Elements.OfType<ExtractionDocumentTextElement>());
+        Assert.Single(page.Elements.OfType<ExtractionDocumentImageElement>());
+        var table = Assert.Single(page.Elements.OfType<ExtractionDocumentTableElement>());
+        var cell = table.Cells[0, 0]!;
+        Assert.Equal((0, 0, 2, 2, "columnHeader"),
+            (cell.RowIndex, cell.ColumnIndex, cell.RowSpan, cell.ColumnSpan, cell.Role));
+        var source = Assert.Single(cell.Sources);
+        Assert.Equal(AzureWireFixture.Points, source.Polygon.Select(point => (point.X, point.Y)));
+        Assert.Same(result.SourcePages[0], source.Page);
+        if (fallback is null)
+        {
+            Assert.Null(cell.Content);
+        }
+        else
+        {
+            var text = Assert.IsType<ExtractionDocumentTextElement>(cell.Content);
+            Assert.Equal(fallback, Assert.IsType<TextContent>(text.Content).Text);
+            Assert.Same(source, Assert.Single(text.Sources));
+        }
+        var native = Assert.IsType<NativeResult>(result.RawRepresentation);
+#if CONTENT_UNDERSTANDING
+        var nativeCell = Assert.IsType<NativeContent>(Assert.Single(native.Contents)).Tables[0].Cells[0];
+#else
+        var nativeCell = native.Tables[0].Cells[0];
+#endif
+        Assert.Empty(nativeCell.Elements);
+        Assert.Equal(fallback, nativeCell.Content);
+        Assert.Same(nativeCell, source.GetRawRepresentation());
+        Assert.Equal(2, transport.Requests.Count);
+        Assert.Equal(2, transport.Delivered[1].DisposeCount);
+        AssertMixedCellBorrowedInput(input);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExtractAsync_MixedCell_AncestorSectionRedundancyYieldsToCellOwnership(bool nested)
+    {
+        var root = MixedCellReplay("/figures/0", "/paragraphs/0");
+        AzureWireFixture.Content(root)["sections"] = nested
+            ? new JsonArray(
+                AzureWireFixture.Section("/paragraphs/0", "/sections/1", "/figures/0"),
+                AzureWireFixture.Section("/figures/0", "/tables/0", "/paragraphs/0"))
+            : new JsonArray(AzureWireFixture.Section("/paragraphs/0", "/tables/0", "/figures/0"));
+        var transport = Replay(AzureWireFixture.Bytes(root));
+        using var client = Create(transport);
+        using var input = new MemoryStream([1, 2, 3]);
+        var result = await Extract(client, input);
+        var outer = Assert.IsType<ExtractionDocumentSection>(Assert.Single(Assert.Single(result.Sections).Elements));
+        var owner = nested ? Assert.IsType<ExtractionDocumentSection>(Assert.Single(outer.Elements)) : outer;
+        var table = Assert.IsType<ExtractionDocumentTableElement>(Assert.Single(owner.Elements));
+        var container = AssertMixedCellContainer(result, table);
+        Assert.Collection(container.Elements,
+            element => Assert.Equal("Revenue chart", Assert.IsType<ExtractionDocumentImageElement>(element).AlternativeText),
+            element => Assert.Equal("Invoice heading", Assert.IsType<TextContent>(Assert.IsType<ExtractionDocumentTextElement>(element).Content).Text));
+        var native = Assert.IsType<NativeResult>(result.RawRepresentation);
+#if CONTENT_UNDERSTANDING
+        var nativeContent = Assert.IsType<NativeContent>(Assert.Single(native.Contents));
+#else
+        var nativeContent = native;
+#endif
+        Assert.Same(nativeContent.Sections[nested ? 1 : 0], owner.Sources[0].GetRawRepresentation());
+        Assert.Same(nativeContent.Figures[0], container.Elements[0].Sources[0].GetRawRepresentation());
+        Assert.Same(nativeContent.Paragraphs[0], container.Elements[1].Sources[0].GetRawRepresentation());
+        // Native sibling lists remain native; only the mapped redundant placement
+        // disappears. This is not permission to mutate the raw SDK result.
+        Assert.Equal(new[] { "/figures/0", "/paragraphs/0" }, nativeContent.Tables[0].Cells[0].Elements);
+        Assert.Contains("/paragraphs/0", nativeContent.Sections[nested ? 1 : 0].Elements);
+        Assert.Contains("/figures/0", nativeContent.Sections[nested ? 1 : 0].Elements);
+        Assert.Equal(2, transport.Requests.Count);
+        Assert.Equal(2, transport.Delivered[1].DisposeCount);
+        AssertMixedCellBorrowedInput(input);
+    }
+
+    [Fact]
+    public async Task ExtractAsync_MixedCell_ValidSectionRefRetainsOrderedSectionChildren()
+    {
+        var root = MixedCellReplay("/sections/0");
+        AzureWireFixture.Content(root)["sections"] =
+            new JsonArray(AzureWireFixture.Section("/figures/0", "/paragraphs/0"));
+        var transport = Replay(AzureWireFixture.Bytes(root));
+        using var client = Create(transport);
+        using var input = new MemoryStream([1, 2, 3]);
+        var result = await Extract(client, input);
+        var table = Assert.IsType<ExtractionDocumentTableElement>(Assert.Single(Assert.Single(result.Sections).Elements));
+        var container = AssertMixedCellContainer(result, table);
+        var section = Assert.IsType<ExtractionDocumentSection>(Assert.Single(container.Elements));
+        Assert.Collection(section.Elements,
+            element => Assert.Equal("Revenue chart", Assert.IsType<ExtractionDocumentImageElement>(element).AlternativeText),
+            element => Assert.Equal("Invoice heading", Assert.IsType<TextContent>(Assert.IsType<ExtractionDocumentTextElement>(element).Content).Text));
+        var native = Assert.IsType<NativeResult>(result.RawRepresentation);
+#if CONTENT_UNDERSTANDING
+        var nativeContent = Assert.IsType<NativeContent>(Assert.Single(native.Contents));
+#else
+        var nativeContent = native;
+#endif
+        Assert.Equal(new[] { "/sections/0" }, nativeContent.Tables[0].Cells[0].Elements);
+        Assert.Same(nativeContent.Sections[0], section.Sources[0].GetRawRepresentation());
+        Assert.Same(nativeContent.Figures[0], section.Elements[0].Sources[0].GetRawRepresentation());
+        Assert.Same(nativeContent.Paragraphs[0], section.Elements[1].Sources[0].GetRawRepresentation());
+        Assert.Same(result.SourcePages[0], section.Sources[0].Page);
+        Assert.Equal(2, transport.Delivered[1].DisposeCount);
+        AssertMixedCellBorrowedInput(input);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExtractAsync_MixedCell_AncestorRedundancyOfSectionDescendantsKeepsOnlyDeepOwner(bool innerFirst)
+    {
+        int innerIndex = innerFirst ? 0 : 1;
+        var root = MixedCellReplay($"/sections/{innerIndex}");
+        var inner = AzureWireFixture.Section("/figures/0", "/paragraphs/0");
+        var outer = AzureWireFixture.Section("/paragraphs/0", "/tables/0", $"/sections/{innerIndex}", "/figures/0");
+        AzureWireFixture.Content(root)["sections"] = innerFirst
+            ? new JsonArray(inner, outer) : new JsonArray(outer, inner);
+        var transport = Replay(AzureWireFixture.Bytes(root));
+        using var client = Create(transport);
+        using var input = new MemoryStream([1, 2, 3]);
+        var result = await Extract(client, input);
+        var mappedOuter = Assert.IsType<ExtractionDocumentSection>(Assert.Single(Assert.Single(result.Sections).Elements));
+        var table = Assert.IsType<ExtractionDocumentTableElement>(Assert.Single(mappedOuter.Elements));
+        var container = AssertMixedCellContainer(result, table);
+        var mappedInner = Assert.IsType<ExtractionDocumentSection>(Assert.Single(container.Elements));
+        Assert.Collection(mappedInner.Elements,
+            element => Assert.Equal("Revenue chart", Assert.IsType<ExtractionDocumentImageElement>(element).AlternativeText),
+            element => Assert.Equal("Invoice heading", Assert.IsType<TextContent>(element.Content).Text));
+        var native = Assert.IsType<NativeResult>(result.RawRepresentation);
+#if CONTENT_UNDERSTANDING
+        var nativeContent = Assert.IsType<NativeContent>(Assert.Single(native.Contents));
+#else
+        var nativeContent = native;
+#endif
+        Assert.Same(nativeContent.Sections[innerIndex], mappedInner.Sources[0].GetRawRepresentation());
+        Assert.Same(nativeContent.Figures[0], mappedInner.Elements[0].Sources[0].GetRawRepresentation());
+        Assert.Same(nativeContent.Paragraphs[0], mappedInner.Elements[1].Sources[0].GetRawRepresentation());
+        Assert.Contains("/paragraphs/0", nativeContent.Sections[1 - innerIndex].Elements);
+        Assert.Contains("/figures/0", nativeContent.Sections[1 - innerIndex].Elements);
+        Assert.Equal(2, transport.Delivered[1].DisposeCount);
+        AssertMixedCellBorrowedInput(input);
+    }
+
+    [Theory]
+    [InlineData("malformed")]
+    [InlineData("unsupported")]
+    [InlineData("dangling-paragraph")]
+    [InlineData("dangling-table")]
+    [InlineData("dangling-figure")]
+    [InlineData("dangling-section")]
+    [InlineData("duplicate-ref")]
+    [InlineData("duplicate-section-ref")]
+    [InlineData("cross-cell-same-table")]
+    [InlineData("cross-cell-across-tables")]
+    [InlineData("cross-cell-table")]
+    [InlineData("cross-cell-figure")]
+    [InlineData("cross-cell-section")]
+    [InlineData("parent-table-self")]
+    [InlineData("cross-table-cycle")]
+    [InlineData("section-mediated-cycle")]
+    [InlineData("cell-section-table-cycle")]
+    [InlineData("section-cycle")]
+    [InlineData("unrelated-section")]
+    [InlineData("ambiguous-sections")]
+    [InlineData("indirect-unrelated-section")]
+    [InlineData("indirect-cross-cell")]
+    public async Task ExtractAsync_MixedCell_InvalidOwnershipGraphRejectsAndCleansUp(string scenario)
+    {
+        var transport = Replay(AzureWireFixture.Bytes(InvalidMixedCellReplay(scenario)));
+        using var client = Create(transport);
+        using var input = new MemoryStream([1, 2, 3]);
+        await Assert.ThrowsAsync<InvalidDataException>(() => Extract(client, input));
+        Assert.Equal(2, transport.Requests.Count);
+        Assert.Equal(2, transport.Delivered[1].DisposeCount);
+        AssertMixedCellBorrowedInput(input);
+    }
+
+    [Theory]
+    [InlineData("pre-copy")]
+    [InlineData("polling")]
+    [InlineData("mapping")]
+    public async Task ExtractAsync_MixedCell_CancellationKeepsBorrowedInputAndFinalCleanup(string stage)
+    {
+        var final = new TrackedResponse(AzureWireFixture.Bytes(MixedCellReplay("/paragraphs/0", "/figures/0")));
+        var transport = new OfflineTransport(TrackedResponse.Accepted(), final);
+        using var cancellation = new CancellationTokenSource();
+        if (stage == "pre-copy")
+        {
+            cancellation.Cancel();
+        }
+        else
+        {
+            transport.AfterResponse = (_, count) =>
+            {
+                if (count == (stage == "polling" ? 1 : 2))
+                {
+                    cancellation.Cancel();
+                }
+            };
+        }
+        using var client = Create(transport, borrowed: true);
+        using var input = new MemoryStream([1, 2, 3]);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Extract(client, input, token: cancellation.Token));
+        Assert.Equal(stage == "pre-copy" ? 0 : stage == "polling" ? 1 : 2, transport.Requests.Count);
+        Assert.All(transport.Requests, request => Assert.True(request.Token.CanBeCanceled));
+        if (stage == "mapping")
+        {
+            Assert.True(final.DisposeCount > 0);
+        }
+        AssertMixedCellBorrowedInput(input);
+    }
+
+#if !CONTENT_UNDERSTANDING
+    [Theory]
+    [InlineData("http")]
+    [InlineData("read")]
+    [InlineData("cancel")]
+    public async Task ExtractAsync_MixedCell_FigureFailureKeepsPrimaryOutcomeAndCleansUp(string scenario)
+    {
+        var figure = new TrackedResponse(scenario == "http"
+            ? Encoding.UTF8.GetBytes("""{"error":{"code":"FigureFailure","message":"figure unavailable"}}""")
+            : [1, 2, 3], scenario == "http" ? 400 : 200);
+        if (scenario == "read")
+        {
+            figure.ContentStream = new FaultingBody([1, 2, 3], new IOException("mixed-cell figure read failure"), seekable: false);
+        }
+        var transport = Replay(AzureWireFixture.Bytes(MixedCellReplay("/figures/0")), figure);
+        using var cancellation = new CancellationTokenSource();
+        if (scenario == "cancel")
+        {
+            transport.AfterResponse = (_, count) =>
+            {
+                if (count == 3)
+                {
+                    cancellation.Cancel();
+                }
+            };
+        }
+        using var client = Create(transport, images: true);
+        using var input = new MemoryStream([1, 2, 3]);
+        var error = await Record.ExceptionAsync(() => Extract(client, input, token: cancellation.Token));
+        if (scenario == "http")
+        {
+            Assert.Contains("FigureFailure", Assert.IsType<RequestFailedException>(error).Message);
+        }
+        else if (scenario == "read")
+        {
+            Assert.Equal("mixed-cell figure read failure", Assert.IsType<IOException>(error).Message);
+        }
+        else
+        {
+            Assert.IsAssignableFrom<OperationCanceledException>(error);
+        }
+        Assert.Equal(3, transport.Requests.Count);
+        Assert.EndsWith("/figures/3.1", transport.Requests[2].Uri.AbsolutePath);
+        Assert.Equal(2, transport.Delivered[1].DisposeCount);
+        Assert.True(figure.DisposeCount > 0);
+        AssertMixedCellBorrowedInput(input);
+    }
+
+    [Fact]
+    public async Task ExtractAsync_MixedCell_InvalidOwnershipAfterFigureDownloadCleansBothResponses()
+    {
+        var figure = new TrackedResponse([137, 80, 78, 71, 13, 10, 26, 10, 42]);
+        var transport = Replay(AzureWireFixture.Bytes(MixedCellReplay("/figures/0", "/figures/0")), figure);
+        using var client = Create(transport, images: true);
+        using var input = new MemoryStream([1, 2, 3]);
+        await Assert.ThrowsAsync<InvalidDataException>(() => Extract(client, input));
+        Assert.Equal(3, transport.Requests.Count);
+        Assert.EndsWith("/figures/3.1", transport.Requests[2].Uri.AbsolutePath);
+        Assert.Equal(2, transport.Delivered[1].DisposeCount);
+        Assert.Equal(2, figure.DisposeCount);
+        AssertMixedCellBorrowedInput(input);
+    }
+#endif
+
+    private static JsonObject MixedCellReplay(params string[] pointers)
+    {
+        // Synthetic fixture, schema-shaped using AzureWireFixture's pinned native
+        // models. A string array deserializes to native DocumentTableCell.Elements.
+        var root = AzureWireFixture.Create();
+        AzureWireFixture.Content(root)["tables"]![0]!["cells"]![0]!["elements"] =
+            JsonSerializer.SerializeToNode(pointers);
+        return root;
+    }
+
+    private static JsonObject InvalidMixedCellReplay(string scenario)
+    {
+        var root = MixedCellReplay("/paragraphs/0");
+        var content = AzureWireFixture.Content(root);
+        var tables = content["tables"]!.AsArray();
+        var firstCell = tables[0]!["cells"]![0]!;
+        void SetRefs(JsonNode cell, params string[] refs) => cell["elements"] = JsonSerializer.SerializeToNode(refs);
+        void AddOtherTable(params string[] refs)
+        {
+            var other = tables[0]!.DeepClone();
+            SetRefs(other["cells"]![0]!, refs);
+            tables.Add(other);
+        }
+        switch (scenario)
+        {
+            case "malformed": SetRefs(firstCell, "paragraphs/0"); break;
+            case "unsupported": SetRefs(firstCell, "/pages/0"); break;
+            case "dangling-paragraph": SetRefs(firstCell, "/paragraphs/999"); break;
+            case "dangling-table": SetRefs(firstCell, "/tables/999"); break;
+            case "dangling-figure": SetRefs(firstCell, "/figures/999"); break;
+            case "dangling-section": SetRefs(firstCell, "/sections/999"); break;
+            case "duplicate-ref": SetRefs(firstCell, "/paragraphs/0", "/paragraphs/0"); break;
+            case "duplicate-section-ref":
+                SetRefs(firstCell, "/sections/0", "/sections/0");
+                content["sections"] = new JsonArray(AzureWireFixture.Section("/paragraphs/0"));
+                break;
+            case "cross-cell-same-table":
+                var otherCell = firstCell.DeepClone();
+                otherCell["columnIndex"] = 2;
+                otherCell["columnSpan"] = 1;
+                tables[0]!["cells"]!.AsArray().Add(otherCell);
+                break;
+            case "cross-cell-across-tables": AddOtherTable("/paragraphs/0"); break;
+            case "cross-cell-table":
+                SetRefs(firstCell, "/tables/2");
+                AddOtherTable("/tables/2");
+                var leaf = tables[0]!.DeepClone();
+                leaf["cells"]![0]!.AsObject().Remove("elements");
+                tables.Add(leaf);
+                break;
+            case "cross-cell-figure":
+                SetRefs(firstCell, "/figures/0");
+                AddOtherTable("/figures/0");
+                break;
+            case "cross-cell-section":
+                SetRefs(firstCell, "/sections/0");
+                AddOtherTable("/sections/0");
+                content["sections"] = new JsonArray(AzureWireFixture.Section("/paragraphs/0"));
+                break;
+            case "parent-table-self": SetRefs(firstCell, "/tables/0"); break;
+            case "cross-table-cycle":
+                SetRefs(firstCell, "/tables/1");
+                AddOtherTable("/tables/0");
+                break;
+            case "section-mediated-cycle":
+                SetRefs(firstCell, "/sections/0");
+                AddOtherTable("/tables/0");
+                content["sections"] = new JsonArray(AzureWireFixture.Section("/tables/1"));
+                break;
+            case "cell-section-table-cycle":
+                SetRefs(firstCell, "/sections/0");
+                content["sections"] = new JsonArray(AzureWireFixture.Section("/tables/0"));
+                break;
+            case "section-cycle":
+                SetRefs(firstCell, "/sections/0");
+                content["sections"] = new JsonArray(
+                    AzureWireFixture.Section("/sections/1"), AzureWireFixture.Section("/sections/0"));
+                break;
+            case "unrelated-section":
+                content["sections"] = new JsonArray(
+                    AzureWireFixture.Section("/tables/0"), AzureWireFixture.Section("/paragraphs/0"));
+                break;
+            case "ambiguous-sections":
+                content["sections"] = new JsonArray(
+                    AzureWireFixture.Section("/tables/0", "/paragraphs/0"), AzureWireFixture.Section("/paragraphs/0"));
+                break;
+            case "indirect-unrelated-section":
+                SetRefs(firstCell, "/sections/0");
+                content["sections"] = new JsonArray(
+                    AzureWireFixture.Section("/paragraphs/0"), AzureWireFixture.Section("/paragraphs/0"));
+                break;
+            case "indirect-cross-cell":
+                SetRefs(firstCell, "/sections/0");
+                AddOtherTable("/sections/1");
+                content["sections"] = new JsonArray(
+                    AzureWireFixture.Section("/paragraphs/0"), AzureWireFixture.Section("/paragraphs/0"));
+                break;
+            default: throw new ArgumentOutOfRangeException(nameof(scenario), scenario, null);
+        }
+        return root;
+    }
+
+    private static ExtractionDocumentSection AssertMixedCellContainer(ExtractionDocument result, ExtractionDocumentTableElement table)
+    {
+        Assert.Equal((2, 3), (table.Cells.RowCount, table.Cells.ColumnCount));
+        Assert.Null(table.Cells[0, 2]);
+        var cell = table.Cells[0, 0]!;
+        Assert.Equal((0, 0, 2, 2, "columnHeader"),
+            (cell.RowIndex, cell.ColumnIndex, cell.RowSpan, cell.ColumnSpan, cell.Role));
+        var source = Assert.Single(cell.Sources);
+        Assert.Same(Assert.Single(result.SourcePages), source.Page);
+        Assert.Equal(AzureWireFixture.Points, source.Polygon.Select(point => (point.X, point.Y)));
+        var container = Assert.IsType<ExtractionDocumentSection>(cell.Content);
+        Assert.Null(container.Content);
+        Assert.Same(source, Assert.Single(container.Sources));
+        return container;
+    }
+
+    private static void AssertMixedCellBorrowedInput(MemoryStream input)
+    {
         input.Position = 0;
         Assert.Equal(1, input.ReadByte());
     }

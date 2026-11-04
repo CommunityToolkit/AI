@@ -1,6 +1,6 @@
 # CommunityToolkit.DocumentExtraction.PdfPig
 
-Preview native PDF text extraction for `IDocumentExtractionClient`, targeting
+Preview native PDF text extraction for `DocumentExtractionClient`, targeting
 .NET 8 and .NET 10. This package depends on the experimental
 `Microsoft.Extensions.Documents.Abstractions` and
 `Microsoft.Extensions.DocumentExtraction.Abstractions` packages, not DataIngestion.

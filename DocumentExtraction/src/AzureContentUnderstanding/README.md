@@ -1,6 +1,6 @@
 # CommunityToolkit.DocumentExtraction.AzureContentUnderstanding
 
-Preview Azure AI Content Understanding adapter for `IDocumentExtractionClient`,
+Preview Azure AI Content Understanding adapter for `DocumentExtractionClient`,
 targeting .NET 8 and .NET 10. This package depends on Documents and Extraction,
 not DataIngestion, and has not been released to NuGet.org.
 
@@ -17,6 +17,18 @@ Sections are structural, without aggregate Markdown. Paragraphs spanning pages
 appear once with all reported sources; content without a reported source is not
 assigned a fabricated page. The service reports an analyzer identity, not a model
 identity; no model identity is inferred from the requested analyzer.
+
+When a native cell supplies `Elements` references, its content is a structural
+section of the referenced paragraphs, figures, tables, or sections in supplied
+order. The same mapped children are removed from page siblings; redundant native
+section membership is reconciled only within the owning table's ancestor chain.
+Dangling, repeated, cyclic, or conflicting ownership fails explicitly. Aggregate
+cell text remains available on the native cell, not duplicated in the structural
+payload. Without child references, the existing nullable text mapping remains.
+No child association is inferred from polygons or Markdown. Content Understanding
+figure references retain reported descriptions and geometry; this adapter does
+not fabricate image bytes or URIs. Offline synthetic schema replay demonstrates
+mapping, not live recognition of images inside cells.
 
 The caller owns its input and supplied SDK client. The result requires no
 disposal. `document.RawRepresentation` exposes the native `AnalysisResult`;

@@ -16,9 +16,9 @@ using Microsoft.Extensions.Documents;
 namespace CommunityToolkit.DocumentExtraction.Mistral;
 
 /// <summary>
-/// An <see cref="IDocumentExtractionClient"/> backed by Mistral OCR on Azure AI Foundry.
+/// A <see cref="DocumentExtractionClient"/> backed by Mistral OCR on Azure AI Foundry.
 /// </summary>
-public sealed class FoundryMistralOcrClient : IDocumentExtractionClient
+public sealed class FoundryMistralOcrClient : DocumentExtractionClient
 {
     private const string ProviderName = "foundry-mistral-ocr";
 
@@ -76,7 +76,7 @@ public sealed class FoundryMistralOcrClient : IDocumentExtractionClient
     }
 
     /// <inheritdoc/>
-    public async Task<ExtractionDocument> ExtractAsync(
+    public override async Task<ExtractionDocument> ExtractAsync(
         Stream document,
         string identifier,
         string mediaType,
@@ -379,18 +379,13 @@ public sealed class FoundryMistralOcrClient : IDocumentExtractionClient
     }
 
     /// <inheritdoc/>
-    public object? GetService(Type serviceType, object? serviceKey = null)
+    protected override void Dispose(bool disposing)
     {
-        ArgumentNullException.ThrowIfNull(serviceType);
-        return serviceKey is null && serviceType.IsInstanceOfType(this) ? this : null;
-    }
-
-    /// <inheritdoc/>
-    public void Dispose()
-    {
-        if (_ownsHttpClient)
+        if (disposing && _ownsHttpClient)
         {
             _http.Dispose();
         }
+
+        base.Dispose(disposing);
     }
 }

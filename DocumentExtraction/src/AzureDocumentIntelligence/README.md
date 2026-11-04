@@ -1,6 +1,6 @@
 # CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence
 
-Preview Azure Document Intelligence adapter for `IDocumentExtractionClient`,
+Preview Azure Document Intelligence adapter for `DocumentExtractionClient`,
 targeting .NET 8 and .NET 10. This package depends on Documents and Extraction,
 not DataIngestion, and has not been released to NuGet.org.
 
@@ -21,6 +21,18 @@ SDK paragraphs, native section pointers, tables, cells, roles, and all polygon
 vertices map directly. Page units and origins are explicit. Structural ancestors
 contain no aggregate text; multi-page elements retain all their sources without
 duplicating their semantic content.
+
+When a native cell supplies `Elements` references, its content is a structural
+section of the referenced paragraphs, figures, tables, or sections in supplied
+order. The same mapped children are removed from page siblings; redundant native
+section membership is reconciled only within the owning table's ancestor chain.
+Dangling, repeated, cyclic, or conflicting ownership fails explicitly. Aggregate
+cell text remains available on the native cell, not duplicated in the structural
+payload. Without child references, the existing nullable text mapping remains.
+No child association is inferred from polygons or Markdown. Figure bytes are
+retrieved only with `includeImages`; no original asset URI is fabricated. Offline
+synthetic schema replay demonstrates mapping, not live recognition of images
+inside cells.
 
 Input streams and supplied SDK clients are borrowed. Final response and figure
 resources are released after semantic figure bytes have been detached. Results

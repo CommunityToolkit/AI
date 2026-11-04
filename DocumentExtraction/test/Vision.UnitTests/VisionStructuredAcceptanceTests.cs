@@ -360,7 +360,7 @@ public sealed class VisionStructuredAcceptanceTests
         Assert.Throws<ArgumentNullException>(() => new VisionLlmOcrClient(null!, useStructuredOutput: true));
         var chat = new RecordingChatClient(RecordingChatClient.Response("""{"pages":[{"markdown":"still usable"}]}"""));
         var client = new VisionLlmOcrClient(chat, useStructuredOutput: true);
-        Assert.Same(client, client.GetService(typeof(IDocumentExtractionClient)));
+        Assert.Same(client, client.GetService(typeof(DocumentExtractionClient)));
         Assert.Same(client, client.GetService(typeof(VisionLlmOcrClient)));
         Assert.Same(chat, client.GetService(typeof(IChatClient)));
         Assert.Null(client.GetService(typeof(string)));

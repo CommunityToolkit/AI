@@ -130,10 +130,15 @@ public sealed class PdfPigDocumentExtractionClientTests
     public void GetService_SelfUnknownTypeAndServiceKey_ReturnsOnlySupportedService()
     {
         using var client = new PdfPigDocumentExtractionClient();
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(PdfPigDocumentExtractionClient).BaseType);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(PdfPigDocumentExtractionClient).GetMethod(nameof(client.ExtractAsync))!.GetBaseDefinition().DeclaringType);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(PdfPigDocumentExtractionClient).GetMethod(nameof(client.GetService))!.DeclaringType);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(PdfPigDocumentExtractionClient).GetMethod(nameof(client.Dispose))!.DeclaringType);
         Assert.Same(client, client.GetService(typeof(PdfPigDocumentExtractionClient)));
-        Assert.Same(client, client.GetService(typeof(IDocumentExtractionClient)));
+        Assert.Same(client, client.GetService(typeof(DocumentExtractionClient)));
+        Assert.Same(client, client.GetService(typeof(object)));
         Assert.Null(client.GetService(typeof(Stream)));
-        Assert.Null(client.GetService(typeof(IDocumentExtractionClient), "key"));
+        Assert.Null(client.GetService(typeof(DocumentExtractionClient), "key"));
         Assert.Throws<ArgumentNullException>(() => client.GetService(null!));
     }
 

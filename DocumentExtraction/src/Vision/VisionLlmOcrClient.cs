@@ -11,7 +11,7 @@ namespace CommunityToolkit.DocumentExtraction.Vision;
 
 /// <summary>Extracts documents with a borrowed vision-capable <see cref="IChatClient"/>.</summary>
 /// <remarks>Structured mode fails explicitly when the model cannot satisfy its schema; it never falls back to free-form.</remarks>
-public sealed class VisionLlmOcrClient : IDocumentExtractionClient
+public sealed class VisionLlmOcrClient : DocumentExtractionClient
 {
     private const string ProviderName = "vision-llm";
     private const string DefaultPrompt =
@@ -59,7 +59,7 @@ public sealed class VisionLlmOcrClient : IDocumentExtractionClient
     }
 
     /// <inheritdoc/>
-    public async Task<ExtractionDocument> ExtractAsync(
+    public override async Task<ExtractionDocument> ExtractAsync(
         Stream document, string identifier, string mediaType,
         DocumentExtractionOptions? options = null, CancellationToken cancellationToken = default)
     {
@@ -280,14 +280,9 @@ public sealed class VisionLlmOcrClient : IDocumentExtractionClient
     }
 
     /// <inheritdoc/>
-    public object? GetService(Type serviceType, object? serviceKey = null)
+    public override object? GetService(Type serviceType, object? serviceKey = null)
     {
         ArgumentNullException.ThrowIfNull(serviceType);
-        return serviceKey is null && serviceType.IsInstanceOfType(this) ? this : _chatClient.GetService(serviceType, serviceKey);
-    }
-
-    /// <inheritdoc/>
-    public void Dispose()
-    {
+        return base.GetService(serviceType, serviceKey) ?? _chatClient.GetService(serviceType, serviceKey);
     }
 }

@@ -503,10 +503,15 @@ public sealed class FoundryMistralOcrClientTests
     public async Task GetService_SelfUnknownAndKeyedLookup_ReturnsContractServices()
     {
         using var session = new OfflineSession();
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(FoundryMistralOcrClient).BaseType);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(FoundryMistralOcrClient).GetMethod(nameof(session.Client.ExtractAsync))!.GetBaseDefinition().DeclaringType);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(FoundryMistralOcrClient).GetMethod(nameof(session.Client.GetService))!.DeclaringType);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(FoundryMistralOcrClient).GetMethod(nameof(session.Client.Dispose))!.DeclaringType);
         Assert.Same(session.Client, session.Client.GetService(typeof(FoundryMistralOcrClient)));
-        Assert.Same(session.Client, session.Client.GetService(typeof(IDocumentExtractionClient)));
+        Assert.Same(session.Client, session.Client.GetService(typeof(DocumentExtractionClient)));
+        Assert.Same(session.Client, session.Client.GetService(typeof(object)));
         Assert.Null(session.Client.GetService(typeof(HttpClient)));
-        Assert.Null(session.Client.GetService(typeof(IDocumentExtractionClient), "key"));
+        Assert.Null(session.Client.GetService(typeof(DocumentExtractionClient), "key"));
         Assert.Equal("serviceType", Assert.Throws<ArgumentNullException>(() => session.Client.GetService(null!)).ParamName);
         await session.AssertCleanAndBorrowedAsync(0, 0, 0);
     }

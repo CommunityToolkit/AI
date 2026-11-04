@@ -7,6 +7,11 @@ namespace CommunityToolkit.DocumentExtraction;
 
 internal static class SectionHierarchy
 {
+    internal sealed record CellContent(
+        ExtractionDocumentTableElement Table,
+        ExtractionDocumentTableCell Cell,
+        IReadOnlyList<string> Elements);
+
     public static void Order(ExtractionDocument document, IReadOnlyDictionary<ExtractionDocumentElement, int> offsets)
     {
         foreach (ExtractionDocumentSection section in document.Sections)
@@ -22,9 +27,10 @@ internal static class SectionHierarchy
     public static void Apply(
         ExtractionDocument document,
         IReadOnlyDictionary<string, ExtractionDocumentElement> elements,
-        IReadOnlyList<(ExtractionDocumentSection Section, IReadOnlyList<string> Elements)> sections)
+        IReadOnlyList<(ExtractionDocumentSection Section, IReadOnlyList<string> Elements)> sections,
+        IReadOnlyList<CellContent>? cells = null)
     {
-        if (sections.Count == 0)
+        if (sections.Count == 0 && (cells is null || cells.Count == 0))
         {
             return;
         }
@@ -35,35 +41,133 @@ internal static class SectionHierarchy
             paths.Add($"/sections/{index}", sections[index].Section);
         }
 
-        var parents = new Dictionary<ExtractionDocumentElement, ExtractionDocumentSection>();
-        foreach (var (section, references) in sections)
+        var parents = new Dictionary<ExtractionDocumentElement, ExtractionDocumentElement>();
+        var cellOwners = new Dictionary<ExtractionDocumentElement, ExtractionDocumentTableElement>();
+        var cellContainers = new List<(ExtractionDocumentSection Section, ExtractionDocumentTableElement Table)>();
+        foreach (CellContent cell in cells ?? [])
         {
-            foreach (string reference in references)
+            if (cell.Elements.Count == 0)
             {
-                if (!paths.TryGetValue(reference, out ExtractionDocumentElement? element))
+                continue;
+            }
+
+            var container = (ExtractionDocumentSection)cell.Cell.Content!;
+            parents.Add(container, cell.Table);
+            cellContainers.Add((container, cell.Table));
+            foreach (string reference in cell.Elements)
+            {
+                ExtractionDocumentElement element = Resolve(reference);
+                if (!parents.TryAdd(element, container))
                 {
-                    throw new InvalidDataException($"The provider section references an unsupported element '{reference}'.");
+                    throw new InvalidDataException($"The provider element '{reference}' belongs to more than one cell or is repeated.");
                 }
 
-                if (!parents.TryAdd(element, section))
-                {
-                    throw new InvalidDataException($"The provider element '{reference}' belongs to more than one section.");
-                }
+                cellOwners.Add(element, cell.Table);
+                container.Elements.Add(element);
             }
         }
 
-        foreach (var (section, _) in sections)
+        var redundantMemberships = new List<(ExtractionDocumentSection Section, ExtractionDocumentTableElement Table)>();
+        var retainedCellMemberships = new List<(ExtractionDocumentSection Section, ExtractionDocumentSection Container)>();
+        var sectionClaims = new Dictionary<ExtractionDocumentElement, List<ExtractionDocumentSection>>();
+        foreach (var (section, references) in sections)
         {
-            var visited = new HashSet<ExtractionDocumentSection>();
-            ExtractionDocumentSection current = section;
-            while (parents.TryGetValue(current, out ExtractionDocumentSection? parent))
+            var seen = new HashSet<ExtractionDocumentElement>();
+            foreach (string reference in references)
+            {
+                ExtractionDocumentElement element = Resolve(reference);
+                if (!seen.Add(element))
+                {
+                    throw new InvalidDataException($"The provider element '{reference}' belongs to more than one section entry.");
+                }
+
+                if (cellOwners.TryGetValue(element, out ExtractionDocumentTableElement? table))
+                {
+                    redundantMemberships.Add((section, table));
+                    continue;
+                }
+
+                if (!sectionClaims.TryGetValue(element, out List<ExtractionDocumentSection>? claims))
+                {
+                    claims = [];
+                    sectionClaims.Add(element, claims);
+                }
+
+                claims.Add(section);
+            }
+        }
+
+        foreach (var (element, claims) in sectionClaims)
+        {
+            if (claims.Count == 1)
+            {
+                parents.Add(element, claims[0]);
+                continue;
+            }
+
+            ExtractionDocumentSection? owner = null;
+            ExtractionDocumentTableElement? ownerTable = null;
+            ExtractionDocumentSection? ownerContainer = null;
+            // Ancestor sections may repeat descendants of a cell-owned section.
+            foreach (ExtractionDocumentSection candidate in claims)
+            {
+                foreach (var (container, table) in cellContainers)
+                {
+                    if (CanReach(candidate, container) &&
+                        claims.All(other => ReferenceEquals(other, candidate) || CanReach(table, other)))
+                    {
+                        if (owner is not null && !ReferenceEquals(owner, candidate))
+                        {
+                            throw new InvalidDataException("A provider element has ambiguous cell-section ownership.");
+                        }
+
+                        owner = candidate;
+                        ownerTable = table;
+                        ownerContainer = container;
+                        break;
+                    }
+                }
+            }
+
+            if (owner is null || ownerTable is null || ownerContainer is null)
+            {
+                throw new InvalidDataException("A provider element belongs to more than one section.");
+            }
+
+            parents.Add(element, owner);
+            retainedCellMemberships.Add((owner, ownerContainer));
+            redundantMemberships.AddRange(claims.Where(section => !ReferenceEquals(section, owner))
+                .Select(section => (section, ownerTable)));
+        }
+
+        foreach (ExtractionDocumentElement element in parents.Keys)
+        {
+            var visited = new HashSet<ExtractionDocumentElement>();
+            ExtractionDocumentElement current = element;
+            while (parents.TryGetValue(current, out ExtractionDocumentElement? parent))
             {
                 if (!visited.Add(current))
                 {
-                    throw new InvalidDataException("The provider returned a cyclic section hierarchy.");
+                    throw new InvalidDataException("The provider returned a cyclic section or table-cell hierarchy.");
                 }
 
                 current = parent;
+            }
+        }
+
+        foreach (var (section, table) in redundantMemberships)
+        {
+            if (!HasAncestor(table, section))
+            {
+                throw new InvalidDataException("A cell-owned element has conflicting native section membership.");
+            }
+        }
+
+        foreach (var (section, container) in retainedCellMemberships)
+        {
+            if (!HasAncestor(section, container))
+            {
+                throw new InvalidDataException("A provider section has ambiguous cell ancestry.");
             }
         }
 
@@ -76,13 +180,70 @@ internal static class SectionHierarchy
         {
             foreach (string reference in references)
             {
-                section.Elements.Add(paths[reference]);
+                ExtractionDocumentElement element = Resolve(reference);
+                if (parents.TryGetValue(element, out ExtractionDocumentElement? parent) && ReferenceEquals(parent, section))
+                {
+                    section.Elements.Add(element);
+                }
             }
 
             if (!parents.ContainsKey(section))
             {
                 ProviderAdapterHelpers.GetSection(document, section.Sources).Elements.Add(section);
             }
+        }
+
+        ExtractionDocumentElement Resolve(string reference)
+        {
+            if (reference is null || !paths.TryGetValue(reference, out ExtractionDocumentElement? element))
+            {
+                throw new InvalidDataException($"The provider references an unsupported element '{reference}'.");
+            }
+
+            return element;
+        }
+
+        bool CanReach(ExtractionDocumentElement element, ExtractionDocumentElement ancestor)
+        {
+            var pending = new Stack<ExtractionDocumentElement>();
+            var visited = new HashSet<ExtractionDocumentElement>();
+            pending.Push(element);
+            while (pending.TryPop(out ExtractionDocumentElement? current))
+            {
+                if (ReferenceEquals(current, ancestor))
+                {
+                    return true;
+                }
+
+                if (!visited.Add(current))
+                {
+                    continue;
+                }
+
+                if (sectionClaims.TryGetValue(current, out List<ExtractionDocumentSection>? claims))
+                {
+                    foreach (ExtractionDocumentSection section in claims)
+                    {
+                        pending.Push(section);
+                    }
+                }
+                else if (parents.TryGetValue(current, out ExtractionDocumentElement? parent))
+                {
+                    pending.Push(parent);
+                }
+            }
+
+            return false;
+        }
+
+        bool HasAncestor(ExtractionDocumentElement element, ExtractionDocumentElement ancestor)
+        {
+            while (!ReferenceEquals(element, ancestor) && parents.TryGetValue(element, out ExtractionDocumentElement? parent))
+            {
+                element = parent;
+            }
+
+            return ReferenceEquals(element, ancestor);
         }
     }
 }

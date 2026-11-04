@@ -1,6 +1,6 @@
 # CommunityToolkit.DocumentExtraction.Mistral
 
-Preview Mistral OCR on Azure AI Foundry for `IDocumentExtractionClient`,
+Preview Mistral OCR on Azure AI Foundry for `DocumentExtractionClient`,
 targeting .NET 8 and .NET 10. This package depends on Documents and Extraction,
 not DataIngestion, and has not been released to NuGet.org.
 

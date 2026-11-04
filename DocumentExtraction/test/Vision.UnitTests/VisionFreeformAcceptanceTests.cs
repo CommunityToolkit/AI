@@ -245,8 +245,13 @@ public sealed class VisionFreeformAcceptanceTests
         Assert.Throws<ArgumentNullException>(() => new VisionLlmOcrClient(null!));
         var chat = new RecordingChatClient(RecordingChatClient.Response("still usable"));
         var client = new VisionLlmOcrClient(chat);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(VisionLlmOcrClient).BaseType);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(VisionLlmOcrClient).GetMethod(nameof(client.ExtractAsync))!.GetBaseDefinition().DeclaringType);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(VisionLlmOcrClient).GetMethod(nameof(client.GetService))!.GetBaseDefinition().DeclaringType);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(VisionLlmOcrClient).GetMethod(nameof(client.Dispose))!.DeclaringType);
         Assert.Same(client, client.GetService(typeof(VisionLlmOcrClient)));
-        Assert.Same(client, client.GetService(typeof(IDocumentExtractionClient)));
+        Assert.Same(client, client.GetService(typeof(DocumentExtractionClient)));
+        Assert.Same(client, client.GetService(typeof(object)));
         Assert.Same(chat, client.GetService(typeof(IChatClient)));
         Assert.Null(client.GetService(typeof(string)));
         Assert.Null(client.GetService(typeof(VisionLlmOcrClient), "key"));

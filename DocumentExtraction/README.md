@@ -1,11 +1,28 @@
 # Document extraction providers
 
-These five preview provider packages implement the experimental
-`Microsoft.Extensions.DocumentExtraction.IDocumentExtractionClient` over the
+These five preview provider packages derive from the experimental
+`Microsoft.Extensions.DocumentExtraction.DocumentExtractionClient` over the
 full `Microsoft.Extensions.Documents.ExtractionDocument` hierarchy. They are
 not yet published to NuGet.org. No DataIngestion bridge, enrichment package,
 public renderer, companion Documents framework, or core Markdown conversion
 is introduced here.
+
+**Preview breaking change:** `DocumentExtractionClient` replaces
+`IDocumentExtractionClient` entirely. Implementers derive from the abstract class
+and override `ExtractAsync`; callers and DI registrations use the new class.
+There is no compatibility shim: previously compiled interface-based consumers
+must rebuild. Stream input, completed-document results, middleware ordering and
+borrowed-client ownership remain unchanged.
+
+For example, the provider declaration changes from
+`PdfPigDocumentExtractionClient : IDocumentExtractionClient` to
+`PdfPigDocumentExtractionClient : DocumentExtractionClient`, with
+`public override Task<ExtractionDocument> ExtractAsync(...)`. Existing callers
+use `DocumentExtractionClient client = new PdfPigDocumentExtractionClient()`.
+Replace DI registration and lookup of `IDocumentExtractionClient` with
+`DocumentExtractionClient`, including keyed registrations/lookups. Middleware
+still invokes the configured extraction pipeline; obtaining a native service
+through `GetService` does not replace pipeline invocation.
 
 | Package suffix | Source | Input |
 |---|---|---|
@@ -21,6 +38,13 @@ dependencies currently require `10.10.0-review.20261102.1`. These core
 prereleases are not released on a public package feed. Until the upstream
 packages publish, the component uses a temporary, reproducible **public-source
 prerequisite**, linked to [dotnet/extensions#7588](https://github.com/dotnet/extensions/pull/7588).
+
+**Local migration boundary:** The committed pins and public-source bootstrap
+below still provide the older interface-based core, not the abstract root.
+The coordinated migration is validated separately with a private candidate
+override. Public dependency/bootstrap coordination and clean-checkout CI
+acceptance are still pending; the commands below do not yet build this migrated
+source without that override.
 
 `eng/Bootstrap-DocumentExtractionCore.ps1` fetches the full, unmodified public
 `https://github.com/luisquintanilla/extensions.git` source at immutable commit

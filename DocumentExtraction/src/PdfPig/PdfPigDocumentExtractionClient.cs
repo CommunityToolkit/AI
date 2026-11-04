@@ -15,12 +15,12 @@ namespace CommunityToolkit.DocumentExtraction.PdfPig;
 public sealed class PdfPigDocumentExtractionClient(
     IPageSegmenter? pageSegmenter = null,
     IWordExtractor? wordExtractor = null,
-    Func<TextBlock, string?>? roleResolver = null) : IDocumentExtractionClient
+    Func<TextBlock, string?>? roleResolver = null) : DocumentExtractionClient
 {
     private const string ProviderName = "pdfpig";
 
     /// <inheritdoc/>
-    public async Task<ExtractionDocument> ExtractAsync(
+    public override async Task<ExtractionDocument> ExtractAsync(
         Stream document, string identifier, string mediaType,
         DocumentExtractionOptions? options = null, CancellationToken cancellationToken = default)
     {
@@ -67,17 +67,5 @@ public sealed class PdfPigDocumentExtractionClient(
 
         cancellationToken.ThrowIfCancellationRequested();
         return output;
-    }
-
-    /// <inheritdoc/>
-    public object? GetService(Type serviceType, object? serviceKey = null)
-    {
-        ArgumentNullException.ThrowIfNull(serviceType);
-        return serviceKey is null && serviceType.IsInstanceOfType(this) ? this : null;
-    }
-
-    /// <inheritdoc/>
-    public void Dispose()
-    {
     }
 }

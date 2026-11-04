@@ -12,9 +12,9 @@ using Microsoft.Extensions.Documents;
 namespace CommunityToolkit.DocumentExtraction.AzureContentUnderstanding;
 
 /// <summary>
-/// An <see cref="IDocumentExtractionClient"/> backed by Azure AI Content Understanding.
+/// A <see cref="DocumentExtractionClient"/> backed by Azure AI Content Understanding.
 /// </summary>
-public sealed class ContentUnderstandingClient : IDocumentExtractionClient
+public sealed class ContentUnderstandingClient : DocumentExtractionClient
 {
     private const string ProviderName = "azure-content-understanding";
 
@@ -47,7 +47,7 @@ public sealed class ContentUnderstandingClient : IDocumentExtractionClient
     }
 
     /// <inheritdoc/>
-    public async Task<Microsoft.Extensions.Documents.ExtractionDocument> ExtractAsync(
+    public override async Task<Microsoft.Extensions.Documents.ExtractionDocument> ExtractAsync(
         Stream document,
         string identifier,
         string mediaType,
@@ -209,9 +209,9 @@ public sealed class ContentUnderstandingClient : IDocumentExtractionClient
             foreach (Azure.AI.ContentUnderstanding.DocumentTableCell cell in table.Cells)
             {
                 IReadOnlyList<ExtractionDocumentSourceReference> cellSources = ParseSources(cell.Source, frames, cell);
-                ExtractionDocumentTextElement? cellContent = cell.Content is { } text
-                    ? new ExtractionDocumentTextElement(new TextContent(text))
-                    : null;
+                ExtractionDocumentElement? cellContent = cell.Elements.Count > 0
+                    ? new ExtractionDocumentSection()
+                    : cell.Content is { } text ? new ExtractionDocumentTextElement(new TextContent(text)) : null;
                 foreach (ExtractionDocumentSourceReference source in cellSources)
                 {
                     cellContent?.Sources.Add(source);
@@ -272,7 +272,21 @@ public sealed class ContentUnderstandingClient : IDocumentExtractionClient
             sections.Add((section, native.Elements.ToArray()));
         }
 
-        SectionHierarchy.Apply(output, elements, sections);
+        var cells = new List<SectionHierarchy.CellContent>();
+        for (int index = 0; index < content.Tables.Count; index++)
+        {
+            var table = (ExtractionDocumentTableElement)elements[$"/tables/{index}"];
+            foreach (Azure.AI.ContentUnderstanding.DocumentTableCell cell in content.Tables[index].Cells)
+            {
+                if (cell.Elements.Count > 0)
+                {
+                    cells.Add(new SectionHierarchy.CellContent(
+                        table, table.Cells[cell.RowIndex, cell.ColumnIndex]!, cell.Elements.ToArray()));
+                }
+            }
+        }
+
+        SectionHierarchy.Apply(output, elements, sections, cells);
     }
 
     private static void OrderContent(
@@ -353,15 +367,10 @@ public sealed class ContentUnderstandingClient : IDocumentExtractionClient
         ExtractionDocumentSection Section);
 
     /// <inheritdoc/>
-    public object? GetService(Type serviceType, object? serviceKey = null)
+    public override object? GetService(Type serviceType, object? serviceKey = null)
     {
         ArgumentNullException.ThrowIfNull(serviceType);
-        return serviceKey is not null ? null : serviceType.IsInstanceOfType(this)
-            ? this : serviceType == typeof(Azure.AI.ContentUnderstanding.ContentUnderstandingClient) ? _client : null;
-    }
-
-    /// <inheritdoc/>
-    public void Dispose()
-    {
+        return serviceKey is null && serviceType == typeof(Azure.AI.ContentUnderstanding.ContentUnderstandingClient)
+            ? _client : base.GetService(serviceType, serviceKey);
     }
 }
