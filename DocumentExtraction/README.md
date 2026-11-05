@@ -1,122 +1,206 @@
-# Document extraction providers
+# Document extraction
 
-These five preview provider packages derive from the experimental
-`Microsoft.Extensions.DocumentExtraction.DocumentExtractionClient` over the
-full `Microsoft.Extensions.Documents.ExtractionDocument` hierarchy. They are
-not yet published to NuGet.org. No DataIngestion bridge, enrichment package,
-public renderer, companion Documents framework, or core Markdown conversion
-is introduced here.
+Extract text, tables, figures and source locations from documents with a choice
+of local PDF parsing, Azure document services or vision-capable language models.
+Each provider returns the same `Microsoft.Extensions.Documents.ExtractionDocument`
+graph, so downstream processing can work with document structure rather than
+backend-specific response formats.
 
-**Preview breaking change:** `DocumentExtractionClient` replaces
-`IDocumentExtractionClient` entirely. Implementers derive from the abstract class
-and override `ExtractAsync`; callers and DI registrations use the new class.
-There is no compatibility shim: previously compiled interface-based consumers
-must rebuild. Stream input, completed-document results, middleware ordering and
-borrowed-client ownership remain unchanged.
+## Choose a provider
 
-For example, the provider declaration changes from
-`PdfPigDocumentExtractionClient : IDocumentExtractionClient` to
-`PdfPigDocumentExtractionClient : DocumentExtractionClient`, with
-`public override Task<ExtractionDocument> ExtractAsync(...)`. Existing callers
-use `DocumentExtractionClient client = new PdfPigDocumentExtractionClient()`.
-Replace DI registration and lookup of `IDocumentExtractionClient` with
-`DocumentExtractionClient`, including keyed registrations/lookups. Middleware
-still invokes the configured extraction pipeline; obtaining a native service
-through `GetService` does not replace pipeline invocation.
+All packages target **.NET 8 and .NET 10**. Package IDs start with
+`CommunityToolkit.DocumentExtraction.`.
 
-| Package suffix | Source | Input |
+| Package | Use when you need | Processing and input |
 |---|---|---|
-| `PdfPig` | Native PdfPig | PDF |
-| `AzureContentUnderstanding` | Azure AI Content Understanding SDK | Service-supported documents |
-| `AzureDocumentIntelligence` | Azure Document Intelligence SDK | Service-supported documents |
-| `Mistral` | Mistral OCR on Azure AI Foundry | Service-supported documents |
-| `Vision` | Borrowed Microsoft.Extensions.AI `IChatClient` | Images and rasterized PDF pages |
+| [PdfPig](src/PdfPig/README.md) | Existing PDF text and block geometry without a service | Local; searchable PDFs, no OCR |
+| [AzureContentUnderstanding](src/AzureContentUnderstanding/README.md) | Document text, tables and layout from a Content Understanding analyzer | Azure; analyzer-supported document formats |
+| [AzureDocumentIntelligence](src/AzureDocumentIntelligence/README.md) | OCR, layout, tables and optional figure downloads | Azure; model-supported document formats |
+| [Mistral](src/Mistral/README.md) | Mistral OCR page text, tables and images through Azure AI Foundry | Azure; endpoint-supported document formats |
+| [Vision](src/Vision/README.md) | Free-form transcription or structured tables with your own vision-capable `IChatClient` | Local or hosted model; images and locally rasterized PDF pages |
 
-All package IDs start with `CommunityToolkit.DocumentExtraction.` and target
-`net8.0` and `net10.0`. Versions are centrally managed; the experimental core
-dependencies currently require `10.10.0-review.20261104.4`. These core
-prereleases are not released on a public package feed. Until the upstream
-packages publish, the component uses a temporary, reproducible **public-source
-prerequisite**, linked to [dotnet/extensions#7588](https://github.com/dotnet/extensions/pull/7588).
+Azure providers upload document content to the configured service and can incur
+charges. Vision sends images to your chosen backend; a PDF makes one inference
+call per page. PdfPig reads existing PDF text locally and does not recognize
+scanned text. Choose based on document format, required fidelity, latency,
+privacy and cost.
 
-`eng/Bootstrap-DocumentExtractionCore.ps1` fetches the full, unmodified public
-`https://github.com/luisquintanilla/extensions.git` source at immutable commit
-`c03481c76b63c6820e1de6ed9da09d5ff1e9f495`, verifies its tree
-`f2e9d521223db1cf33fa8bcec5667da26b92cc49`, and packs the four original owning
-projects with SDK `10.0.401`. It does not replace upstream projects/imports or
-use a moving build DLL. `Features=` disables the upstream debug-determinism
-compiler feature which otherwise removes portable-PDB SourceLink. No extra
-`ContinuousIntegrationBuild` or `ArtifactsDir` build override is applied.
-This snapshot includes the abstract extraction client and the exact Documents
-prerequisite from [dotnet/extensions#7835](https://github.com/dotnet/extensions/pull/7835)
-at `e08fe2eae1529a763d0d8d2e42a8d1feae153ed6`, including section-valued
-mixed table cells. Source-built `.4` packages are distinct from earlier private
-review archives; no public NuGet release or upstream API approval is implied.
+## Install
 
-```powershell
-.\eng\Bootstrap-DocumentExtractionCore.ps1 -DotnetPath C:\path\to\sdk-10.0.401\dotnet.exe
-.\eng\New-DocumentExtractionNuGetConfig.ps1 `
-    -CorePackageDirectory .\nuget\document-extraction-core `
-    -OutputPath .\nuget\document-extraction-nuget.config
-dotnet restore .\DocumentExtraction\DocumentExtraction.slnf `
-    --configfile .\nuget\document-extraction-nuget.config
-dotnet build .\DocumentExtraction\DocumentExtraction.slnf --no-restore -c Release
-dotnet test .\DocumentExtraction\DocumentExtraction.slnf --no-build --no-restore -c Release
-dotnet pack .\DocumentExtraction\DocumentExtraction.slnf --no-build --no-restore `
-    -c Release --output .\nuget\document-extraction-providers
+Install the provider your application needs:
+
+```shell
+dotnet add package CommunityToolkit.DocumentExtraction.PdfPig --prerelease
 ```
 
-CI executes that same source bootstrap on Windows, uploads its actual nupkgs as
-the same-run `document-extraction-core-source-packages` artifact, and restores
-the Windows/Linux provider jobs from that artifact plus NuGet.org using an
-isolated configuration. This is not a URL for historical CI binaries and does
-not claim canonical cross-build byte equality. SDK installation remains isolated;
-the bootstrap refuses dirty source checkouts or mismatched SDK/source identities.
-Private review archives/configurations are not CI inputs or committed dependencies.
-No package release, signing, or publishing job is enabled for this preview lane.
+Substitute any package ID from the table. The providers bring in
+`Microsoft.Extensions.DocumentExtraction.Abstractions`,
+`Microsoft.Extensions.Documents.Abstractions` and
+`Microsoft.Extensions.AI.Abstractions` transitively.
 
-The component's tests use real Azure SDK HTTP replay, controlled Mistral HTTP
-handlers, fake chat clients, and generated native PDFs. They require no cloud
-authentication, embedding calls, models, or downloads. PdfPig remains native-text
-only; no ONNX inference success is claimed.
+Azure examples use the additional `Azure.Identity` package for
+`DefaultAzureCredential`. Vision requires an application-supplied chat adapter,
+configured model and credentials. Each provider README contains its setup,
+supported options and examples.
 
-## Representation and ownership
+## Extract a document
 
-Content is local `AIContent` within the full document/section/text/image/table/
-cell hierarchy. Documents and structural ancestors do not duplicate child text.
-Source frames are ordinary entries in `SourcePages`, native observations retain their identity,
-and polygons retain every vertex in order. SDK section pointers and table cell
-spans are preserved. A missing original page number stays missing.
+This complete console example uses PdfPig. Supply an existing searchable PDF.
 
-Callers own input streams and supplied SDK, HTTP, and chat clients. Returned
-documents are data-only, non-disposable values. Temporary resources are disposed
-after semantic image bytes and JSON observations have been detached. Optional
-`document.RawRepresentation` exposes provider-native inspection: a native Azure
-result, cloned Mistral JSON, or one/ordered multiple Vision chat responses.
-PdfPig retains independent native blocks, not its disposed parser. These objects
-are borrowed mutable inspection objects, not durable serialization or deep-clone
-guarantees, and can contain sensitive data. There is no shared raw-response capture
-policy, wire artifact, or operation registry. Request extractor selection does not
-fabricate a returned model identity.
+```csharp
+using System;
+using System.IO;
+using System.Threading;
+using CommunityToolkit.DocumentExtraction.PdfPig;
+using Microsoft.Extensions.AI;
+using Microsoft.Extensions.DocumentExtraction;
+using Microsoft.Extensions.Documents;
 
-Text elements store text only in `TextContent.Text`; their optional role is
-independent. Image OCR/transcription `Text` is distinct from `AlternativeText`;
-captions and descriptions populate only the latter. Vision retains reported page
-association without claiming measured paragraph polygons. Other providers retain
-their measured source geometry without inventing units, page numbers, or regions.
+using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+using DocumentExtractionClient extractor = new PdfPigDocumentExtractionClient();
+using var input = File.OpenRead("document.pdf");
+ExtractionDocument document = await extractor.ExtractAsync(
+    input, "document.pdf", "application/pdf", cancellationToken: timeout.Token);
 
-## Source attribution
+foreach (var element in document.EnumerateContent())
+{
+    if (element.Content is TextContent text)
+    {
+        Console.WriteLine(text.Text);
+    }
+}
+```
 
-Native segmentation, bounding-box mapping, pluggable role resolution, and
-rendering-resource/test patterns recover useful work authored by
-[@luisquintanilla](https://github.com/luisquintanilla) in the closed, unmerged
-[CommunityToolkit/AI#3](https://github.com/CommunityToolkit/AI/pull/3)
-(`37b34b1fbf0a6f265257f4b46d75b687e3cf0684`) and
-[CommunityToolkit/AI#14](https://github.com/CommunityToolkit/AI/pull/14)
-(`f7ec65479ce9afe172579fb884d67f534dcf73e8`).
-Provider-specific mapping and offline replay fixtures also adapt the retained
-provider source supplied for this implementation. The old `IOcrClient` model,
-MEDI policy/enrichment flow, scanned-page placeholders, and text-only Skia page
-renderer are not revived: actual PDF rasterization uses PDFium internally.
+All providers use `ExtractAsync(Stream, identifier, mediaType, options,
+cancellationToken)`. The identifier labels the result; it is not a URL that the
+provider fetches. Supply a readable stream and the actual media type.
+`DocumentExtractionOptions.ExtractorName` selects an analyzer/model where the
+provider supports it. Provider-specific options belong in `AdditionalProperties`;
+unsupported options raise errors.
 
-Licensed under the repository's [MIT license](../LICENSE).
+## Work with the result
+
+`ExtractionDocument` contains sections and a hierarchy of text, images and
+tables. Content is local to each element; structural ancestors do not repeat
+their children's text. `EnumerateContent()` walks section elements in depth-first
+order and yields non-section elements, including tables. It does **not** enter
+table cells or return document/section-local payloads. Inspect `document.Content`,
+section `Content` and table cells directly when you need those payloads.
+
+| Result | How to use it |
+|---|---|
+| Text | `ExtractionDocumentTextElement.Content` contains `TextContent`; read its `Text` and the element's optional role. |
+| Tables | `ExtractionDocumentTableElement.Cells` exposes `RowCount`, `ColumnCount` and a `[row, column]` indexer. A cell can hold a text element or nested section, with spans and an optional role. Mistral and some vision results instead keep table-local Markdown in the table's `Content`. |
+| Images | Read `ExtractionDocumentImageElement.Content` when image data is available. `AlternativeText` is a caption/description; `Text` is recognized image text, when supplied. |
+| Sources | `document.SourcePages` describes source frames. Element `Sources` associate content with a page and any reported ordered polygon. Page numbers, dimensions or geometry can be absent. |
+| Native data | `document.RawRepresentation` and `source.GetRawRepresentation()` expose backend-specific inspection objects where available. |
+
+### Read table cell content
+
+The cell indexer returns an actual anchor cell or null. Null means either an empty
+position or one covered by another anchor's span; it is not an empty text cell.
+Read `RowIndex`, `ColumnIndex`, `RowSpan` and `ColumnSpan` from non-null anchors
+to understand the occupied range. An anchor can itself have null `Content`.
+
+Continuation of the example above. This walks sections and table anchor cells
+explicitly, including section-valued mixed cell content and nested tables:
+
+```csharp
+foreach (var page in document.SourcePages)
+{
+    Console.WriteLine($"Source {page.Identifier}, original page {page.PageNumber}");
+}
+
+foreach (var section in document.Sections)
+{
+    PrintElement(section);
+}
+
+void PrintElement(ExtractionDocumentElement element)
+{
+    if (element.Content is TextContent text)
+    {
+        Console.WriteLine(text.Text);
+    }
+    if (element is ExtractionDocumentImageElement image &&
+        image.Content is DataContent data)
+    {
+        Console.WriteLine($"{image.AlternativeText}: {data.Data.Length} image bytes");
+    }
+    if (element is ExtractionDocumentSection section)
+    {
+        foreach (var child in section.Elements)
+        {
+            PrintElement(child);
+        }
+    }
+    else if (element is ExtractionDocumentTableElement table)
+    {
+        foreach (var cell in table.Cells)
+        {
+            if (cell is null)
+            {
+                continue;
+            }
+
+            Console.WriteLine(
+                $"Cell ({cell.RowIndex}, {cell.ColumnIndex}), span {cell.RowSpan} x {cell.ColumnSpan}");
+            if (cell.Content is { } content)
+            {
+                PrintElement(content);
+            }
+        }
+    }
+}
+```
+
+Source capabilities vary: PdfPig supplies PDF block geometry; Azure services
+supply their reported regions; Vision supplies page associations rather than
+measured paragraph polygons. Check for data instead of assuming every provider
+supplies the same level of detail.
+
+## Lifetimes, cancellation and middleware
+
+Dispose extraction clients when finished. Providers leave caller-supplied input
+streams and SDK, HTTP or chat clients open. Returned documents require no
+disposal; extracted image bytes and data remain usable after extraction.
+Native inspection objects can be mutable and contain sensitive data, so avoid
+treating them as a durable interchange format or logging them indiscriminately.
+
+Providers buffer input in memory. Set application file-size limits and pass a
+cancellation token; cancellation cannot undo remote processing already accepted.
+Service, parsing and validation errors propagate to the caller.
+
+For extraction middleware such as logging, also install
+`Microsoft.Extensions.DocumentExtraction`:
+
+```shell
+dotnet add package Microsoft.Extensions.DocumentExtraction --prerelease
+```
+
+Use `DocumentExtractionClientBuilder` to wrap the provider, and call
+`ExtractAsync` on the resulting pipeline. Native `GetService` access is for
+backend-specific operations; direct calls to those services bypass extraction
+middleware. The [Vision examples](src/Vision/README.md#add-extraction-logging-middleware)
+show a logging pipeline.
+
+## Experimental API diagnostics
+
+The shared contracts produce `MEDE0001` and `EXTEXP0019` experimental API
+diagnostics. To use these APIs, opt in explicitly in your application project:
+
+```xml
+<PropertyGroup>
+  <NoWarn>$(NoWarn);MEDE0001;EXTEXP0019</NoWarn>
+</PropertyGroup>
+```
+
+## Feedback and license
+
+[Report issues or request features](https://github.com/CommunityToolkit/AI/issues).
+When reporting a problem, include the provider, package versions, input media type
+and a minimal reproduction without credentials or sensitive document content.
+
+PDF segmentation, geometry and rendering integration include contributions by
+[@luisquintanilla](https://github.com/luisquintanilla).
+Licensed under the [MIT license](https://github.com/CommunityToolkit/AI/blob/main/LICENSE).
