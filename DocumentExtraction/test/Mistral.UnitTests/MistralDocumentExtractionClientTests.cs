@@ -13,7 +13,7 @@ using Microsoft.Extensions.Documents;
 
 namespace CommunityToolkit.DocumentExtraction.Mistral.UnitTests;
 
-public sealed class FoundryMistralOcrClientTests
+public sealed class MistralDocumentExtractionClientTests
 {
     // Wire fixture includes Unicode escapes and provider-only usage/model fields
     // to verify the detached native JSON as well as mapped semantic content.
@@ -495,19 +495,19 @@ public sealed class FoundryMistralOcrClientTests
     public void FindUnique_UniqueMissingAndRepeatedMatches_ReturnsOnlyUnambiguousPosition(string source, string value, int? start, int? length)
     {
         Assert.Equal(start is null ? null : ((int Start, int Length)?)(start.Value, length!.Value),
-            FoundryMistralOcrClient.FindUnique(source, value));
-        Assert.Equal((0, 3), FoundryMistralOcrClient.FindUnique("ABCdef", "ABC"));
+            MistralDocumentExtractionClient.FindUnique(source, value));
+        Assert.Equal((0, 3), MistralDocumentExtractionClient.FindUnique("ABCdef", "ABC"));
     }
 
     [Fact]
     public async Task GetService_SelfUnknownAndKeyedLookup_ReturnsContractServices()
     {
         using var session = new OfflineSession();
-        Assert.Equal(typeof(DocumentExtractionClient), typeof(FoundryMistralOcrClient).BaseType);
-        Assert.Equal(typeof(DocumentExtractionClient), typeof(FoundryMistralOcrClient).GetMethod(nameof(session.Client.ExtractAsync))!.GetBaseDefinition().DeclaringType);
-        Assert.Equal(typeof(DocumentExtractionClient), typeof(FoundryMistralOcrClient).GetMethod(nameof(session.Client.GetService))!.DeclaringType);
-        Assert.Equal(typeof(DocumentExtractionClient), typeof(FoundryMistralOcrClient).GetMethod(nameof(session.Client.Dispose))!.DeclaringType);
-        Assert.Same(session.Client, session.Client.GetService(typeof(FoundryMistralOcrClient)));
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(MistralDocumentExtractionClient).BaseType);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(MistralDocumentExtractionClient).GetMethod(nameof(session.Client.ExtractAsync))!.GetBaseDefinition().DeclaringType);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(MistralDocumentExtractionClient).GetMethod(nameof(session.Client.GetService))!.DeclaringType);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(MistralDocumentExtractionClient).GetMethod(nameof(session.Client.Dispose))!.DeclaringType);
+        Assert.Same(session.Client, session.Client.GetService(typeof(MistralDocumentExtractionClient)));
         Assert.Same(session.Client, session.Client.GetService(typeof(DocumentExtractionClient)));
         Assert.Same(session.Client, session.Client.GetService(typeof(object)));
         Assert.Null(session.Client.GetService(typeof(HttpClient)));
@@ -537,7 +537,7 @@ public sealed class FoundryMistralOcrClientTests
         };
         string? model = scenario switch { "model-null" => null, "model-empty" => "", "model-whitespace" => " ", _ => "model" };
         ArgumentException error = Assert.ThrowsAny<ArgumentException>(() =>
-            new FoundryMistralOcrClient(endpoint!, scenario == "credential-null" ? null! : session.Credential,
+            new MistralDocumentExtractionClient(endpoint!, scenario == "credential-null" ? null! : session.Credential,
                 model!, false, session.Http, scenario == "delay-null" ? null! : (_, _) => Task.CompletedTask));
         Assert.Equal(parameter, error.ParamName);
         await session.AssertCleanAndBorrowedAsync(0, 0, 0);
@@ -547,7 +547,7 @@ public sealed class FoundryMistralOcrClientTests
     public async Task Dispose_RepeatedCalls_DoesNotDisposeBorrowedHttpClient()
     {
         using var session = new OfflineSession();
-        using (var publicClient = new FoundryMistralOcrClient(new Uri("https://unit.invalid"), session.Credential,
+        using (var publicClient = new MistralDocumentExtractionClient(new Uri("https://unit.invalid"), session.Credential,
             httpClient: session.Http))
         {
             ExtractionDocument document = await publicClient.ExtractAsync(session.Input, "public.pdf", "application/pdf");

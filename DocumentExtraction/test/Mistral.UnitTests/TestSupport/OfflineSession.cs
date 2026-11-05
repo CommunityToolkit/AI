@@ -168,7 +168,7 @@ internal sealed class OfflineSession : IDisposable
     public RecordingHttpMessageHandler Handler { get; } = new();
     public FixedCredential Credential { get; } = new();
     public HttpClient Http { get; }
-    public FoundryMistralOcrClient Client { get; }
+    public MistralDocumentExtractionClient Client { get; }
     public TrackingInput Input { get; }
     public List<TimeSpan> Delays { get; } = [];
     public Action<TimeSpan, CancellationToken>? OnDelay { get; set; }
@@ -179,7 +179,7 @@ internal sealed class OfflineSession : IDisposable
         Handler.Replies.Enqueue((status, response ?? EmptyResponse));
         Http = new HttpClient(Handler);
         Input = input ?? new TrackingInput(InputBytes);
-        Client = new FoundryMistralOcrClient(new Uri("https://unit.invalid/base/"), Credential,
+        Client = new MistralDocumentExtractionClient(new Uri("https://unit.invalid/base/"), Credential,
             "default-model", includeImages, Http, (delay, token) =>
             {
                 Delays.Add(delay);

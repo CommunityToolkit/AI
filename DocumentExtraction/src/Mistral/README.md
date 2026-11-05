@@ -64,7 +64,7 @@ string endpoint = Environment.GetEnvironmentVariable("AZURE_MISTRAL_OCR_ENDPOINT
 string model = Environment.GetEnvironmentVariable("AZURE_MISTRAL_OCR_MODEL")
     ?? throw new InvalidOperationException("Set AZURE_MISTRAL_OCR_MODEL.");
 using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(5));
-using var extractor = new FoundryMistralOcrClient(
+using var extractor = new MistralDocumentExtractionClient(
     new Uri(endpoint), new DefaultAzureCredential(), defaultModel: model);
 using var input = File.OpenRead("invoice.pdf");
 ExtractionDocument document = await extractor.ExtractAsync(
@@ -128,7 +128,7 @@ if (document.RawRepresentation is JsonElement native &&
 }
 
 using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
-using var borrowedHttpExtractor = new FoundryMistralOcrClient(
+using var borrowedHttpExtractor = new MistralDocumentExtractionClient(
     new Uri(endpoint), new DefaultAzureCredential(), defaultModel: model,
     httpClient: http);
 ```

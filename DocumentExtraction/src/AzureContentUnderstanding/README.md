@@ -65,7 +65,7 @@ string analyzer = Environment.GetEnvironmentVariable("AZURE_CONTENT_UNDERSTANDIN
     ?? throw new InvalidOperationException("Set AZURE_CONTENT_UNDERSTANDING_ANALYZER.");
 
 using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(5));
-using var extractor = new ContentUnderstandingClient(
+using var extractor = new AzureContentUnderstandingDocumentExtractionClient(
     new Uri(endpoint), new DefaultAzureCredential(), analyzerId: analyzer);
 using var input = File.OpenRead("invoice.pdf");
 ExtractionDocument document = await extractor.ExtractAsync(
@@ -124,7 +124,7 @@ var sdk = extractor.GetService(
 Console.WriteLine($"Native SDK available: {sdk is not null}");
 ```
 
-The `ContentUnderstandingClient` constructor also accepts an existing
+The `AzureContentUnderstandingDocumentExtractionClient` constructor also accepts an existing
 `Azure.AI.ContentUnderstanding.ContentUnderstandingClient` and `analyzerId`.
 Use that overload to configure SDK transport or authentication yourself.
 

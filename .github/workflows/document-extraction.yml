@@ -12,6 +12,7 @@ on:
       - 'global.json'
       - 'eng/Bootstrap-DocumentExtractionCore.ps1'
       - 'eng/New-DocumentExtractionNuGetConfig.ps1'
+      - 'eng/Get-DocumentExtractionHeronModel.ps1'
       - 'nuget.config'
       - '.github/workflows/document-extraction.yml'
   pull_request:
@@ -25,6 +26,7 @@ on:
       - 'global.json'
       - 'eng/Bootstrap-DocumentExtractionCore.ps1'
       - 'eng/New-DocumentExtractionNuGetConfig.ps1'
+      - 'eng/Get-DocumentExtractionHeronModel.ps1'
       - 'nuget.config'
       - '.github/workflows/document-extraction.yml'
   workflow_dispatch:
@@ -85,7 +87,12 @@ jobs:
         run: dotnet restore DocumentExtraction/DocumentExtraction.slnf --configfile "${{ runner.temp }}/document-extraction-nuget.config"
       - name: Build
         run: dotnet build DocumentExtraction/DocumentExtraction.slnf --no-restore -c Release
+      - name: Acquire pinned Apache-2.0 layout model for native inference acceptance
+        shell: pwsh
+        run: ./eng/Get-DocumentExtractionHeronModel.ps1 -OutputPath "${{ runner.temp }}/heron/model.onnx"
       - name: Offline tests
+        env:
+          DOCUMENT_EXTRACTION_HERON_MODEL: ${{ runner.temp }}/heron/model.onnx
         run: dotnet test DocumentExtraction/DocumentExtraction.slnf --no-build --no-restore -c Release
       - name: Pack preview artifacts
         run: dotnet pack DocumentExtraction/DocumentExtraction.slnf --no-build --no-restore -c Release --output artifacts/document-extraction

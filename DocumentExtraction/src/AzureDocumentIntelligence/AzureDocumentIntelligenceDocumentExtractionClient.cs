@@ -14,7 +14,7 @@ namespace CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence;
 /// <summary>
 /// A <see cref="DocumentExtractionClient"/> backed by Azure Document Intelligence.
 /// </summary>
-public sealed class AzureDocumentIntelligenceClient : DocumentExtractionClient
+public sealed class AzureDocumentIntelligenceDocumentExtractionClient : DocumentExtractionClient
 {
     private const string ProviderName = "azure-document-intelligence";
 
@@ -23,7 +23,7 @@ public sealed class AzureDocumentIntelligenceClient : DocumentExtractionClient
     private readonly bool _includeImages;
 
     /// <summary>Creates an adapter using the supplied Azure endpoint and credential.</summary>
-    public AzureDocumentIntelligenceClient(
+    public AzureDocumentIntelligenceDocumentExtractionClient(
         Uri endpoint,
         TokenCredential credential,
         string defaultModel = "prebuilt-layout",
@@ -35,7 +35,7 @@ public sealed class AzureDocumentIntelligenceClient : DocumentExtractionClient
     }
 
     /// <summary>Creates an adapter around a borrowed SDK client.</summary>
-    public AzureDocumentIntelligenceClient(
+    public AzureDocumentIntelligenceDocumentExtractionClient(
         DocumentIntelligenceClient client, string defaultModel = "prebuilt-layout", bool includeImages = false)
     {
         ArgumentNullException.ThrowIfNull(client);
@@ -57,14 +57,14 @@ public sealed class AzureDocumentIntelligenceClient : DocumentExtractionClient
         DocumentExtractionOptions normalizedOptions = ProviderAdapterHelpers.NormalizeOptions(options);
         ProviderAdapterHelpers.RejectUnsupportedProperties(
             normalizedOptions,
-            nameof(AzureDocumentIntelligenceClient),
+            nameof(AzureDocumentIntelligenceDocumentExtractionClient),
             "locale",
             "pages",
             "features");
         string model = ProviderAdapterHelpers.ResolveExtractor(
             normalizedOptions,
             _defaultModel,
-            nameof(AzureDocumentIntelligenceClient));
+            nameof(AzureDocumentIntelligenceDocumentExtractionClient));
 
         using var buffer = new MemoryStream();
         await document.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);

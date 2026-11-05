@@ -9,22 +9,22 @@ using Microsoft.Extensions.Documents;
 #if CONTENT_UNDERSTANDING
 using SdkClient = Azure.AI.ContentUnderstanding.ContentUnderstandingClient;
 using SdkOptions = Azure.AI.ContentUnderstanding.ContentUnderstandingClientOptions;
-using Adapter = CommunityToolkit.DocumentExtraction.AzureContentUnderstanding.ContentUnderstandingClient;
+using Adapter = CommunityToolkit.DocumentExtraction.AzureContentUnderstanding.AzureContentUnderstandingDocumentExtractionClient;
 using NativeResult = Azure.AI.ContentUnderstanding.AnalysisResult;
 using NativeContent = Azure.AI.ContentUnderstanding.DocumentContent;
 #else
 using SdkClient = Azure.AI.DocumentIntelligence.DocumentIntelligenceClient;
 using SdkOptions = Azure.AI.DocumentIntelligence.DocumentIntelligenceClientOptions;
-using Adapter = CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence.AzureDocumentIntelligenceClient;
+using Adapter = CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence.AzureDocumentIntelligenceDocumentExtractionClient;
 using NativeResult = Azure.AI.DocumentIntelligence.AnalyzeResult;
 #endif
 
 namespace CommunityToolkit.DocumentExtraction.Tests;
 
 #if CONTENT_UNDERSTANDING
-public sealed class ContentUnderstandingClientTests
+public sealed class AzureContentUnderstandingDocumentExtractionClientTests
 #else
-public sealed class AzureDocumentIntelligenceClientTests
+public sealed class AzureDocumentIntelligenceDocumentExtractionClientTests
 #endif
 {
     private static Adapter Create(OfflineTransport transport, bool borrowed = false, bool images = false,

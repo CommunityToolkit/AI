@@ -18,7 +18,7 @@ namespace CommunityToolkit.DocumentExtraction.Mistral;
 /// <summary>
 /// A <see cref="DocumentExtractionClient"/> backed by Mistral OCR on Azure AI Foundry.
 /// </summary>
-public sealed class FoundryMistralOcrClient : DocumentExtractionClient
+public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
 {
     private const string ProviderName = "foundry-mistral-ocr";
 
@@ -34,7 +34,7 @@ public sealed class FoundryMistralOcrClient : DocumentExtractionClient
     private readonly Func<TimeSpan, CancellationToken, Task> _delayAsync;
 
     /// <summary>Creates an adapter using the supplied endpoint, credential, and optional borrowed HTTP client.</summary>
-    public FoundryMistralOcrClient(
+    public MistralDocumentExtractionClient(
         Uri endpoint,
         TokenCredential credential,
         string defaultModel = "mistral-ocr-4-0",
@@ -50,7 +50,7 @@ public sealed class FoundryMistralOcrClient : DocumentExtractionClient
     {
     }
 
-    internal FoundryMistralOcrClient(
+    internal MistralDocumentExtractionClient(
         Uri endpoint,
         TokenCredential credential,
         string defaultModel,
@@ -87,14 +87,14 @@ public sealed class FoundryMistralOcrClient : DocumentExtractionClient
         DocumentExtractionOptions normalizedOptions = ProviderAdapterHelpers.NormalizeOptions(options);
         ProviderAdapterHelpers.RejectUnsupportedProperties(
             normalizedOptions,
-            nameof(FoundryMistralOcrClient),
+            nameof(MistralDocumentExtractionClient),
             "includeImages",
             "imageLimit",
             "imageMinSize");
         string model = ProviderAdapterHelpers.ResolveExtractor(
             normalizedOptions,
             _defaultModel,
-            nameof(FoundryMistralOcrClient));
+            nameof(MistralDocumentExtractionClient));
         bool includeImages = ProviderAdapterHelpers.GetProperty<bool?>(
             normalizedOptions,
             "includeImages") ?? _includeImages;

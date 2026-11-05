@@ -37,6 +37,7 @@
     <PackageVersion Include="Azure.Core" Version="1.53.0" />
     <PackageVersion Include="PdfPig" Version="0.1.15" />
     <PackageVersion Include="Docnet.Core" Version="2.6.0" />
+    <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.23.2" />
     <PackageVersion Include="SkiaSharp" Version="3.119.0" />
     <PackageVersion Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.0" />
   </ItemGroup>

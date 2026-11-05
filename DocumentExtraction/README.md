@@ -11,19 +11,24 @@ backend-specific response formats.
 All packages target **.NET 8 and .NET 10**. Package IDs start with
 `CommunityToolkit.DocumentExtraction.`.
 
-| Package | Use when you need | Processing and input |
-|---|---|---|
-| [PdfPig](src/PdfPig/README.md) | Existing PDF text and block geometry without a service | Local; searchable PDFs, no OCR |
-| [AzureContentUnderstanding](src/AzureContentUnderstanding/README.md) | Document text, tables and layout from a Content Understanding analyzer | Azure; analyzer-supported document formats |
-| [AzureDocumentIntelligence](src/AzureDocumentIntelligence/README.md) | OCR, layout, tables and optional figure downloads | Azure; model-supported document formats |
-| [Mistral](src/Mistral/README.md) | Mistral OCR page text, tables and images through Azure AI Foundry | Azure; endpoint-supported document formats |
-| [Vision](src/Vision/README.md) | Free-form transcription or structured tables with your own vision-capable `IChatClient` | Local or hosted model; images and locally rasterized PDF pages |
+| Package | Client type | Use when you need | Processing and input |
+|---|---|---|---|
+| [PdfPig](src/PdfPig/README.md) | `PdfPigDocumentExtractionClient` | Existing PDF text and block geometry without a service | Local; searchable PDFs, no OCR |
+| [PdfPig.OnnxLayoutAnalysis](src/PdfPig.OnnxLayoutAnalysis/README.md) | `PdfPigOnnxDocumentExtractionClient` | Native PDF text with model-detected headings, tables and pictures | Local; actual page rasterization and an explicitly acquired Heron ONNX model, no OCR |
+| [AzureContentUnderstanding](src/AzureContentUnderstanding/README.md) | `AzureContentUnderstandingDocumentExtractionClient` | Document text, tables and layout from a Content Understanding analyzer | Azure; analyzer-supported document formats |
+| [AzureDocumentIntelligence](src/AzureDocumentIntelligence/README.md) | `AzureDocumentIntelligenceDocumentExtractionClient` | OCR, layout, tables and optional figure downloads | Azure; model-supported document formats |
+| [Mistral](src/Mistral/README.md) | `MistralDocumentExtractionClient` | Mistral OCR page text, tables and images through Azure AI Foundry | Azure; endpoint-supported document formats |
+| [Vision](src/Vision/README.md) | `VisionDocumentExtractionClient` | Free-form transcription or structured tables with your own vision-capable `IChatClient` | Local or hosted model; images and locally rasterized PDF pages |
 
 Azure providers upload document content to the configured service and can incur
 charges. Vision sends images to your chosen backend; a PDF makes one inference
 call per page. PdfPig reads existing PDF text locally and does not recognize
 scanned text. Choose based on document format, required fidelity, latency,
 privacy and cost.
+
+`PdfPig.OnnxLayoutAnalysis` is optional: the basic PdfPig package does not bring
+in PDFium, ONNX Runtime or model weights. The companion detects layout regions,
+not table cells or scanned text; see its setup and result semantics before use.
 
 ## Install
 

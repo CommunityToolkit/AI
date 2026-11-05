@@ -14,7 +14,7 @@ namespace CommunityToolkit.DocumentExtraction.AzureContentUnderstanding;
 /// <summary>
 /// A <see cref="DocumentExtractionClient"/> backed by Azure AI Content Understanding.
 /// </summary>
-public sealed class ContentUnderstandingClient : DocumentExtractionClient
+public sealed class AzureContentUnderstandingDocumentExtractionClient : DocumentExtractionClient
 {
     private const string ProviderName = "azure-content-understanding";
 
@@ -25,7 +25,7 @@ public sealed class ContentUnderstandingClient : DocumentExtractionClient
     private readonly string _analyzerId;
 
     /// <summary>Creates an adapter using the supplied Azure endpoint and credential.</summary>
-    public ContentUnderstandingClient(
+    public AzureContentUnderstandingDocumentExtractionClient(
         Uri endpoint,
         TokenCredential credential,
         string analyzerId = DefaultAnalyzerId,
@@ -36,7 +36,7 @@ public sealed class ContentUnderstandingClient : DocumentExtractionClient
     }
 
     /// <summary>Creates an adapter around a borrowed SDK client.</summary>
-    public ContentUnderstandingClient(
+    public AzureContentUnderstandingDocumentExtractionClient(
         Azure.AI.ContentUnderstanding.ContentUnderstandingClient client,
         string analyzerId = DefaultAnalyzerId)
     {
@@ -58,12 +58,12 @@ public sealed class ContentUnderstandingClient : DocumentExtractionClient
         DocumentExtractionOptions normalizedOptions = ProviderAdapterHelpers.NormalizeOptions(options);
         ProviderAdapterHelpers.RejectUnsupportedProperties(
             normalizedOptions,
-            nameof(ContentUnderstandingClient),
+            nameof(AzureContentUnderstandingDocumentExtractionClient),
             "processingLocation");
         string analyzerId = ProviderAdapterHelpers.ResolveExtractor(
             normalizedOptions,
             _analyzerId,
-            nameof(ContentUnderstandingClient));
+            nameof(AzureContentUnderstandingDocumentExtractionClient));
         ProcessingLocation? processingLocation = ParseProcessingLocation(
             ProviderAdapterHelpers.GetProperty<string>(normalizedOptions, "processingLocation"));
 

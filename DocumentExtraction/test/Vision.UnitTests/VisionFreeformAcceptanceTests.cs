@@ -18,7 +18,7 @@ public sealed class VisionFreeformAcceptanceTests
         var response = RecordingChatClient.Response(literal, explicitRaw ? sentinel : null);
         var chat = new RecordingChatClient(response);
         using var input = new BorrowedInput([137, 80, 78, 71, 1, 5, 9]);
-        using var client = new VisionLlmOcrClient(chat, prompt: "Literal transcription, please.");
+        using var client = new VisionDocumentExtractionClient(chat, prompt: "Literal transcription, please.");
         var options = new DocumentExtractionOptions { ExtractorName = "requested-route" };
         var result = await client.ExtractAsync(input, "invoice.scan.png", "IMAGE/PNG", options);
 
@@ -67,7 +67,7 @@ public sealed class VisionFreeformAcceptanceTests
     {
         var response = RecordingChatClient.Response(literal, model: null);
         var chat = new RecordingChatClient(response);
-        using var client = new VisionLlmOcrClient(chat);
+        using var client = new VisionDocumentExtractionClient(chat);
         using var input = new BorrowedInput([1, 2, 3]);
         var result = await client.ExtractAsync(input, "empty.png", "image/png", new() { ExtractorName = "not-a-returned-model" });
         var section = Assert.Single(result.Sections);
@@ -93,7 +93,7 @@ public sealed class VisionFreeformAcceptanceTests
         var failure = new InvalidOperationException("deterministic chat failure");
         var chat = new RecordingChatClient(failure, RecordingChatClient.Response("forbidden fallback"));
         using var input = new BorrowedInput([4, 5, 6]);
-        var client = new VisionLlmOcrClient(chat);
+        var client = new VisionDocumentExtractionClient(chat);
         Assert.Same(failure, await Assert.ThrowsAsync<InvalidOperationException>(
             () => client.ExtractAsync(input, "fail.jpg", "image/jpeg")));
         Assert.Single(chat.Requests);
@@ -117,7 +117,7 @@ public sealed class VisionFreeformAcceptanceTests
             OnRequest = stage == "during-chat" ? _ => cancellation.Cancel() : null,
         };
         using var input = new BorrowedInput([8, 9, 10], stage == "during-copy" ? cancellation : null);
-        var client = new VisionLlmOcrClient(chat);
+        var client = new VisionDocumentExtractionClient(chat);
         if (stage == "before-copy")
         {
             cancellation.Cancel();
@@ -148,7 +148,7 @@ public sealed class VisionFreeformAcceptanceTests
     {
         var chat = new RecordingChatClient(RecordingChatClient.Response("unused"));
         using var input = new MemoryStream([1, 2, 3]);
-        using var client = new VisionLlmOcrClient(chat);
+        using var client = new VisionDocumentExtractionClient(chat);
         if (scenario == "unreadable")
         {
             input.Dispose();
@@ -191,7 +191,7 @@ public sealed class VisionFreeformAcceptanceTests
         ];
         var chat = new RecordingChatClient(responses);
         using var input = new BorrowedInput(PdfFixture.Create());
-        using var client = new VisionLlmOcrClient(chat);
+        using var client = new VisionDocumentExtractionClient(chat);
         var result = await client.ExtractAsync(input, "native.pdf", "APPLICATION/PDF");
         Assert.Equal(3, chat.Requests.Count);
         Assert.Equal(new int?[] { 1, 2, 3 }, result.SourcePages.Select(p => p.PageNumber));
@@ -227,7 +227,7 @@ public sealed class VisionFreeformAcceptanceTests
     {
         var chat = new RecordingChatClient();
         using var input = new BorrowedInput(PdfFixture.Create(empty: true));
-        using var client = new VisionLlmOcrClient(chat);
+        using var client = new VisionDocumentExtractionClient(chat);
         var result = await client.ExtractAsync(input, "empty.pdf", "application/pdf");
         Assert.Equal("empty.pdf", result.Identifier);
         Assert.Empty(Assert.IsType<ChatResponse[]>(result.RawRepresentation));
@@ -242,20 +242,20 @@ public sealed class VisionFreeformAcceptanceTests
     [Fact]
     public async Task GetServiceAndDispose_PreserveBorrowedChatAndValidateConstructor()
     {
-        Assert.Throws<ArgumentNullException>(() => new VisionLlmOcrClient(null!));
+        Assert.Throws<ArgumentNullException>(() => new VisionDocumentExtractionClient(null!));
         var chat = new RecordingChatClient(RecordingChatClient.Response("still usable"));
-        var client = new VisionLlmOcrClient(chat);
-        Assert.Equal(typeof(DocumentExtractionClient), typeof(VisionLlmOcrClient).BaseType);
-        Assert.Equal(typeof(DocumentExtractionClient), typeof(VisionLlmOcrClient).GetMethod(nameof(client.ExtractAsync))!.GetBaseDefinition().DeclaringType);
-        Assert.Equal(typeof(DocumentExtractionClient), typeof(VisionLlmOcrClient).GetMethod(nameof(client.GetService))!.GetBaseDefinition().DeclaringType);
-        Assert.Equal(typeof(DocumentExtractionClient), typeof(VisionLlmOcrClient).GetMethod(nameof(client.Dispose))!.DeclaringType);
-        Assert.Same(client, client.GetService(typeof(VisionLlmOcrClient)));
+        var client = new VisionDocumentExtractionClient(chat);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(VisionDocumentExtractionClient).BaseType);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(VisionDocumentExtractionClient).GetMethod(nameof(client.ExtractAsync))!.GetBaseDefinition().DeclaringType);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(VisionDocumentExtractionClient).GetMethod(nameof(client.GetService))!.GetBaseDefinition().DeclaringType);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(VisionDocumentExtractionClient).GetMethod(nameof(client.Dispose))!.DeclaringType);
+        Assert.Same(client, client.GetService(typeof(VisionDocumentExtractionClient)));
         Assert.Same(client, client.GetService(typeof(DocumentExtractionClient)));
         Assert.Same(client, client.GetService(typeof(object)));
         Assert.Same(chat, client.GetService(typeof(IChatClient)));
         Assert.Null(client.GetService(typeof(string)));
-        Assert.Null(client.GetService(typeof(VisionLlmOcrClient), "key"));
-        Assert.Equal((typeof(VisionLlmOcrClient), (object?)"key"), chat.ServiceRequests[^1]);
+        Assert.Null(client.GetService(typeof(VisionDocumentExtractionClient), "key"));
+        Assert.Equal((typeof(VisionDocumentExtractionClient), (object?)"key"), chat.ServiceRequests[^1]);
         Assert.Throws<ArgumentNullException>(() => client.GetService(null!));
         client.Dispose();
         client.Dispose();

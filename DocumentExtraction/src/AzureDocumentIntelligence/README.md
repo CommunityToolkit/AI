@@ -59,7 +59,7 @@ using Microsoft.Extensions.Documents;
 string endpoint = Environment.GetEnvironmentVariable("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT")
     ?? throw new InvalidOperationException("Set AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT.");
 using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(5));
-using var extractor = new AzureDocumentIntelligenceClient(
+using var extractor = new AzureDocumentIntelligenceDocumentExtractionClient(
     new Uri(endpoint), new DefaultAzureCredential());
 using var input = File.OpenRead("invoice.pdf");
 ExtractionDocument document = await extractor.ExtractAsync(
@@ -117,7 +117,7 @@ not an additional-properties option.
 ```csharp
 using Azure.AI.DocumentIntelligence;
 
-using var imageExtractor = new AzureDocumentIntelligenceClient(
+using var imageExtractor = new AzureDocumentIntelligenceDocumentExtractionClient(
     new Uri(endpoint), new DefaultAzureCredential(), includeImages: true);
 using var imageInput = File.OpenRead("invoice.pdf");
 var illustratedDocument = await imageExtractor.ExtractAsync(

@@ -11,7 +11,7 @@ namespace CommunityToolkit.DocumentExtraction.Vision;
 
 /// <summary>Extracts documents with a borrowed vision-capable <see cref="IChatClient"/>.</summary>
 /// <remarks>Structured mode fails explicitly when the model cannot satisfy its schema; it never falls back to free-form.</remarks>
-public sealed class VisionLlmOcrClient : DocumentExtractionClient
+public sealed class VisionDocumentExtractionClient : DocumentExtractionClient
 {
     private const string ProviderName = "vision-llm";
     private const string DefaultPrompt =
@@ -50,7 +50,7 @@ public sealed class VisionLlmOcrClient : DocumentExtractionClient
     private readonly bool _useStructuredOutput;
 
     /// <summary>Creates an adapter without taking ownership of the chat client.</summary>
-    public VisionLlmOcrClient(IChatClient chatClient, string? prompt = null, bool useStructuredOutput = false)
+    public VisionDocumentExtractionClient(IChatClient chatClient, string? prompt = null, bool useStructuredOutput = false)
     {
         ArgumentNullException.ThrowIfNull(chatClient);
         _chatClient = chatClient;
@@ -65,7 +65,7 @@ public sealed class VisionLlmOcrClient : DocumentExtractionClient
     {
         ProviderAdapterHelpers.ValidateInput(document, identifier, mediaType);
         DocumentExtractionOptions request = ProviderAdapterHelpers.NormalizeOptions(options);
-        ProviderAdapterHelpers.RejectUnsupportedProperties(request, nameof(VisionLlmOcrClient));
+        ProviderAdapterHelpers.RejectUnsupportedProperties(request, nameof(VisionDocumentExtractionClient));
         bool isPdf = string.Equals(mediaType, "application/pdf", StringComparison.OrdinalIgnoreCase);
         if (!isPdf && !mediaType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
         {

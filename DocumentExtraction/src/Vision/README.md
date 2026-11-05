@@ -65,7 +65,7 @@ public static class ImageExtraction
     public static async Task<ExtractionDocument> ExtractAsync(
         IChatClient chatClient, string pngPath, CancellationToken cancellationToken)
     {
-        using var extractor = new VisionLlmOcrClient(chatClient);
+        using var extractor = new VisionDocumentExtractionClient(chatClient);
         using var input = File.OpenRead(pngPath);
         ExtractionDocument document = await extractor.ExtractAsync(
             input, Path.GetFileName(pngPath), "image/png",
@@ -114,7 +114,7 @@ public static class StructuredExtraction
         IChatClient chatClient, string pdfPath, string modelId,
         CancellationToken cancellationToken)
     {
-        using var extractor = new VisionLlmOcrClient(chatClient, useStructuredOutput: true);
+        using var extractor = new VisionDocumentExtractionClient(chatClient, useStructuredOutput: true);
         using var input = File.OpenRead(pdfPath);
         var options = new DocumentExtractionOptions { ExtractorName = modelId };
         var document = await extractor.ExtractAsync(
@@ -161,7 +161,7 @@ public static class ExtractionPipeline
 {
     public static DocumentExtractionClient Create(
         IChatClient chatClient, ILoggerFactory loggerFactory)
-        => new DocumentExtractionClientBuilder(new VisionLlmOcrClient(chatClient))
+        => new DocumentExtractionClientBuilder(new VisionDocumentExtractionClient(chatClient))
             .UseLogging(loggerFactory)
             .Build();
 }
