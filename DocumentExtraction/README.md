@@ -18,11 +18,13 @@ All packages target **.NET 8 and .NET 10**. Package IDs start with
 | [AzureContentUnderstanding](src/AzureContentUnderstanding/README.md) | `ContentUnderstandingExtractionClient` | Document text, tables and layout from a Content Understanding analyzer | Azure; analyzer-supported document formats |
 | [AzureDocumentIntelligence](src/AzureDocumentIntelligence/README.md) | `DocumentIntelligenceExtractionClient` | OCR, layout, tables and optional figure downloads | Azure; model-supported document formats |
 | [Mistral](src/Mistral/README.md) | `MistralDocumentExtractionClient` | Native Mistral OCR page text, tables and images, directly or through Microsoft Foundry | Hosted; endpoint-supported documents and images |
-| [Vision](src/Vision/README.md) | `VisionDocumentExtractionClient` | Free-form transcription or structured tables with your own vision-capable `IChatClient` | Local or hosted model; images and locally rasterized PDF pages |
+| [Vision](src/Vision/README.md) | `VisionDocumentExtractionClient` | Free-form transcription or structured tables with your own capable `IChatClient` | Local or hosted backend; original PDF/image bytes in one request, with format support required from the adapter/API/model |
 
 Azure and Mistral providers upload document content to the configured service and
-can incur charges. Vision sends images to your chosen backend; a PDF makes one inference
-call per page. PdfPig reads existing PDF text locally and does not recognize
+can incur charges. Vision sends original PDF/image bytes to your chosen backend
+in one chat request; it does not parse or render PDFs locally. PDF support must
+be provided by the configured adapter, API and model, not inferred from image
+support. PdfPig reads existing PDF text locally and does not recognize
 scanned text. Choose based on document format, required fidelity, latency,
 privacy and cost.
 
@@ -33,7 +35,7 @@ Its managed ONNX dependency does not choose a native runtime. Applications add
 `Microsoft.ML.OnnxRuntime` 1.23.2 for CPU or
 `Microsoft.ML.OnnxRuntime.Gpu` 1.23.2 for CUDA, then configure a caller-owned
 session for GPU execution. PDF rendering and preprocessing still run on CPU.
-Both the companion and Vision render PDFs with `PdfPig.Rendering.Skia`, including
+The companion renders PDFs with `PdfPig.Rendering.Skia`, including
 native SkiaSharp/HarfBuzz assets and managed PDF image filters. This is not a
 native-free rendering stack. See the provider READMEs for platform and licensing
 requirements; basic PdfPig does not acquire these dependencies.
@@ -53,7 +55,8 @@ Substitute any package ID from the table. The providers bring in
 
 Azure examples use the additional `Azure.Identity` package for
 `DefaultAzureCredential`. Vision requires an application-supplied chat adapter,
-configured model and credentials. Each provider README contains its setup,
+configured model and credentials, plus support for the supplied PDF/image format.
+It has no local PDF-rendering dependency or fallback. Each provider README contains its setup,
 supported options and examples.
 
 Mistral uses one package for both hosts. Configure its complete native OCR
@@ -189,7 +192,7 @@ void PrintElement(ExtractionDocumentElement element)
 ```
 
 Source capabilities vary: PdfPig supplies PDF block geometry; Azure services
-supply their reported regions; Vision supplies page associations rather than
+supply their reported regions; Vision supplies model-reported source associations rather than
 measured paragraph polygons. Check for data instead of assuming every provider
 supplies the same level of detail.
 

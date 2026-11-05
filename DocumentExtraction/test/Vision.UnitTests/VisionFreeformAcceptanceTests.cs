@@ -2,7 +2,6 @@ using CommunityToolkit.DocumentExtraction.PdfPig.UnitTests;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DocumentExtraction;
 using Microsoft.Extensions.Documents;
-using SkiaSharp;
 
 namespace CommunityToolkit.DocumentExtraction.Vision.UnitTests;
 
@@ -87,15 +86,17 @@ public sealed class VisionFreeformAcceptanceTests
         Assert.Single(chat.Requests);
     }
 
-    [Fact]
-    public async Task ExtractAsync_ChatFailure_PropagatesWithoutRetryAndBorrowsResources()
+    [Theory]
+    [InlineData("image/jpeg")]
+    [InlineData("application/pdf")]
+    public async Task ExtractAsync_ChatFailure_PropagatesWithoutRetryAndBorrowsResources(string mediaType)
     {
         var failure = new InvalidOperationException("deterministic chat failure");
         var chat = new RecordingChatClient(failure, RecordingChatClient.Response("forbidden fallback"));
         using var input = new BorrowedInput([4, 5, 6]);
         var client = new VisionDocumentExtractionClient(chat);
         Assert.Same(failure, await Assert.ThrowsAsync<InvalidOperationException>(
-            () => client.ExtractAsync(input, "fail.jpg", "image/jpeg")));
+            () => client.ExtractAsync(input, "fail", mediaType)));
         Assert.Single(chat.Requests);
         Assert.Null(chat.Requests[0].Options!.ResponseFormat);
         client.Dispose();
@@ -106,10 +107,13 @@ public sealed class VisionFreeformAcceptanceTests
     }
 
     [Theory]
-    [InlineData("before-copy", 0)]
-    [InlineData("during-copy", 0)]
-    [InlineData("during-chat", 1)]
-    public async Task ExtractAsync_Cancellation_PreservesTokenAndBorrowedResources(string stage, int calls)
+    [InlineData("before-copy", 0, "image/png")]
+    [InlineData("during-copy", 0, "image/png")]
+    [InlineData("during-chat", 1, "image/png")]
+    [InlineData("before-copy", 0, "application/pdf")]
+    [InlineData("during-copy", 0, "application/pdf")]
+    [InlineData("during-chat", 1, "application/pdf")]
+    public async Task ExtractAsync_Cancellation_PreservesTokenAndBorrowedResources(string stage, int calls, string mediaType)
     {
         using var cancellation = new CancellationTokenSource();
         var chat = new RecordingChatClient(RecordingChatClient.Response("must not return"))
@@ -124,12 +128,13 @@ public sealed class VisionFreeformAcceptanceTests
         }
 
         var error = await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => client.ExtractAsync(input, "cancel.png", "image/png", cancellationToken: cancellation.Token));
+            () => client.ExtractAsync(input, "cancel", mediaType, cancellationToken: cancellation.Token));
         Assert.Equal(cancellation.Token, error.CancellationToken);
         Assert.Equal(calls, chat.Requests.Count);
         if (calls == 1)
         {
             Assert.Equal(cancellation.Token, chat.Requests[0].Token);
+            Assert.Equal(mediaType, Assert.IsType<DataContent>(chat.Requests[0].Messages[0].Contents[1]).MediaType);
         }
 
         client.Dispose();
@@ -181,59 +186,76 @@ public sealed class VisionFreeformAcceptanceTests
     }
 
     [Fact]
-    public async Task ExtractAsync_LocalPdf_SendsNativePngPerOriginalPageAndPreservesFrames()
+    public async Task ExtractAsync_MultipagePdf_ForwardsOriginalBytesInOneCallWithoutInventedPageMetadata()
     {
-        ChatResponse[] responses =
-        [
-            RecordingChatClient.Response("# First\n42", new object()),
-            RecordingChatClient.Response(""),
-            RecordingChatClient.Response("Red square", new object()),
-        ];
-        var chat = new RecordingChatClient(responses);
-        using var input = new BorrowedInput(PdfFixture.Create());
+        var response = RecordingChatClient.Response("# Complete document\n42", new object());
+        var chat = new RecordingChatClient(response);
+        byte[] bytes = PdfFixture.Create();
+        using var input = new BorrowedInput([0, .. bytes]);
+        input.Position = 1;
         using var client = new VisionDocumentExtractionClient(chat);
-        var result = await client.ExtractAsync(input, "native.pdf", "APPLICATION/PDF");
-        Assert.Equal(3, chat.Requests.Count);
-        Assert.Equal(new int?[] { 1, 2, 3 }, result.SourcePages.Select(p => p.PageNumber));
-        Assert.Equal(new[] { (300d, 400d), (500d, 600d), (700d, 800d) },
-            result.SourcePages.Select(p => (p.Dimensions!.Value.Width, p.Dimensions.Value.Height)));
-        Assert.Equal(new[] { "# First\n42", "Red square" },
-            result.EnumerateContent().Select(e => Assert.IsType<TextContent>(e.Content).Text));
-        Assert.Empty(result.Sections[1].Elements);
-        var nativeResponses = Assert.IsType<ChatResponse[]>(result.RawRepresentation);
-        Assert.Equal(3, nativeResponses.Length);
-        for (int i = 0; i < 3; i++)
-        {
-            var page = result.SourcePages[i];
-            Assert.Same(responses[i], nativeResponses[i]);
-            var source = Assert.Single(result.Sections[i].Sources);
-            Assert.Same(page, source.Page);
-            Assert.Same(responses[i].RawRepresentation ?? responses[i], source.GetRawRepresentation());
-            Assert.Equal(ExtractionDocumentCoordinateUnit.Point, page.CoordinateUnit);
-            Assert.Equal(ExtractionDocumentCoordinateOrigin.BottomLeft, page.CoordinateOrigin);
-            var image = Assert.IsType<DataContent>(chat.Requests[i].Messages[0].Contents[1]);
-            Assert.Equal("image/png", image.MediaType);
-            using var bitmap = SKBitmap.Decode(image.Data.ToArray());
-            Assert.Equal((int)page.Dimensions!.Value.Width * 2, bitmap.Width);
-            Assert.Equal((int)page.Dimensions.Value.Height * 2, bitmap.Height);
-        }
+        var result = await client.ExtractAsync(input, "native.pdf", "APPLICATION/PDF", new() { ExtractorName = "pdf-route" });
+        var request = Assert.Single(chat.Requests);
+        Assert.Equal("pdf-route", request.Options!.ModelId);
+        Assert.Null(request.Options.ResponseFormat);
+        var message = Assert.Single(request.Messages);
+        Assert.Equal(ChatRole.User, message.Role);
+        var content = Assert.IsType<DataContent>(message.Contents[1]);
+        Assert.Equal(bytes, content.Data.ToArray());
+        Assert.Equal("APPLICATION/PDF", content.MediaType);
+        Assert.Contains("Transcribe this document", Assert.IsType<TextContent>(message.Contents[0]).Text);
+        var page = Assert.Single(result.SourcePages);
+        Assert.Null(page.PageNumber);
+        Assert.Null(page.Dimensions);
+        Assert.Null(page.CoordinateOrigin);
+        Assert.Null(page.CoordinateUnit);
+        var section = Assert.Single(result.Sections);
+        var source = Assert.Single(section.Sources);
+        Assert.Same(page, source.Page);
+        Assert.Empty(source.Polygon);
+        Assert.Same(response.RawRepresentation, source.GetRawRepresentation());
+        Assert.Same(response, result.RawRepresentation);
+        Assert.Equal("# Complete document\n42", Assert.IsType<TextContent>(Assert.Single(section.Elements).Content).Text);
+        client.Dispose();
+        Assert.Equal(input.Length, input.Position);
+        input.AssertStillReadable(0);
+        Assert.Equal(0, chat.DisposeCalls);
+    }
 
+    [Fact]
+    public async Task ExtractAsync_ZeroPagePdf_IsForwardedWithoutLocalParsingOrPageCountAssumptions()
+    {
+        var response = RecordingChatClient.Response("");
+        var chat = new RecordingChatClient(response);
+        byte[] bytes = PdfFixture.Create(empty: true);
+        using var input = new BorrowedInput(bytes);
+        using var client = new VisionDocumentExtractionClient(chat);
+        var result = await client.ExtractAsync(input, "empty.pdf", "application/pdf");
+        Assert.Equal("empty.pdf", result.Identifier);
+        Assert.Same(response, result.RawRepresentation);
+        Assert.Null(Assert.Single(result.SourcePages).PageNumber);
+        Assert.Empty(Assert.Single(result.Sections).Elements);
+        var content = Assert.IsType<DataContent>(Assert.Single(chat.Requests).Messages[0].Contents[1]);
+        Assert.Equal(bytes, content.Data.ToArray());
+        Assert.Equal("application/pdf", content.MediaType);
+        client.Dispose();
         input.AssertStillReadable((byte)'%');
         Assert.Equal(0, chat.DisposeCalls);
     }
 
     [Fact]
-    public async Task ExtractAsync_ZeroPagePdf_PreservesEmptyResponseArrayWithoutChatOrInventedFrames()
+    public async Task ExtractAsync_PdfUnsupportedByBackend_PropagatesWithoutRasterizationOrRetry()
     {
-        var chat = new RecordingChatClient();
-        using var input = new BorrowedInput(PdfFixture.Create(empty: true));
+        var failure = new NotSupportedException("The selected backend does not support PDF file inputs.");
+        var chat = new RecordingChatClient(failure, RecordingChatClient.Response("forbidden fallback"));
+        byte[] bytes = PdfFixture.Create();
+        using var input = new BorrowedInput(bytes);
         using var client = new VisionDocumentExtractionClient(chat);
-        var result = await client.ExtractAsync(input, "empty.pdf", "application/pdf");
-        Assert.Equal("empty.pdf", result.Identifier);
-        Assert.Empty(Assert.IsType<ChatResponse[]>(result.RawRepresentation));
-        Assert.Empty(result.SourcePages);
-        Assert.Empty(result.Sections);
-        Assert.Empty(chat.Requests);
+        Assert.Same(failure, await Assert.ThrowsAsync<NotSupportedException>(
+            () => client.ExtractAsync(input, "native.pdf", "application/pdf")));
+        var content = Assert.IsType<DataContent>(Assert.Single(chat.Requests).Messages[0].Contents[1]);
+        Assert.Equal(bytes, content.Data.ToArray());
+        Assert.Equal("application/pdf", content.MediaType);
         client.Dispose();
         input.AssertStillReadable((byte)'%');
         Assert.Equal(0, chat.DisposeCalls);

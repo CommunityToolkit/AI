@@ -5,20 +5,19 @@ using System.Text.Json;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DocumentExtraction;
 using Microsoft.Extensions.Documents;
-using UglyToad.PdfPig;
 
 namespace CommunityToolkit.DocumentExtraction.Vision;
 
-/// <summary>Extracts documents with a borrowed vision-capable <see cref="IChatClient"/>.</summary>
+/// <summary>Extracts documents with a borrowed <see cref="IChatClient"/> that supports the supplied input format.</summary>
 /// <remarks>Structured mode fails explicitly when the model cannot satisfy its schema; it never falls back to free-form.</remarks>
 public sealed class VisionDocumentExtractionClient : DocumentExtractionClient
 {
     private const string ProviderName = "vision-llm";
     private const string DefaultPrompt =
-        "Transcribe this image to GitHub-flavored Markdown. Preserve headings, lists, and tables. " +
+        "Transcribe this document to GitHub-flavored Markdown. Preserve headings, lists, and tables. " +
         "Output only the Markdown, no commentary.";
     private const string StructuredPrompt =
-        "Transcribe this image as a JSON object with a pages array. Do not infer page numbers. " +
+        "Transcribe this document as a JSON object with a pages array. Do not infer page numbers. " +
         "Each page may contain markdown, tables with rowCount/columnCount and either markdown or cells " +
         "(rowIndex, columnIndex, text, rowSpan, columnSpan, role), figures with captions, language, and confidence. " +
         "An index is an explicitly known zero-based original page number, not an assembly index. " +
@@ -76,57 +75,26 @@ public sealed class VisionDocumentExtractionClient : DocumentExtractionClient
         await document.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
         byte[] bytes = buffer.ToArray();
         var output = new ExtractionDocument(identifier);
-        var responses = new List<ChatResponse>();
-        if (isPdf)
-        {
-            using PdfDocument pdf = PdfPageRenderer.Open(bytes);
-            for (int number = 1; number <= pdf.NumberOfPages; number++)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                var page = pdf.GetPage(number);
-                await ExtractPageAsync(output, PdfPageRasterizer.RenderPage(pdf, number, cancellationToken),
-                    "image/png", request, responses, number, page.Width, page.Height, cancellationToken).ConfigureAwait(false);
-            }
-        }
-        else
-        {
-            await ExtractPageAsync(output, bytes, mediaType, request, responses, null, null, null, cancellationToken).ConfigureAwait(false);
-        }
-
-        cancellationToken.ThrowIfCancellationRequested();
-        output.RawRepresentation = responses.Count == 1 ? responses[0] : responses.ToArray();
-        return output;
-    }
-
-    private async Task ExtractPageAsync(
-        ExtractionDocument output, byte[] bytes, string mediaType, DocumentExtractionOptions request,
-        List<ChatResponse> responses,
-        int? originalPageNumber, double? width, double? height, CancellationToken cancellationToken)
-    {
-        var options = new ChatOptions
+        var chatOptions = new ChatOptions
         {
             ModelId = request.ExtractorName,
             ResponseFormat = _useStructuredOutput ? ChatResponseFormat.ForJsonSchema(s_schema) : null,
         };
         string instruction = _prompt ?? (_useStructuredOutput ? StructuredPrompt : DefaultPrompt);
-        if (_useStructuredOutput && originalPageNumber is { } known)
-        {
-            instruction += $" This image is original page index {known - 1}. Return exactly one page.";
-        }
-
         var message = new ChatMessage(ChatRole.User, [new TextContent(instruction), new DataContent(bytes, mediaType)]);
-        ChatResponse response = await _chatClient.GetResponseAsync([message], options, cancellationToken).ConfigureAwait(false);
+        ChatResponse response = await _chatClient.GetResponseAsync([message], chatOptions, cancellationToken).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
-        string framePrefix = $"{output.Identifier}:{ProviderName}:response:{responses.Count}";
-        responses.Add(response);
+        output.RawRepresentation = response;
+        string framePrefix = $"{output.Identifier}:{ProviderName}:response:0";
         if (!_useStructuredOutput)
         {
-            var (page, reference) = CreateFrame(originalPageNumber, "image");
+            var reference = CreateFrame(null, isPdf ? "document" : "image");
             var section = new ExtractionDocumentSection();
             section.Sources.Add(reference);
             output.Sections.Add(section);
             AddText(section, response.Text, reference);
-            return;
+            cancellationToken.ThrowIfCancellationRequested();
+            return output;
         }
 
         using JsonDocument json = JsonDocument.Parse(response.Text);
@@ -142,11 +110,6 @@ public sealed class VisionDocumentExtractionClient : DocumentExtractionClient
             {
                 throw new InvalidDataException($"Vision structured output contains unsupported root property '{property.Name}'.");
             }
-        }
-
-        if (originalPageNumber is not null && pages.GetArrayLength() != 1)
-        {
-            throw new InvalidDataException("Per-page PDF vision extraction must return exactly one page.");
         }
 
         var seen = new HashSet<int>();
@@ -166,12 +129,7 @@ public sealed class VisionDocumentExtractionClient : DocumentExtractionClient
                 reportedNumber = checked(value + 1);
             }
 
-            if (originalPageNumber is not null && reportedNumber is not null && originalPageNumber != reportedNumber)
-            {
-                throw new InvalidDataException("Vision returned a page index inconsistent with the source PDF.");
-            }
-
-            int? number = originalPageNumber ?? reportedNumber;
+            int? number = reportedNumber;
             if (number is { } numbered && !seen.Add(numbered))
             {
                 throw new InvalidDataException($"Vision returned duplicate page number {numbered}.");
@@ -192,7 +150,7 @@ public sealed class VisionDocumentExtractionClient : DocumentExtractionClient
                 throw new InvalidDataException("Vision language must be a string or null.");
             }
 
-            var (_, reference) = CreateFrame(number, $"frame:{frameIndex++}");
+            var reference = CreateFrame(number, $"frame:{frameIndex++}");
             var section = new ExtractionDocumentSection();
             section.Sources.Add(reference);
             output.Sections.Add(section);
@@ -237,15 +195,14 @@ public sealed class VisionDocumentExtractionClient : DocumentExtractionClient
             }
         }
 
-        (ExtractionDocumentSourcePage, ExtractionDocumentSourceReference) CreateFrame(int? number, string name)
+        cancellationToken.ThrowIfCancellationRequested();
+        return output;
+
+        ExtractionDocumentSourceReference CreateFrame(int? number, string name)
         {
-            var page = new ExtractionDocumentSourcePage(
-                $"{framePrefix}:{name}", number,
-                width is { } w && height is { } h ? new ExtractionDocumentPageDimensions(w, h) : null,
-                width is not null ? ExtractionDocumentCoordinateUnit.Point : null,
-                width is not null ? ExtractionDocumentCoordinateOrigin.BottomLeft : null);
+            var page = new ExtractionDocumentSourcePage($"{framePrefix}:{name}", number);
             output.SourcePages.Add(page);
-            return (page, new ExtractionDocumentSourceReference(page, rawRepresentation: response.RawRepresentation ?? response));
+            return new ExtractionDocumentSourceReference(page, rawRepresentation: response.RawRepresentation ?? response);
         }
     }
 

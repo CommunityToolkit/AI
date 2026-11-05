@@ -3,7 +3,6 @@ using CommunityToolkit.DocumentExtraction.PdfPig.UnitTests;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DocumentExtraction;
 using Microsoft.Extensions.Documents;
-using SkiaSharp;
 
 namespace CommunityToolkit.DocumentExtraction.Vision.UnitTests;
 
@@ -24,20 +23,24 @@ public sealed class VisionStructuredAcceptanceTests
         """;
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task ExtractAsync_ValidStructuredImage_PreservesPayloadExactResponseRootNativeSourcesAndSchema(bool explicitRaw)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task ExtractAsync_ValidStructuredInput_PreservesPayloadExactResponseRootNativeSourcesAndSchema(bool explicitRaw, bool pdf)
     {
         using var native = JsonDocument.Parse(Valid);
         object raw = native.RootElement.Clone();
         var response = RecordingChatClient.Response(Valid, explicitRaw ? raw : null);
         var chat = new RecordingChatClient(response);
-        using var input = new BorrowedInput([137, 80, 78, 71, 11, 22, 33]);
+        byte[] bytes = pdf ? PdfFixture.Create() : [137, 80, 78, 71, 11, 22, 33];
+        string mediaType = pdf ? "application/pdf" : "image/png";
+        using var input = new BorrowedInput(bytes);
         using var client = new VisionDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
-        var result = await client.ExtractAsync(input, "invoice-panels.png", "image/png",
+        var result = await client.ExtractAsync(input, "invoice", mediaType,
             new() { ExtractorName = "requested-structured-route" });
 
-        Assert.Equal("invoice-panels.png", result.Identifier);
+        Assert.Equal("invoice", result.Identifier);
         Assert.Equal(2, result.Sections.Count);
         Assert.Equal(new int?[] { 3, null }, result.SourcePages.Select(p => p.PageNumber));
         Assert.Null(result.Content);
@@ -117,11 +120,11 @@ public sealed class VisionStructuredAcceptanceTests
         Assert.Equal(ChatRole.User, message.Role);
         Assert.Equal(2, message.Contents.Count);
         Assert.Contains("JSON object with a pages array", Assert.IsType<TextContent>(message.Contents[0]).Text);
-        var image = Assert.IsType<DataContent>(message.Contents[1]);
-        Assert.Equal("image/png", image.MediaType);
-        Assert.Equal(new byte[] { 137, 80, 78, 71, 11, 22, 33 }, image.Data.ToArray());
+        var content = Assert.IsType<DataContent>(message.Contents[1]);
+        Assert.Equal(mediaType, content.MediaType);
+        Assert.Equal(bytes, content.Data.ToArray());
         client.Dispose();
-        input.AssertStillReadable(137);
+        input.AssertStillReadable(bytes[0]);
         Assert.Equal(0, chat.DisposeCalls);
     }
 
@@ -203,16 +206,21 @@ public sealed class VisionStructuredAcceptanceTests
     public async Task ExtractAsync_StrictShapeAndConflictingAnchors_RejectsWithoutFreeformFallback(string scenario, string json)
         => Assert.IsType<InvalidDataException>(await AssertStrictRejectionAsync(json, scenario));
 
-    private static async Task<Exception> AssertStrictRejectionAsync(string json, string identifier = "bad-shape.png")
+    private static async Task<Exception> AssertStrictRejectionAsync(
+        string json, string identifier = "bad-shape.png", string mediaType = "image/png")
     {
         var chat = new RecordingChatClient(RecordingChatClient.Response(json), RecordingChatClient.Response("forbidden freeform fallback"));
         using var input = new BorrowedInput([7, 8, 9]);
         var client = new VisionDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
-        Exception? error = await Record.ExceptionAsync(() => client.ExtractAsync(input, identifier, "image/png"));
+        Exception? error = await Record.ExceptionAsync(() => client.ExtractAsync(input, identifier, mediaType));
         client.Dispose();
         input.AssertStillReadable(7);
         Assert.Equal(0, chat.DisposeCalls);
-        Assert.IsType<ChatResponseFormatJson>(Assert.Single(chat.Requests).Options!.ResponseFormat);
+        var request = Assert.Single(chat.Requests);
+        Assert.IsType<ChatResponseFormatJson>(request.Options!.ResponseFormat);
+        var content = Assert.IsType<DataContent>(request.Messages[0].Contents[1]);
+        Assert.Equal(new byte[] { 7, 8, 9 }, content.Data.ToArray());
+        Assert.Equal(mediaType, content.MediaType);
         Assert.NotNull(error);
         Assert.True(error is JsonException or InvalidDataException or InvalidOperationException or ArgumentException or OverflowException
             or KeyNotFoundException or FormatException,
@@ -221,9 +229,11 @@ public sealed class VisionStructuredAcceptanceTests
     }
 
     [Theory]
-    [InlineData("capability")]
-    [InlineData("failure")]
-    public async Task ExtractAsync_ChatFailure_PropagatesPrimaryErrorWithoutSchemaFallbackAndBorrowsResources(string kind)
+    [InlineData("capability", "image/png")]
+    [InlineData("failure", "image/png")]
+    [InlineData("capability", "application/pdf")]
+    [InlineData("failure", "application/pdf")]
+    public async Task ExtractAsync_ChatFailure_PropagatesPrimaryErrorWithoutSchemaFallbackAndBorrowsResources(string kind, string mediaType)
     {
         Exception failure = kind == "capability"
             ? new NotSupportedException("JSON schema response format unsupported")
@@ -231,7 +241,7 @@ public sealed class VisionStructuredAcceptanceTests
         var chat = new RecordingChatClient(failure, RecordingChatClient.Response("""{"pages":[]}"""));
         using var input = new BorrowedInput([4, 5, 6]);
         var client = new VisionDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
-        Assert.Same(failure, await Record.ExceptionAsync(() => client.ExtractAsync(input, "failure.png", "image/png")));
+        Assert.Same(failure, await Record.ExceptionAsync(() => client.ExtractAsync(input, "failure", mediaType)));
         Assert.IsType<ChatResponseFormatJson>(Assert.Single(chat.Requests).Options!.ResponseFormat);
         client.Dispose();
         client.Dispose();
@@ -241,10 +251,13 @@ public sealed class VisionStructuredAcceptanceTests
     }
 
     [Theory]
-    [InlineData("before-copy", 0)]
-    [InlineData("during-copy", 0)]
-    [InlineData("during-chat", 1)]
-    public async Task ExtractAsync_Cancellation_PreservesTokenAndBorrowedResourcesWithoutFallback(string stage, int calls)
+    [InlineData("before-copy", 0, "image/png")]
+    [InlineData("during-copy", 0, "image/png")]
+    [InlineData("during-chat", 1, "image/png")]
+    [InlineData("before-copy", 0, "application/pdf")]
+    [InlineData("during-copy", 0, "application/pdf")]
+    [InlineData("during-chat", 1, "application/pdf")]
+    public async Task ExtractAsync_Cancellation_PreservesTokenAndBorrowedResourcesWithoutFallback(string stage, int calls, string mediaType)
     {
         using var cancellation = new CancellationTokenSource();
         var chat = new RecordingChatClient(RecordingChatClient.Response("""{"pages":[]}"""))
@@ -259,13 +272,14 @@ public sealed class VisionStructuredAcceptanceTests
         }
 
         var error = await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            client.ExtractAsync(input, "cancel.png", "image/png", cancellationToken: cancellation.Token));
+            client.ExtractAsync(input, "cancel", mediaType, cancellationToken: cancellation.Token));
         Assert.Equal(cancellation.Token, error.CancellationToken);
         Assert.Equal(calls, chat.Requests.Count);
         if (calls == 1)
         {
             Assert.Equal(cancellation.Token, chat.Requests[0].Token);
             Assert.IsType<ChatResponseFormatJson>(chat.Requests[0].Options!.ResponseFormat);
+            Assert.Equal(mediaType, Assert.IsType<DataContent>(chat.Requests[0].Messages[0].Contents[1]).MediaType);
         }
 
         client.Dispose();
@@ -275,84 +289,105 @@ public sealed class VisionStructuredAcceptanceTests
     }
 
     [Fact]
-    public async Task ExtractAsync_LocalPdfStructured_PreservesNativeImageOrderOriginalFramesAndKnownIndexPrompt()
+    public async Task ExtractAsync_MultipagePdfStructured_AcceptsReportedPagesInOneDocumentResponseWithoutInferredMetadata()
     {
-        ChatResponse[] responses =
-        [
-            RecordingChatClient.Response("""{"pages":[{"index":0,"markdown":"First"}]}""", new object()),
-            RecordingChatClient.Response("""{"pages":[{}]}"""),
-            RecordingChatClient.Response("""{"pages":[{"index":2,"figures":[{"caption":"Red square"}]}]}""", new object()),
-        ];
-        var chat = new RecordingChatClient(responses);
-        using var input = new BorrowedInput(PdfFixture.Create());
+        var response = RecordingChatClient.Response(
+            """{"pages":[{"index":2,"markdown":"First"},{},{"index":0,"figures":[{"caption":"Red square"}]}]}""", new object());
+        var chat = new RecordingChatClient(response);
+        byte[] bytes = PdfFixture.Create();
+        using var input = new BorrowedInput([0, .. bytes]);
+        input.Position = 1;
         using var client = new VisionDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
         var result = await client.ExtractAsync(input, "native.pdf", "application/pdf");
-        Assert.Equal(3, chat.Requests.Count);
-        Assert.Equal(new int?[] { 1, 2, 3 }, result.SourcePages.Select(p => p.PageNumber));
-        Assert.Equal(new[] { (300d, 400d), (500d, 600d), (700d, 800d) },
-            result.SourcePages.Select(p => (p.Dimensions!.Value.Width, p.Dimensions.Value.Height)));
+        var request = Assert.Single(chat.Requests);
+        Assert.Equal(new int?[] { 3, null, 1 }, result.SourcePages.Select(p => p.PageNumber));
         Assert.Equal("First", Assert.IsType<TextContent>(result.Sections[0].Elements[0].Content).Text);
         Assert.Empty(result.Sections[1].Elements);
         Assert.Equal("Red square", Assert.IsType<ExtractionDocumentImageElement>(result.Sections[2].Elements[0]).AlternativeText);
         Assert.Null(Assert.IsType<ExtractionDocumentImageElement>(result.Sections[2].Elements[0]).Text);
-        var nativeResponses = Assert.IsType<ChatResponse[]>(result.RawRepresentation);
-        Assert.Equal(3, nativeResponses.Length);
+        Assert.Same(response, result.RawRepresentation);
         for (int i = 0; i < 3; i++)
         {
             var page = result.SourcePages[i];
-            Assert.Same(responses[i], nativeResponses[i]);
             var source = Assert.Single(result.Sections[i].Sources);
             Assert.Same(page, source.Page);
-            Assert.Same(responses[i].RawRepresentation ?? responses[i], source.GetRawRepresentation());
+            Assert.Same(response.RawRepresentation, source.GetRawRepresentation());
             Assert.All(result.Sections[i].Elements, element => Assert.Same(source, Assert.Single(element.Sources)));
-            Assert.Equal(ExtractionDocumentCoordinateUnit.Point, page.CoordinateUnit);
-            Assert.Equal(ExtractionDocumentCoordinateOrigin.BottomLeft, page.CoordinateOrigin);
-            var request = chat.Requests[i];
-            Assert.IsType<ChatResponseFormatJson>(request.Options!.ResponseFormat);
-            Assert.Contains($"original page index {i}. Return exactly one page.", Assert.IsType<TextContent>(request.Messages[0].Contents[0]).Text);
-            var image = Assert.IsType<DataContent>(request.Messages[0].Contents[1]);
-            Assert.Equal("image/png", image.MediaType);
-            using var bitmap = SKBitmap.Decode(image.Data.ToArray());
-            Assert.Equal((int)page.Dimensions!.Value.Width * 2, bitmap.Width);
-            Assert.Equal((int)page.Dimensions.Value.Height * 2, bitmap.Height);
+            Assert.Null(page.Dimensions);
+            Assert.Null(page.CoordinateUnit);
+            Assert.Null(page.CoordinateOrigin);
+            Assert.Empty(source.Polygon);
         }
 
-        input.AssertStillReadable((byte)'%');
+        Assert.IsType<ChatResponseFormatJson>(request.Options!.ResponseFormat);
+        string instruction = Assert.IsType<TextContent>(request.Messages[0].Contents[0]).Text;
+        Assert.Contains("Transcribe this document", instruction);
+        Assert.DoesNotContain("original page index", instruction);
+        Assert.DoesNotContain("exactly one page", instruction);
+        var content = Assert.IsType<DataContent>(request.Messages[0].Contents[1]);
+        Assert.Equal("application/pdf", content.MediaType);
+        Assert.Equal(bytes, content.Data.ToArray());
+        client.Dispose();
+        Assert.Equal(input.Length, input.Position);
+        input.AssertStillReadable(0);
         Assert.Equal(0, chat.DisposeCalls);
     }
 
     [Theory]
-    [InlineData("""{"pages":[]}""")]
-    [InlineData("""{"pages":[{},{}]}""")]
-    [InlineData("""{"pages":[{"index":1}]}""")]
-    public async Task ExtractAsync_LocalPdfInconsistentIndexOrCount_RejectsWithoutFallback(string json)
+    [InlineData("""{"pages":[]}""", 0, null)]
+    [InlineData("""{"pages":[{},{}]}""", 2, null)]
+    [InlineData("""{"pages":[{"index":9}]}""", 1, 10)]
+    public async Task ExtractAsync_PdfReportedPageCountAndIndices_AreNotComparedToLocallyParsedMetadata(
+        string json, int count, int? number)
     {
         var chat = new RecordingChatClient(RecordingChatClient.Response(json), RecordingChatClient.Response("forbidden fallback"));
         using var input = new BorrowedInput(PdfFixture.Create());
         using var client = new VisionDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
-        await Assert.ThrowsAsync<InvalidDataException>(() => client.ExtractAsync(input, "native.pdf", "application/pdf"));
+        var result = await client.ExtractAsync(input, "native.pdf", "application/pdf");
         Assert.IsType<ChatResponseFormatJson>(Assert.Single(chat.Requests).Options!.ResponseFormat);
-        Assert.Equal("image/png", Assert.IsType<DataContent>(chat.Requests[0].Messages[0].Contents[1]).MediaType);
+        Assert.Equal(count, result.SourcePages.Count);
+        Assert.Equal(count, result.Sections.Count);
+        Assert.All(result.SourcePages, page =>
+        {
+            Assert.Equal(number, page.PageNumber);
+            Assert.Null(page.Dimensions);
+            Assert.Null(page.CoordinateUnit);
+            Assert.Null(page.CoordinateOrigin);
+        });
+        Assert.Equal("application/pdf", Assert.IsType<DataContent>(chat.Requests[0].Messages[0].Contents[1]).MediaType);
         input.AssertStillReadable((byte)'%');
         Assert.Equal(0, chat.DisposeCalls);
     }
 
     [Fact]
-    public async Task ExtractAsync_ZeroPagePdf_PreservesEmptyResponseArrayWithoutChatOrInventedFrames()
+    public async Task ExtractAsync_ZeroPagePdf_ForwardsOriginalInputAndUsesBackendResponseWithoutInventedFrames()
     {
-        var chat = new RecordingChatClient();
-        using var input = new BorrowedInput(PdfFixture.Create(empty: true));
+        var response = RecordingChatClient.Response("""{"pages":[]}""");
+        var chat = new RecordingChatClient(response);
+        byte[] bytes = PdfFixture.Create(empty: true);
+        using var input = new BorrowedInput(bytes);
         using var client = new VisionDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
         var result = await client.ExtractAsync(input, "empty.pdf", "application/pdf");
         Assert.Equal("empty.pdf", result.Identifier);
-        Assert.Empty(Assert.IsType<ChatResponse[]>(result.RawRepresentation));
+        Assert.Same(response, result.RawRepresentation);
         Assert.Empty(result.SourcePages);
         Assert.Empty(result.Sections);
-        Assert.Empty(chat.Requests);
+        var content = Assert.IsType<DataContent>(Assert.Single(chat.Requests).Messages[0].Contents[1]);
+        Assert.Equal(bytes, content.Data.ToArray());
+        Assert.Equal("application/pdf", content.MediaType);
         client.Dispose();
         input.AssertStillReadable((byte)'%');
         Assert.Equal(0, chat.DisposeCalls);
     }
+
+    [Theory]
+    [InlineData("{")]
+    [InlineData("""{"pages":null}""")]
+    [InlineData("""{"pages":[{"index":1},{"index":1}]}""")]
+    [InlineData("""{"pages":[{"tables":[{"rowCount":1,"columnCount":1,"cells":[{"rowIndex":0,"columnIndex":0,"rowSpan":2}]}]}]}""")]
+    [InlineData("""{"pages":[],"unexpected":true}""")]
+    public Task ExtractAsync_MalformedPdfResponse_RejectsWithoutRenderingRetryOrFreeformFallback(string json)
+        => AssertStrictRejectionAsync(json, "invalid.pdf", "application/pdf");
 
     [Fact]
     public async Task GetServiceAndDispose_PreserveBorrowedChatAndValidateStructuredConstructor()

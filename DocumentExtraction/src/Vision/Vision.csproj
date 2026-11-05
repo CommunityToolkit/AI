@@ -5,16 +5,9 @@
     <RootNamespace>$(AssemblyName)</RootNamespace>
     <TargetFrameworks>net10.0;net8.0</TargetFrameworks>
     <Title>Microsoft.Extensions.AI vision document extraction provider</Title>
-    <Description>Free-form and structured vision extraction using an IChatClient.</Description>
+    <Description>Free-form and structured extraction from original PDF and image inputs using a capable IChatClient.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="PdfPig" />
-    <PackageReference Include="PdfPig.Rendering.Skia" />
-    <PackageReference Include="SkiaSharp" />
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
-    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" />
-    <Compile Include="..\Shared\PdfPageRenderer.cs" LinkBase="Shared" />
-    <None Include="..\Shared\PdfRendering.NOTICES.txt" Pack="true" PackagePath="\" />
     <InternalsVisibleTo Include="$(AssemblyName).UnitTests" />
   </ItemGroup>
 </Project>
