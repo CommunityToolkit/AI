@@ -14,7 +14,7 @@ namespace CommunityToolkit.DocumentExtraction.AzureContentUnderstanding;
 /// <summary>
 /// A <see cref="DocumentExtractionClient"/> backed by Azure AI Content Understanding.
 /// </summary>
-public sealed class AzureContentUnderstandingDocumentExtractionClient : DocumentExtractionClient
+public sealed class ContentUnderstandingExtractionClient : DocumentExtractionClient
 {
     private const string ProviderName = "azure-content-understanding";
 
@@ -25,10 +25,10 @@ public sealed class AzureContentUnderstandingDocumentExtractionClient : Document
     private readonly string _analyzerId;
 
     /// <summary>Creates an adapter using the supplied Azure endpoint and credential.</summary>
-    public AzureContentUnderstandingDocumentExtractionClient(
+    public ContentUnderstandingExtractionClient(
         Uri endpoint,
         TokenCredential credential,
-        AzureContentUnderstandingDocumentExtractionClientOptions? options = null,
+        ContentUnderstandingExtractionOptions? options = null,
         ContentUnderstandingClientOptions? clientOptions = null)
         : this(new Azure.AI.ContentUnderstanding.ContentUnderstandingClient(
             endpoint, credential, clientOptions ?? new ContentUnderstandingClientOptions()), options)
@@ -36,9 +36,9 @@ public sealed class AzureContentUnderstandingDocumentExtractionClient : Document
     }
 
     /// <summary>Creates an adapter around a borrowed SDK client.</summary>
-    public AzureContentUnderstandingDocumentExtractionClient(
+    public ContentUnderstandingExtractionClient(
         Azure.AI.ContentUnderstanding.ContentUnderstandingClient client,
-        AzureContentUnderstandingDocumentExtractionClientOptions? options = null)
+        ContentUnderstandingExtractionOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(client);
         string analyzerId = options is null ? DefaultAnalyzerId : options.AnalyzerId;
@@ -59,12 +59,12 @@ public sealed class AzureContentUnderstandingDocumentExtractionClient : Document
         DocumentExtractionOptions normalizedOptions = ProviderAdapterHelpers.NormalizeOptions(options);
         ProviderAdapterHelpers.RejectUnsupportedProperties(
             normalizedOptions,
-            nameof(AzureContentUnderstandingDocumentExtractionClient),
+            nameof(ContentUnderstandingExtractionClient),
             "processingLocation");
         string analyzerId = ProviderAdapterHelpers.ResolveExtractor(
             normalizedOptions,
             _analyzerId,
-            nameof(AzureContentUnderstandingDocumentExtractionClient));
+            nameof(ContentUnderstandingExtractionClient));
         ProcessingLocation? processingLocation = ParseProcessingLocation(
             ProviderAdapterHelpers.GetProperty<string>(normalizedOptions, "processingLocation"));
 

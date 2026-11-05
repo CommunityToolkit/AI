@@ -9,9 +9,12 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="PdfPig" />
-    <PackageReference Include="Docnet.Core" />
+    <PackageReference Include="PdfPig.Rendering.Skia" />
     <PackageReference Include="SkiaSharp" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" />
+    <Compile Include="..\Shared\PdfPageRenderer.cs" LinkBase="Shared" />
+    <None Include="..\Shared\PdfRendering.NOTICES.txt" Pack="true" PackagePath="\" />
     <InternalsVisibleTo Include="$(AssemblyName).UnitTests" />
   </ItemGroup>
 </Project>

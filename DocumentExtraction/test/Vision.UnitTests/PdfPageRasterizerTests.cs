@@ -1,6 +1,6 @@
 using CommunityToolkit.DocumentExtraction.PdfPig.UnitTests;
-using Docnet.Core.Exceptions;
 using SkiaSharp;
+using UglyToad.PdfPig.Core;
 
 namespace CommunityToolkit.DocumentExtraction.Vision.UnitTests;
 
@@ -12,7 +12,8 @@ public sealed class PdfPageRasterizerTests(ITestOutputHelper output)
     [InlineData(3, 1400, 1600)]
     public void RenderPage_LocalPdf_ReturnsDecodablePngForRequestedOneBasedPage(int number, int width, int height)
     {
-        byte[] png = PdfPageRasterizer.RenderPage(PdfFixture.Create(), number);
+        using var pdf = PdfPageRenderer.Open(PdfFixture.Create());
+        byte[] png = PdfPageRasterizer.RenderPage(pdf, number);
         Assert.Equal(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }, png.Take(8));
         using var bitmap = SKBitmap.Decode(png);
         Assert.Equal(width, bitmap.Width);
@@ -26,7 +27,7 @@ public sealed class PdfPageRasterizerTests(ITestOutputHelper output)
         }
         else if (number == 2)
         {
-            Assert.Equal((byte)0, bitmap.GetPixel(60, 60).Alpha);
+            Assert.Equal(SKColors.White, bitmap.GetPixel(60, 60));
         }
     }
 
@@ -36,28 +37,41 @@ public sealed class PdfPageRasterizerTests(ITestOutputHelper output)
     [InlineData(4)]
     public void RenderPage_InvalidPageNumber_Rejects(int number)
     {
-        var error = Assert.Throws<DocnetException>(() => PdfPageRasterizer.RenderPage(PdfFixture.Create(), number));
+        using var pdf = PdfPageRenderer.Open(PdfFixture.Create());
+        var error = Assert.Throws<ArgumentOutOfRangeException>(() => PdfPageRasterizer.RenderPage(pdf, number));
         output.WriteLine($"{error.GetType().FullName}: {error.Message}");
-        Assert.Equal($"failed to open page for page index {number - 1}", error.Message);
     }
 
     [Fact]
     public void RenderPage_InvalidPdf_Rejects()
     {
-        var error = Assert.Throws<DocnetLoadDocumentException>(() => PdfPageRasterizer.RenderPage([1, 2, 3], 1));
+        var error = Assert.Throws<PdfDocumentFormatException>(() => PdfPageRenderer.Open([1, 2, 3]));
         output.WriteLine($"{error.GetType().FullName}: {error.Message}");
-        Assert.Contains("file not in PDF format or corrupted", error.Message);
     }
 
     [Fact]
     public void RenderPage_RepeatedCalls_ReturnManagedBytesAfterNativeCleanup()
     {
-        byte[] first = PdfPageRasterizer.RenderPage(PdfFixture.Create(), 1);
-        byte[] second = PdfPageRasterizer.RenderPage(PdfFixture.Create(), 3);
+        byte[] first;
+        byte[] second;
+        using (var pdf = PdfPageRenderer.Open(PdfFixture.Create()))
+        {
+            first = PdfPageRasterizer.RenderPage(pdf, 1);
+            second = PdfPageRasterizer.RenderPage(pdf, 3);
+        }
         using var firstBitmap = SKBitmap.Decode(first);
         using var secondBitmap = SKBitmap.Decode(second);
         Assert.Equal(600, firstBitmap.Width);
         Assert.Equal(1600, secondBitmap.Height);
         Assert.NotSame(first, second);
+    }
+
+    [Fact]
+    public void RenderPage_CanceledRenderDoesNotPoisonBorrowedDocument()
+    {
+        using var pdf = PdfPageRenderer.Open(PdfFixture.Create());
+        Assert.Throws<OperationCanceledException>(() => PdfPageRasterizer.RenderPage(pdf, 1, new(true)));
+        using var bitmap = SKBitmap.Decode(PdfPageRasterizer.RenderPage(pdf, 1));
+        Assert.Equal(600, bitmap.Width);
     }
 }

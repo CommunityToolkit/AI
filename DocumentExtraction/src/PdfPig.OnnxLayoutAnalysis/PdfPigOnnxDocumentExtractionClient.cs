@@ -1,12 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Docnet.Core;
-using Docnet.Core.Models;
 using Microsoft.Extensions.DocumentExtraction;
 using Microsoft.Extensions.Documents;
 using Microsoft.ML.OnnxRuntime;
-using UglyToad.PdfPig;
 using UglyToad.PdfPig.Tokens;
 
 namespace CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis;
@@ -76,8 +73,7 @@ public sealed class PdfPigOnnxDocumentExtractionClient : DocumentExtractionClien
         using var buffer = new MemoryStream();
         await document.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
         byte[] bytes = buffer.ToArray();
-        using var pdf = PdfDocument.Open(bytes);
-        using var rendered = DocLib.Instance.GetDocReader(bytes, new PageDimensions(_options.RenderDpi / 72d));
+        using var pdf = PdfPageRenderer.Open(bytes);
         var output = new ExtractionDocument(identifier);
         var observations = new List<PdfPigLayoutRegion>();
         for (int number = 1; number <= pdf.NumberOfPages; number++)
@@ -90,8 +86,7 @@ public sealed class PdfPigOnnxDocumentExtractionClient : DocumentExtractionClien
                 throw new NotSupportedException("Only a literal default PDF UserUnit (1) is supported by the PdfPig display-coordinate contract.");
             }
 
-            using var pageReader = rendered.GetPageReader(number - 1);
-            var raster = PageRaster.Render(pageReader, page, _options.MaximumPagePixels, cancellationToken);
+            var raster = PageRaster.Render(pdf, page, _options.RenderDpi / 72d, _options.MaximumPagePixels, cancellationToken);
             IReadOnlyList<HeronDetection> detections;
             lock (_sync)
             {

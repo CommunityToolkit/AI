@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Docnet.Core;
-using Docnet.Core.Models;
+using SkiaSharp;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DocumentExtraction;
 using Microsoft.Extensions.Documents;
@@ -35,11 +34,9 @@ public sealed class LayoutTests(ITestOutputHelper output)
     public void ActualRasterAndWordCoordinatesAgree(int rotation, bool crop, int dpi)
     {
         byte[] bytes = LayoutPdfFixture.Create(rotation, crop);
-        using var pdf = PdfDocument.Open(bytes);
+        using var pdf = PdfPageRenderer.Open(bytes);
         var page = pdf.GetPage(1);
-        using var reader = DocLib.Instance.GetDocReader(bytes, new PageDimensions(dpi / 72d));
-        using var nativePage = reader.GetPageReader(0);
-        var raster = PageRaster.Render(nativePage, page, 32_000_000, default);
+        var raster = PageRaster.Render(pdf, page, dpi / 72d, 32_000_000, default);
         var redPixels = new List<(int X, int Y)>();
         for (int y = 0; y < raster.Height; y++)
         {
@@ -75,6 +72,7 @@ public sealed class LayoutTests(ITestOutputHelper output)
             .Where(word => !string.IsNullOrWhiteSpace(word.Text) &&
                 word.BoundingBox.Centroid.X >= 0 && word.BoundingBox.Centroid.X <= page.Width &&
                 word.BoundingBox.Centroid.Y >= 0 && word.BoundingBox.Centroid.Y <= page.Height).ToArray();
+        Assert.NotEmpty(words);
         foreach (var word in words)
         {
             var box = LayoutAssembler.AxisAligned(word.BoundingBox);
@@ -162,11 +160,9 @@ public sealed class LayoutTests(ITestOutputHelper output)
     [Fact]
     public void RasterLimitsCancellationAndOptionsFailExplicitly()
     {
-        using var pdf = PdfDocument.Open(LayoutPdfFixture.Create());
-        using var reader = DocLib.Instance.GetDocReader(LayoutPdfFixture.Create(), new PageDimensions(2d));
-        using var page = reader.GetPageReader(0);
-        Assert.Throws<InvalidDataException>(() => PageRaster.Render(page, pdf.GetPage(1), 10, default));
-        Assert.Throws<OperationCanceledException>(() => PageRaster.Render(page, pdf.GetPage(1), 32_000_000, new(true)));
+        using var pdf = PdfPageRenderer.Open(LayoutPdfFixture.Create());
+        Assert.Throws<InvalidDataException>(() => PageRaster.Render(pdf, pdf.GetPage(1), 2d, 10, default));
+        Assert.Throws<OperationCanceledException>(() => PageRaster.Render(pdf, pdf.GetPage(1), 2d, 32_000_000, new(true)));
         Assert.Throws<OperationCanceledException>(() => new PageRaster(new byte[4], 1, 1, 1, 1).ToTensor(new(true)));
         Assert.Throws<ArgumentOutOfRangeException>(() => new OnnxLayoutOptions { ConfidenceThreshold = float.NaN }.Snapshot());
         Assert.Throws<ArgumentOutOfRangeException>(() => new OnnxLayoutOptions { RenderDpi = 0 }.Snapshot());
@@ -238,18 +234,51 @@ public sealed class LayoutTests(ITestOutputHelper output)
     public void CompositesRealPdfTransparencyOntoWhite()
     {
         byte[] bytes = LayoutPdfFixture.Create(transparency: true);
-        using var pdf = PdfDocument.Open(bytes);
-        using var reader = DocLib.Instance.GetDocReader(bytes, new PageDimensions(2d));
-        using var page = reader.GetPageReader(0);
-        var raster = PageRaster.Render(page, pdf.GetPage(1), 32_000_000, default);
+        using var pdf = PdfPageRenderer.Open(bytes);
+        var raster = PageRaster.Render(pdf, pdf.GetPage(1), 2d, 32_000_000, default);
         int index = (1050 * raster.Width + 730) * 4;
         Assert.Equal(255, raster.Bgra[index + 1]);
-        Assert.InRange(raster.Bgra[index + 3], (byte)126, (byte)129);
+        Assert.Equal(255, raster.Bgra[index + 3]);
+        Assert.InRange(raster.Bgra[index], (byte)126, (byte)129);
+        Assert.InRange(raster.Bgra[index + 2], (byte)126, (byte)129);
         var tensor = raster.ToTensor(default);
         int x = 365 * 640 / 400, y = 525 * 640 / 550;
         Assert.Equal(255, tensor[0, 1, y, x]);
         Assert.InRange(tensor[0, 0, y, x], (byte)126, (byte)129);
         Assert.InRange(tensor[0, 2, y, x], (byte)126, (byte)129);
+    }
+
+    [Theory]
+    [InlineData(SKColorType.Rgba8888, SKAlphaType.Premul)]
+    [InlineData(SKColorType.Bgra8888, SKAlphaType.Unpremul)]
+    public void NormalizesPaddedRowsColorOrderAndAlpha(SKColorType color, SKAlphaType alpha)
+    {
+        var info = new SKImageInfo(1, 2, color, alpha);
+        using var bitmap = new SKBitmap(info, 16);
+        bitmap.SetPixel(0, 0, new SKColor(240, 40, 100, 128));
+        bitmap.SetPixel(0, 1, new SKColor(10, 200, 30, 255));
+        byte[] bytes = PdfPageRenderer.CopyBgra(bitmap, default);
+        Assert.Equal(8, bytes.Length);
+        Assert.InRange(bytes[0], (byte)99, (byte)101);
+        Assert.InRange(bytes[1], (byte)39, (byte)41);
+        Assert.InRange(bytes[2], (byte)239, (byte)241);
+        Assert.Equal(128, bytes[3]);
+        Assert.Equal(new byte[] { 30, 200, 10, 255 }, bytes[4..]);
+        Assert.Throws<OperationCanceledException>(() => PdfPageRenderer.CopyBgra(bitmap, new(true)));
+    }
+
+    [Fact]
+    public void RendersDctImageThroughPublishedFilterAndPreservesNativeWords()
+    {
+        using var pdf = PdfPageRenderer.Open(LayoutPdfFixture.Create(jpeg: true));
+        var page = pdf.GetPage(1);
+        var raster = PageRaster.Render(pdf, page, 2d, 32_000_000, default);
+        int index = (170 * raster.Width + 600) * 4;
+        Assert.InRange(raster.Bgra[index], (byte)250, (byte)255);
+        Assert.InRange(raster.Bgra[index + 1], (byte)0, (byte)5);
+        Assert.InRange(raster.Bgra[index + 2], (byte)0, (byte)5);
+        Assert.Equal(255, raster.Bgra[index + 3]);
+        Assert.Contains(page.GetWords(), word => word.Text == "LOCAL");
     }
 
     [Fact]

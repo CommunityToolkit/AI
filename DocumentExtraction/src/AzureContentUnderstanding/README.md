@@ -54,10 +54,12 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using Azure.AI.ContentUnderstanding;
 using Azure.Identity;
 using CommunityToolkit.DocumentExtraction.AzureContentUnderstanding;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Documents;
+using Microsoft.Extensions.DocumentExtraction;
 
 string endpoint = Environment.GetEnvironmentVariable("AZURE_CONTENT_UNDERSTANDING_ENDPOINT")
     ?? throw new InvalidOperationException("Set AZURE_CONTENT_UNDERSTANDING_ENDPOINT.");
@@ -65,9 +67,9 @@ string analyzer = Environment.GetEnvironmentVariable("AZURE_CONTENT_UNDERSTANDIN
     ?? throw new InvalidOperationException("Set AZURE_CONTENT_UNDERSTANDING_ANALYZER.");
 
 using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(5));
-using var extractor = new AzureContentUnderstandingDocumentExtractionClient(
-    new Uri(endpoint), new DefaultAzureCredential(),
-    new AzureContentUnderstandingDocumentExtractionClientOptions { AnalyzerId = analyzer });
+var sdkClient = new ContentUnderstandingClient(new Uri(endpoint), new DefaultAzureCredential());
+using DocumentExtractionClient extractor = sdkClient.AsDocumentExtractionClient(
+    new() { AnalyzerId = analyzer });
 using var input = File.OpenRead("invoice.pdf");
 ExtractionDocument document = await extractor.ExtractAsync(
     input, "invoice.pdf", "application/pdf", cancellationToken: timeout.Token);
@@ -82,13 +84,17 @@ foreach (var text in document.EnumerateContent().OfType<ExtractionDocumentTextEl
 }
 ```
 
-Use a service-supported document/media-type combination. The constructor defaults
+Use a service-supported document/media-type combination. The adapter defaults
 to the `prebuilt-document` base analyzer; select a document analyzer with the
 capabilities you need rather than relying on that default.
 Toolkit options are copied at construction; null or omitted options select the
 defaults. For native transport/retry settings, pass the separate Azure SDK
 `ContentUnderstandingClientOptions` as `clientOptions`, or supply a configured
 borrowed SDK client alongside the Toolkit options.
+`AsDocumentExtractionClient` borrows that exact native SDK client, preserving its
+credentials, transport and retry configuration. Calling it with null or omitted
+options selects the defaults. The adapter constructors remain supported for
+endpoint/credential construction or direct native-client wrapping.
 The traversal above lists text outside table cells; see
 [reading table cell content](https://github.com/CommunityToolkit/AI/blob/main/DocumentExtraction/README.md#read-table-cell-content)
 to include text and mixed content inside cells.
@@ -129,9 +135,10 @@ var sdk = extractor.GetService(
 Console.WriteLine($"Native SDK available: {sdk is not null}");
 ```
 
-The `AzureContentUnderstandingDocumentExtractionClient` constructor also accepts an existing
-`Azure.AI.ContentUnderstanding.ContentUnderstandingClient` and `analyzerId`.
-Use that overload to configure SDK transport or authentication yourself.
+The `ContentUnderstandingExtractionClient` constructor also accepts an
+existing `ContentUnderstandingClient` and optional
+`ContentUnderstandingExtractionOptions`, as an alternative to
+the extension. Both paths capture the settings and leave the native client borrowed.
 
 ## Working with results
 

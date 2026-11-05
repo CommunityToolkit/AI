@@ -3,12 +3,14 @@
 
 using System.Globalization;
 using System.Text;
+using SkiaSharp;
 
 namespace CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis.UnitTests;
 
 internal static class LayoutPdfFixture
 {
-    internal static byte[] Create(int rotation = 0, bool crop = false, int pages = 1, bool userUnit = false, bool transparency = false)
+    internal static byte[] Create(int rotation = 0, bool crop = false, int pages = 1, bool userUnit = false, bool transparency = false,
+        bool jpeg = false)
     {
         string box = crop ? "/MediaBox [0 0 500 700] /CropBox [50 100 450 650]" : "/MediaBox [0 0 400 550]";
         int dx = crop ? 50 : 0, dy = crop ? 100 : 0;
@@ -39,7 +41,17 @@ internal static class LayoutPdfFixture
             }
             objects.Add($"<< /Length {content.Length} >>\nstream\n{content}\nendstream");
         }
-        objects.Add("<< /Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /ASCIIHexDecode /Length 7 >>\nstream\n0000FF>\nendstream");
+        string image = "0000FF>";
+        if (jpeg)
+        {
+            using var bitmap = new SKBitmap(1, 1);
+            bitmap.Erase(SKColors.Blue);
+            using var encoded = bitmap.Encode(SKEncodedImageFormat.Jpeg, 100);
+            image = Convert.ToHexString(encoded.ToArray()) + ">";
+        }
+
+        string filter = jpeg ? "[/ASCIIHexDecode /DCTDecode]" : "/ASCIIHexDecode";
+        objects.Add($"<< /Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter {filter} /Length {image.Length} >>\nstream\n{image}\nendstream");
 
         var result = new StringBuilder("%PDF-1.4\n");
         var offsets = new List<int>();

@@ -4,7 +4,7 @@
 namespace CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence;
 
 /// <summary>Configures defaults for Azure Document Intelligence extraction.</summary>
-public sealed class AzureDocumentIntelligenceDocumentExtractionClientOptions
+public sealed class DocumentIntelligenceExtractionOptions
 {
     /// <summary>Gets or sets the model used when the extraction request does not select one.</summary>
     public string DefaultModel { get; set; } = "prebuilt-layout";

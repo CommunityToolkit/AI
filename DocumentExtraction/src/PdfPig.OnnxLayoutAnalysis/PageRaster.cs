@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Docnet.Core.Readers;
 using Microsoft.ML.OnnxRuntime.Tensors;
+using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.Core;
 
@@ -10,27 +10,20 @@ namespace CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis;
 
 internal sealed record PageRaster(byte[] Bgra, int Width, int Height, double PageWidth, double PageHeight)
 {
-    internal static PageRaster Render(IPageReader reader, Page page, int maximumPixels, CancellationToken token)
+    internal static PageRaster Render(PdfDocument document, Page page, double scale, int maximumPixels, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
-        int width = reader.GetPageWidth();
-        int height = reader.GetPageHeight();
-        if (width <= 0 || height <= 0 || (long)width * height > maximumPixels)
-        {
-            throw new InvalidDataException("Rendered PDF page exceeds the configured pixel limit or has invalid dimensions.");
-        }
+        using var bitmap = PdfPageRenderer.Render(document, page.Number, scale, maximumPixels, token);
+        int width = bitmap.Width;
+        int height = bitmap.Height;
 
         if (!double.IsFinite(page.Width) || !double.IsFinite(page.Height) || page.Width <= 0 || page.Height <= 0 ||
             Math.Abs((double)width / height - page.Width / page.Height) > 0.02)
         {
-            throw new InvalidDataException("PDFium and PdfPig disagree on the visible page frame.");
+            throw new InvalidDataException("The raster and native text disagree on the visible PDF page frame.");
         }
 
-        byte[] bytes = reader.GetImage();
-        if (bytes.Length != checked(width * height * 4))
-        {
-            throw new InvalidDataException("PDFium returned an invalid BGRA image length.");
-        }
+        byte[] bytes = PdfPageRenderer.CopyBgra(bitmap, token);
 
         token.ThrowIfCancellationRequested();
         return new(bytes, width, height, page.Width, page.Height);
@@ -55,8 +48,6 @@ internal sealed record PageRaster(byte[] Bgra, int Width, int Height, double Pag
                 double fx = sx - x0;
                 for (int c = 0; c < 3; c++)
                 {
-                    // PDFium pixels have a transparent background. Composite onto white,
-                    // then resize the real RGB page; do not render word-box surrogates.
                     double upper = Channel(x0, y0, c) * (1 - fx) + Channel(x1, y0, c) * fx;
                     double lower = Channel(x0, y1, c) * (1 - fx) + Channel(x1, y1, c) * fx;
                     data[c * 640 * 640 + y * 640 + x] = (byte)Math.Clamp(
@@ -70,7 +61,7 @@ internal sealed record PageRaster(byte[] Bgra, int Width, int Height, double Pag
 
     internal PdfRectangle ToPageBounds(float left, float top, float right, float bottom)
     {
-        // Both readers already apply the effective crop origin and page rotation.
+        // PdfPig applies the effective crop origin and page rotation to both paths.
         // Actual raster sizes absorb DPI rounding; only scale and Y-flip remain.
         double x1 = Math.Clamp(left, 0, Width) * PageWidth / Width;
         double x2 = Math.Clamp(right, 0, Width) * PageWidth / Width;

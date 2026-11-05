@@ -51,16 +51,18 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using Azure.AI.DocumentIntelligence;
 using Azure.Identity;
 using CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Documents;
+using Microsoft.Extensions.DocumentExtraction;
 
 string endpoint = Environment.GetEnvironmentVariable("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT")
     ?? throw new InvalidOperationException("Set AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT.");
 using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(5));
-using var extractor = new AzureDocumentIntelligenceDocumentExtractionClient(
-    new Uri(endpoint), new DefaultAzureCredential());
+var sdkClient = new DocumentIntelligenceClient(new Uri(endpoint), new DefaultAzureCredential());
+using DocumentExtractionClient extractor = sdkClient.AsDocumentExtractionClient();
 using var input = File.OpenRead("invoice.pdf");
 ExtractionDocument document = await extractor.ExtractAsync(
     input, "invoice.pdf", "application/pdf", cancellationToken: timeout.Token);
@@ -117,9 +119,8 @@ not an additional-properties option.
 ```csharp
 using Azure.AI.DocumentIntelligence;
 
-using var imageExtractor = new AzureDocumentIntelligenceDocumentExtractionClient(
-    new Uri(endpoint), new DefaultAzureCredential(),
-    new AzureDocumentIntelligenceDocumentExtractionClientOptions
+using DocumentExtractionClient imageExtractor = sdkClient.AsDocumentExtractionClient(
+    new()
     {
         DefaultModel = "prebuilt-layout",
         IncludeImages = true,
@@ -157,11 +158,15 @@ distinct from recognized image `Text`.
 
 The constructor also accepts an existing
 `Azure.AI.DocumentIntelligence.DocumentIntelligenceClient`, with optional
-`AzureDocumentIntelligenceDocumentExtractionClientOptions`. Options are copied at
+`DocumentIntelligenceExtractionOptions`. Options are copied at
 construction: `DefaultModel` defaults to `prebuilt-layout`, and `IncludeImages`
 to `false`; null or omitted options select those defaults. Native SDK transport
 and retry settings belong in the separate `DocumentIntelligenceClientOptions`
 `clientOptions` parameter or the configured borrowed SDK client.
+`AsDocumentExtractionClient` is a convenience conversion to the common
+`DocumentExtractionClient` abstraction using that same constructor. It preserves
+the supplied native client's credentials, transport and retry configuration;
+the adapter constructors remain supported.
 Retrieve the SDK client through unkeyed
 `GetService(typeof(DocumentIntelligenceClient))` when you need SDK operations.
 Inspect `AnalyzeResult` for service-specific fields beyond the shared layout model.

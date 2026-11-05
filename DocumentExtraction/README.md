@@ -15,8 +15,8 @@ All packages target **.NET 8 and .NET 10**. Package IDs start with
 |---|---|---|---|
 | [PdfPig](src/PdfPig/README.md) | `PdfPigDocumentExtractionClient` | Existing PDF text and block geometry without a service | Local; searchable PDFs, no OCR |
 | [PdfPig.OnnxLayoutAnalysis](src/PdfPig.OnnxLayoutAnalysis/README.md) | `PdfPigOnnxDocumentExtractionClient` | Native PDF text with model-detected headings, tables and pictures | Local; actual page rasterization and an explicitly acquired Heron ONNX model, no OCR |
-| [AzureContentUnderstanding](src/AzureContentUnderstanding/README.md) | `AzureContentUnderstandingDocumentExtractionClient` | Document text, tables and layout from a Content Understanding analyzer | Azure; analyzer-supported document formats |
-| [AzureDocumentIntelligence](src/AzureDocumentIntelligence/README.md) | `AzureDocumentIntelligenceDocumentExtractionClient` | OCR, layout, tables and optional figure downloads | Azure; model-supported document formats |
+| [AzureContentUnderstanding](src/AzureContentUnderstanding/README.md) | `ContentUnderstandingExtractionClient` | Document text, tables and layout from a Content Understanding analyzer | Azure; analyzer-supported document formats |
+| [AzureDocumentIntelligence](src/AzureDocumentIntelligence/README.md) | `DocumentIntelligenceExtractionClient` | OCR, layout, tables and optional figure downloads | Azure; model-supported document formats |
 | [Mistral](src/Mistral/README.md) | `MistralDocumentExtractionClient` | Native Mistral OCR page text, tables and images, directly or through Microsoft Foundry | Hosted; endpoint-supported documents and images |
 | [Vision](src/Vision/README.md) | `VisionDocumentExtractionClient` | Free-form transcription or structured tables with your own vision-capable `IChatClient` | Local or hosted model; images and locally rasterized PDF pages |
 
@@ -27,12 +27,16 @@ scanned text. Choose based on document format, required fidelity, latency,
 privacy and cost.
 
 `PdfPig.OnnxLayoutAnalysis` is optional: the basic PdfPig package does not bring
-in PDFium, ONNX Runtime or model weights. The companion detects layout regions,
+in Skia rendering, ONNX Runtime or model weights. The companion detects layout regions,
 not table cells or scanned text; see its setup and result semantics before use.
 Its managed ONNX dependency does not choose a native runtime. Applications add
 `Microsoft.ML.OnnxRuntime` 1.23.2 for CPU or
 `Microsoft.ML.OnnxRuntime.Gpu` 1.23.2 for CUDA, then configure a caller-owned
 session for GPU execution. PDF rendering and preprocessing still run on CPU.
+Both the companion and Vision render PDFs with `PdfPig.Rendering.Skia`, including
+native SkiaSharp/HarfBuzz assets and managed PDF image filters. This is not a
+native-free rendering stack. See the provider READMEs for platform and licensing
+requirements; basic PdfPig does not acquire these dependencies.
 
 ## Install
 
@@ -60,10 +64,16 @@ scope. Direct Mistral uses `https://api.mistral.ai/v1/ocr`; Foundry operation pa
 depend on the deployment. No Chat/Responses adapter or second Mistral package is
 required.
 
-Azure Content Understanding, Document Intelligence and Vision accept their own
-typed `...DocumentExtractionClientOptions` for construction-time defaults.
+Azure Content Understanding and Document Intelligence accept typed
+`ContentUnderstandingExtractionOptions` and `DocumentIntelligenceExtractionOptions`;
+Vision accepts `VisionDocumentExtractionClientOptions` for construction-time defaults.
 Settings are captured when the client is created; null options select defaults.
 Azure SDK `ClientOptions` remain separate for native transport/retry settings.
+For an existing native Azure SDK client, import its corresponding Toolkit
+provider namespace and call `AsDocumentExtractionClient()` or
+`AsDocumentExtractionClient(new() { ... })` with its typed settings. The extension
+returns the common `DocumentExtractionClient` and borrows the SDK client;
+the existing adapter constructors remain supported.
 Per-request `DocumentExtractionOptions` still supplies the supported selector
 and additional-property overrides described in each provider README.
 

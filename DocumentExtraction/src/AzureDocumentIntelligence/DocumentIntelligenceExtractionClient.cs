@@ -14,7 +14,7 @@ namespace CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence;
 /// <summary>
 /// A <see cref="DocumentExtractionClient"/> backed by Azure Document Intelligence.
 /// </summary>
-public sealed class AzureDocumentIntelligenceDocumentExtractionClient : DocumentExtractionClient
+public sealed class DocumentIntelligenceExtractionClient : DocumentExtractionClient
 {
     private const string ProviderName = "azure-document-intelligence";
 
@@ -23,10 +23,10 @@ public sealed class AzureDocumentIntelligenceDocumentExtractionClient : Document
     private readonly bool _includeImages;
 
     /// <summary>Creates an adapter using the supplied Azure endpoint and credential.</summary>
-    public AzureDocumentIntelligenceDocumentExtractionClient(
+    public DocumentIntelligenceExtractionClient(
         Uri endpoint,
         TokenCredential credential,
-        AzureDocumentIntelligenceDocumentExtractionClientOptions? options = null,
+        DocumentIntelligenceExtractionOptions? options = null,
         DocumentIntelligenceClientOptions? clientOptions = null)
         : this(new DocumentIntelligenceClient(
             endpoint, credential, clientOptions ?? new DocumentIntelligenceClientOptions()), options)
@@ -34,8 +34,8 @@ public sealed class AzureDocumentIntelligenceDocumentExtractionClient : Document
     }
 
     /// <summary>Creates an adapter around a borrowed SDK client.</summary>
-    public AzureDocumentIntelligenceDocumentExtractionClient(
-        DocumentIntelligenceClient client, AzureDocumentIntelligenceDocumentExtractionClientOptions? options = null)
+    public DocumentIntelligenceExtractionClient(
+        DocumentIntelligenceClient client, DocumentIntelligenceExtractionOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(client);
         string defaultModel = options is null ? "prebuilt-layout" : options.DefaultModel;
@@ -57,14 +57,14 @@ public sealed class AzureDocumentIntelligenceDocumentExtractionClient : Document
         DocumentExtractionOptions normalizedOptions = ProviderAdapterHelpers.NormalizeOptions(options);
         ProviderAdapterHelpers.RejectUnsupportedProperties(
             normalizedOptions,
-            nameof(AzureDocumentIntelligenceDocumentExtractionClient),
+            nameof(DocumentIntelligenceExtractionClient),
             "locale",
             "pages",
             "features");
         string model = ProviderAdapterHelpers.ResolveExtractor(
             normalizedOptions,
             _defaultModel,
-            nameof(AzureDocumentIntelligenceDocumentExtractionClient));
+            nameof(DocumentIntelligenceExtractionClient));
 
         using var buffer = new MemoryStream();
         await document.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);

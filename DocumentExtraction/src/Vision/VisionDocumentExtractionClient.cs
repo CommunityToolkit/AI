@@ -79,13 +79,12 @@ public sealed class VisionDocumentExtractionClient : DocumentExtractionClient
         var responses = new List<ChatResponse>();
         if (isPdf)
         {
-            using var pdfInput = new MemoryStream(bytes, writable: false);
-            using PdfDocument pdf = PdfDocument.Open(pdfInput);
+            using PdfDocument pdf = PdfPageRenderer.Open(bytes);
             for (int number = 1; number <= pdf.NumberOfPages; number++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var page = pdf.GetPage(number);
-                await ExtractPageAsync(output, PdfPageRasterizer.RenderPage(bytes, number),
+                await ExtractPageAsync(output, PdfPageRasterizer.RenderPage(pdf, number, cancellationToken),
                     "image/png", request, responses, number, page.Width, page.Height, cancellationToken).ConfigureAwait(false);
             }
         }

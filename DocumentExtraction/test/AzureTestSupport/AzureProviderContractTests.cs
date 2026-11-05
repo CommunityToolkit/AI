@@ -7,26 +7,28 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DocumentExtraction;
 using Microsoft.Extensions.Documents;
 #if CONTENT_UNDERSTANDING
+using CommunityToolkit.DocumentExtraction.AzureContentUnderstanding;
 using SdkClient = Azure.AI.ContentUnderstanding.ContentUnderstandingClient;
 using SdkOptions = Azure.AI.ContentUnderstanding.ContentUnderstandingClientOptions;
-using Adapter = CommunityToolkit.DocumentExtraction.AzureContentUnderstanding.AzureContentUnderstandingDocumentExtractionClient;
-using AdapterOptions = CommunityToolkit.DocumentExtraction.AzureContentUnderstanding.AzureContentUnderstandingDocumentExtractionClientOptions;
+using Adapter = CommunityToolkit.DocumentExtraction.AzureContentUnderstanding.ContentUnderstandingExtractionClient;
+using AdapterOptions = CommunityToolkit.DocumentExtraction.AzureContentUnderstanding.ContentUnderstandingExtractionOptions;
 using NativeResult = Azure.AI.ContentUnderstanding.AnalysisResult;
 using NativeContent = Azure.AI.ContentUnderstanding.DocumentContent;
 #else
+using CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence;
 using SdkClient = Azure.AI.DocumentIntelligence.DocumentIntelligenceClient;
 using SdkOptions = Azure.AI.DocumentIntelligence.DocumentIntelligenceClientOptions;
-using Adapter = CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence.AzureDocumentIntelligenceDocumentExtractionClient;
-using AdapterOptions = CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence.AzureDocumentIntelligenceDocumentExtractionClientOptions;
+using Adapter = CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence.DocumentIntelligenceExtractionClient;
+using AdapterOptions = CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence.DocumentIntelligenceExtractionOptions;
 using NativeResult = Azure.AI.DocumentIntelligence.AnalyzeResult;
 #endif
 
 namespace CommunityToolkit.DocumentExtraction.Tests;
 
 #if CONTENT_UNDERSTANDING
-public sealed class AzureContentUnderstandingDocumentExtractionClientTests
+public sealed class ContentUnderstandingExtractionClientTests
 #else
-public sealed class AzureDocumentIntelligenceDocumentExtractionClientTests
+public sealed class DocumentIntelligenceExtractionClientTests
 #endif
 {
     private static Adapter Create(OfflineTransport transport, bool borrowed = false, bool images = false,
@@ -55,6 +57,92 @@ public sealed class AzureDocumentIntelligenceDocumentExtractionClientTests
     private static Task<ExtractionDocument> Extract(Adapter client, Stream input, DocumentExtractionOptions? options = null,
         CancellationToken token = default)
         => client.ExtractAsync(input, "invoice.pdf", "application/pdf", options, token);
+
+    [Theory]
+    [InlineData("omitted")]
+    [InlineData("null")]
+    [InlineData("configured")]
+    public async Task AsDocumentExtractionClient_CapturesOptionsAndBorrowsConfiguredNativeClient(string mode)
+    {
+        var wire = AzureWireFixture.Bytes(AzureWireFixture.Create());
+        var transport = new OfflineTransport(
+            TrackedResponse.Accepted(), new TrackedResponse(wire),
+            TrackedResponse.Accepted(), new TrackedResponse(wire),
+            TrackedResponse.Accepted(), new TrackedResponse(wire));
+        var sdkOptions = new SdkOptions { Transport = transport };
+        sdkOptions.Retry.MaxRetries = 0;
+        var credential = new FixedCredential();
+        var sdk = new SdkClient(new Uri("https://offline.test"), credential, sdkOptions);
+#if CONTENT_UNDERSTANDING
+        var settings = new AdapterOptions { AnalyzerId = "captured-selector" };
+#else
+        var settings = new AdapterOptions { DefaultModel = "captured-selector" };
+#endif
+        using DocumentExtractionClient client = mode == "omitted" ? sdk.AsDocumentExtractionClient()
+            : sdk.AsDocumentExtractionClient(mode == "null" ? null : settings);
+        Assert.IsType<Adapter>(client);
+        Assert.Same(sdk, client.GetService(typeof(SdkClient)));
+#if CONTENT_UNDERSTANDING
+        settings.AnalyzerId = "mutated-selector";
+#else
+        settings.DefaultModel = "mutated-selector";
+        settings.IncludeImages = true;
+#endif
+        using var input = new MemoryStream([1, 2, 3]);
+        var result = await client.ExtractAsync(input, "invoice.pdf", "application/pdf");
+        Assert.IsType<NativeResult>(result.RawRepresentation);
+        Assert.Contains(mode == "configured" ? "captured-selector"
+            : AzureWireFixture.IsContentUnderstanding ? "prebuilt-document" : "prebuilt-layout",
+            transport.Requests[0].Uri.AbsolutePath);
+        Assert.DoesNotContain("output=figures", transport.Requests[0].Uri.Query);
+        input.Position = 0;
+        await client.ExtractAsync(input, "override.pdf", "application/pdf", new() { ExtractorName = "request-selector" });
+        Assert.Contains("request-selector", transport.Requests[2].Uri.AbsolutePath);
+        client.Dispose();
+        using DocumentExtractionClient second = sdk.AsDocumentExtractionClient();
+        input.Position = 0;
+        await second.ExtractAsync(input, "still-borrowed.pdf", "application/pdf");
+        Assert.Equal(6, transport.Requests.Count);
+        Assert.True(credential.Calls > 0);
+        Assert.True(input.CanRead);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" \t")]
+    public void AsDocumentExtractionClient_InvalidSelectorAndNullReceiver_UseConstructorValidation(string? selector)
+    {
+        var sdk = new SdkClient(new Uri("https://offline.test"), new FixedCredential());
+#if CONTENT_UNDERSTANDING
+        var settings = new AdapterOptions { AnalyzerId = selector! };
+#else
+        var settings = new AdapterOptions { DefaultModel = selector! };
+#endif
+        Assert.ThrowsAny<ArgumentException>(() => sdk.AsDocumentExtractionClient(settings));
+        SdkClient missing = null!;
+        Assert.Throws<ArgumentNullException>(() => missing.AsDocumentExtractionClient());
+    }
+
+#if !CONTENT_UNDERSTANDING
+    [Fact]
+    public async Task AsDocumentExtractionClient_ConfiguredFigureSetting_IsCaptured()
+    {
+        byte[] imageBytes = [137, 80, 78, 71];
+        var transport = Replay(AzureWireFixture.Bytes(AzureWireFixture.Create()), new TrackedResponse(imageBytes));
+        var sdkOptions = new SdkOptions { Transport = transport };
+        sdkOptions.Retry.MaxRetries = 0;
+        var sdk = new SdkClient(new Uri("https://offline.test"), new FixedCredential(), sdkOptions);
+        var settings = new AdapterOptions { IncludeImages = true };
+        using var client = sdk.AsDocumentExtractionClient(settings);
+        settings.IncludeImages = false;
+        using var input = new MemoryStream([1, 2, 3]);
+        var result = await client.ExtractAsync(input, "figures.pdf", "application/pdf");
+        Assert.Contains("output=figures", transport.Requests[0].Uri.Query);
+        Assert.Equal(imageBytes, Assert.IsType<DataContent>(
+            Assert.Single(result.EnumerateContent().OfType<ExtractionDocumentImageElement>()).Content).Data.ToArray());
+    }
+#endif
 
     [Theory]
     [InlineData(false, false)]

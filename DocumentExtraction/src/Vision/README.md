@@ -23,13 +23,20 @@ Targets **.NET 8 and .NET 10**. Runtime dependencies installed transitively:
   `Microsoft.Extensions.DocumentExtraction.Abstractions` and
   `Microsoft.Extensions.Documents.Abstractions` for chat, extraction and the
   document graph.
-- `PdfPig` **0.1.15** for PDF page metadata.
-- `Docnet.Core` **2.6.0** (PDFium), `SkiaSharp` **3.119.0** and
-  `SkiaSharp.NativeAssets.Linux.NoDependencies` **3.119.0** for PDF rasterization.
+- `PdfPig` **0.1.15** and `PdfPig.Rendering.Skia` **0.1.15.4** for PDF parsing
+  and rendering, including managed DCT/JBIG2/JPX image filters.
+- `SkiaSharp` / `SkiaSharp.HarfBuzz` **3.119.1** with Windows/macOS native assets,
+  plus `SkiaSharp.NativeAssets.Linux.NoDependencies` **3.119.1** and
+  `HarfBuzzSharp.NativeAssets.Linux` **8.3.1.2**.
 
-PDF input requires compatible PDFium and SkiaSharp native assets for the
+PDF input requires compatible SkiaSharp and HarfBuzz native assets for the
 application's OS/architecture. Check native loading in your actual deployment;
 framework support alone does not establish support for every runtime identifier.
+This is not a native-free renderer. Linux NoDependencies avoids Fontconfig, not
+libc/libm/libdl or all system prerequisites. Install suitable fonts in minimal
+images. Fonts without usable embedded outlines can require installed fallback
+fonts; rendering may differ across platforms. The pinned renderer and PDF image
+filters have their own feature/decoder limits.
 
 Supply a concrete **vision-capable `IChatClient`**, configured with a supported
 model/deployment, credentials and image handling. Add your chosen backend's
@@ -135,6 +142,10 @@ PDF pages are rendered locally as PNG and sent individually, with one chat call
 per page, in original page order. `ExtractorName` becomes `ChatOptions.ModelId`;
 it does not overwrite the genuine `ChatResponse.ModelId`. Additional properties
 are rejected.
+Rendering uses the effective crop and rotation at 144 DPI with an opaque white
+background. Pages exceeding 32 million rendered pixels fail before bitmap
+allocation. The entire input is buffered separately; this is not a total-memory
+limit. Non-PDF image bytes keep their original supported media type.
 Client options are copied at construction. Null or omitted options select
 `Prompt = null` and `UseStructuredOutput = false`; a null prompt selects the
 built-in instruction for the chosen output mode. The supplied chat client
@@ -194,14 +205,20 @@ calling native services directly bypasses extraction middleware.
 - Pass cancellation tokens to input copying and chat calls. Cancellation cannot
   undo accepted inference or interrupt every synchronous native rendering step.
 - For schema failures, check backend response-format support. For native loading
-  failures, check PDFium/SkiaSharp assets for your RID. Backend errors and
+  failures, check SkiaSharp/HarfBuzz assets for your RID. Backend errors and
   cancellation propagate; failed model requests are not retried by this provider.
 
 ## Documentation and feedback
 
-- [Docnet native PDF rendering](https://github.com/GowenGit/docnet)
+- [PdfPig Skia rendering](https://github.com/BobLd/PdfPig.Rendering.Skia)
 - [SkiaSharp native deployments](https://github.com/mono/SkiaSharp)
 - [Provider comparison and shared model](https://github.com/CommunityToolkit/AI/blob/main/DocumentExtraction/README.md)
 - [Report a Toolkit issue](https://github.com/CommunityToolkit/AI/issues)
 
 Licensed under the [MIT license](https://github.com/CommunityToolkit/AI/blob/main/LICENSE).
+PdfPig and PdfPig.Rendering.Skia are Apache-2.0; DCT/JBIG2 filter packages are
+Apache-2.0 and the JPX filter is BSD-2-Clause, with embedded JPEG MIT/Apache-2.0
+notices. SkiaSharp/HarfBuzzSharp packages are MIT; their native packages include
+`THIRD-PARTY-NOTICES.txt` for bundled font/codec libraries. See
+`PdfRendering.NOTICES.txt` in this package and retain dependency licenses and
+notices when redistributing.

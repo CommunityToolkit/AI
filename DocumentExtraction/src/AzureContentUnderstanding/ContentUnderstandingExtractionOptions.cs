@@ -4,8 +4,8 @@
 namespace CommunityToolkit.DocumentExtraction.AzureContentUnderstanding;
 
 /// <summary>Configures defaults for Azure Content Understanding extraction.</summary>
-public sealed class AzureContentUnderstandingDocumentExtractionClientOptions
+public sealed class ContentUnderstandingExtractionOptions
 {
     /// <summary>Gets or sets the analyzer used when the extraction request does not select one.</summary>
-    public string AnalyzerId { get; set; } = AzureContentUnderstandingDocumentExtractionClient.DefaultAnalyzerId;
+    public string AnalyzerId { get; set; } = ContentUnderstandingExtractionClient.DefaultAnalyzerId;
 }

@@ -9,7 +9,7 @@ polygons. No document content is sent to a service.
 This is an optional alternative to the lightweight
 [`CommunityToolkit.DocumentExtraction.PdfPig`](https://github.com/CommunityToolkit/AI/blob/main/DocumentExtraction/src/PdfPig/README.md)
 text-only provider. Installing the basic package does not install this package,
-PDFium, ONNX Runtime or model weights.
+Skia rendering, ONNX Runtime or model weights.
 
 ## Install
 
@@ -21,20 +21,30 @@ dotnet add package Microsoft.ML.OnnxRuntime --version 1.23.2
 Targets **.NET 8 and .NET 10**. Runtime dependencies are brought in transitively:
 
 - `PdfPig` **0.1.15**: native PDF words and document layout analysis.
-- `Docnet.Core` **2.6.0**: PDFium page rasterization.
+- `PdfPig.Rendering.Skia` **0.1.15.4**: PdfPig-based page rasterization, with
+  `SkiaSharp` / `SkiaSharp.HarfBuzz` **3.119.1** and PDF image filters.
+- `SkiaSharp.NativeAssets.Linux.NoDependencies` **3.119.1** and
+  `HarfBuzzSharp.NativeAssets.Linux` **8.3.1.2**: Linux native assets; SkiaSharp
+  and HarfBuzzSharp also bring Windows/macOS assets.
 - `Microsoft.ML.OnnxRuntime.Managed` **1.23.2**: managed inference and tensor APIs,
   **without an ONNX native runtime**.
 - `Microsoft.Extensions.DocumentExtraction.Abstractions`,
   `Microsoft.Extensions.Documents.Abstractions` and
   `Microsoft.Extensions.AI.Abstractions`: shared extraction and content types.
 
-Use a process/platform supported by **both** PDFium's
-[Docnet native assets](https://github.com/GowenGit/docnet/tree/v2.6.0) and
+Use a process/platform supported by **both**
+[SkiaSharp's native assets](https://github.com/mono/SkiaSharp) and
 [ONNX Runtime](https://onnxruntime.ai/docs/install/).
 Windows x64 and Linux x64 are the acceptance targets. Do not assume that a
 managed `net8.0` or `net10.0` target guarantees native support for every RID,
 Alpine/musl, ARM, single-file publishing or Native AOT. Missing native libraries
 are errors, not a request to fall back to text-only extraction.
+The renderer still uses native Skia and HarfBuzz; it is not pure managed code.
+The Linux Skia asset avoids a Fontconfig dependency, not libc/libm/libdl or all
+system prerequisites. Install suitable fonts in minimal images. Missing embedded
+glyph outlines can require system-font substitution, so glyph appearance may
+differ between operating systems. PDF feature/image-decoder support is bounded
+by the pinned renderer and filters, not a promise of universal PDF fidelity.
 
 ### Select the application runtime
 
@@ -52,14 +62,14 @@ dotnet add package Microsoft.ML.OnnxRuntime.Gpu --version 1.23.2
 Select one distribution in the application and its executable dependencies, not
 both CPU and GPU native packages. Install a supported NVIDIA driver, CUDA 12.x
 and cuDNN 9.x shared libraries, and use an OS/process architecture supported by
-the GPU package and PDFium. Check the
+the GPU package and SkiaSharp/HarfBuzz. Check the
 [CUDA execution-provider compatibility requirements](https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements)
 for the exact runtime release. Package restore is not a GPU capability check.
 CUDA session/provider setup errors propagate; the Toolkit does not catch them
 and retry a CPU session. ONNX Runtime can itself assign unsupported operators
 to CPU; selecting CUDA does not promise every operator runs on the GPU.
 
-PDF parsing, PDFium rendering, pixel preprocessing and document mapping remain
+PDF parsing, Skia rendering, pixel preprocessing and document mapping remain
 CPU operations. Only model execution can use the configured execution provider.
 
 For `MEDE0001` or `EXTEXP0019` compiler diagnostics, see
@@ -268,18 +278,25 @@ extractor instead.
 - **Memory limits:** lower `RenderDpi` or process smaller PDFs; the model and
   input buffer also consume memory. Native parsing/rendering failures propagate.
 - **Cancellation:** tokens are checked during input copy, between pages,
-  preprocessing and mapping. In-flight ONNX runs receive a termination request.
-  Synchronous native PDF parsing/rendering cannot be interrupted mid-call, so
-  cancellation is not a hard wall-clock deadline.
+  rendering content operators, preprocessing and mapping. In-flight ONNX runs
+  receive a termination request. Individual synchronous parsing, codec and native
+  drawing calls cannot always be interrupted, so cancellation is not a hard
+  wall-clock deadline.
 
 ## Documentation and feedback
 
 - [Docling Heron model card](https://huggingface.co/docling-project/docling-layout-heron)
 - [PdfPig document-layout analysis](https://github.com/UglyToad/PdfPig/wiki/Document-Layout-Analysis)
+- [PdfPig Skia rendering](https://github.com/BobLd/PdfPig.Rendering.Skia)
 - [ONNX Runtime .NET API](https://onnxruntime.ai/docs/api/csharp/api/Microsoft.ML.OnnxRuntime.InferenceSession.html)
 - [Provider comparison and shared result model](https://github.com/CommunityToolkit/AI/blob/main/DocumentExtraction/README.md)
 - [Report a Toolkit issue](https://github.com/CommunityToolkit/AI/issues)
 
 The Toolkit package is [MIT licensed](https://github.com/CommunityToolkit/AI/blob/main/LICENSE).
-PdfPig, Docnet/PDFium, ONNX Runtime and model weights retain their respective
-licenses and notices; model weights are not included in this package.
+PdfPig and PdfPig.Rendering.Skia are Apache-2.0; the DCT/JBIG2 filter packages
+are Apache-2.0 and the JPX filter is BSD-2-Clause. Embedded JPEG code also carries
+MIT and Apache-2.0 notices. SkiaSharp/HarfBuzzSharp packages are MIT and their
+native packages include `THIRD-PARTY-NOTICES.txt` for bundled font/codec libraries.
+See `PdfRendering.NOTICES.txt` in this package and retain dependency licenses and
+notices when redistributing. ONNX Runtime and model weights retain their own
+licenses; model weights are not included.
