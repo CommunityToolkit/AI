@@ -1,7 +1,7 @@
 # Document extraction
 
 Extract text, tables, figures and source locations from documents with a choice
-of local PDF parsing, Azure document services or vision-capable language models.
+of local PDF parsing, document services or vision-capable language models.
 Each provider returns the same `Microsoft.Extensions.Documents.ExtractionDocument`
 graph, so downstream processing can work with document structure rather than
 backend-specific response formats.
@@ -17,11 +17,11 @@ All packages target **.NET 8 and .NET 10**. Package IDs start with
 | [PdfPig.OnnxLayoutAnalysis](src/PdfPig.OnnxLayoutAnalysis/README.md) | `PdfPigOnnxDocumentExtractionClient` | Native PDF text with model-detected headings, tables and pictures | Local; actual page rasterization and an explicitly acquired Heron ONNX model, no OCR |
 | [AzureContentUnderstanding](src/AzureContentUnderstanding/README.md) | `AzureContentUnderstandingDocumentExtractionClient` | Document text, tables and layout from a Content Understanding analyzer | Azure; analyzer-supported document formats |
 | [AzureDocumentIntelligence](src/AzureDocumentIntelligence/README.md) | `AzureDocumentIntelligenceDocumentExtractionClient` | OCR, layout, tables and optional figure downloads | Azure; model-supported document formats |
-| [Mistral](src/Mistral/README.md) | `MistralDocumentExtractionClient` | Mistral OCR page text, tables and images through Azure AI Foundry | Azure; endpoint-supported document formats |
+| [Mistral](src/Mistral/README.md) | `MistralDocumentExtractionClient` | Native Mistral OCR page text, tables and images, directly or through Microsoft Foundry | Hosted; endpoint-supported documents and images |
 | [Vision](src/Vision/README.md) | `VisionDocumentExtractionClient` | Free-form transcription or structured tables with your own vision-capable `IChatClient` | Local or hosted model; images and locally rasterized PDF pages |
 
-Azure providers upload document content to the configured service and can incur
-charges. Vision sends images to your chosen backend; a PDF makes one inference
+Azure and Mistral providers upload document content to the configured service and
+can incur charges. Vision sends images to your chosen backend; a PDF makes one inference
 call per page. PdfPig reads existing PDF text locally and does not recognize
 scanned text. Choose based on document format, required fidelity, latency,
 privacy and cost.
@@ -47,6 +47,14 @@ Azure examples use the additional `Azure.Identity` package for
 `DefaultAzureCredential`. Vision requires an application-supplied chat adapter,
 configured model and credentials. Each provider README contains its setup,
 supported options and examples.
+
+Mistral uses one package for both hosts. Configure its complete native OCR
+operation URI and model/deployment selector with
+`MistralDocumentExtractionClientOptions`; authenticate with a bearer API key or,
+for an endpoint supporting Entra ID, a `TokenCredential` and the resource's token
+scope. Direct Mistral uses `https://api.mistral.ai/v1/ocr`; Foundry operation paths
+depend on the deployment. No Chat/Responses adapter or second Mistral package is
+required.
 
 ## Extract a document
 

@@ -8,21 +8,30 @@ using Azure.Core;
 
 namespace CommunityToolkit.DocumentExtraction.Mistral.UnitTests.TestSupport;
 
-internal sealed class FixedCredential : TokenCredential
+internal sealed class FixedCredential : TokenCredential, IDisposable
 {
     public int Calls { get; private set; }
     public List<string[]> Scopes { get; } = [];
+    public Queue<AccessToken> Tokens { get; } = [];
+    public Action<CancellationToken>? BeforeGetToken { get; set; }
+    public int DisposeCalls { get; private set; }
 
     public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        BeforeGetToken?.Invoke(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
         Calls++;
         Scopes.Add(requestContext.Scopes.ToArray());
-        return new AccessToken("local-offline-token", DateTimeOffset.MaxValue);
+        return Tokens.TryDequeue(out AccessToken token)
+            ? token
+            : new AccessToken("local-offline-token", DateTimeOffset.MaxValue);
     }
 
     public override ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
         => ValueTask.FromResult(GetToken(requestContext, cancellationToken));
+
+    public void Dispose() => DisposeCalls++;
 }
 
 internal sealed class TrackingContent(byte[] bytes) : HttpContent
@@ -172,21 +181,34 @@ internal sealed class OfflineSession : IDisposable
     public TrackingInput Input { get; }
     public List<TimeSpan> Delays { get; } = [];
     public Action<TimeSpan, CancellationToken>? OnDelay { get; set; }
+    private readonly string _tokenScope;
 
     public OfflineSession(byte[]? response = null, HttpStatusCode status = HttpStatusCode.OK,
-        TrackingInput? input = null, bool includeImages = false)
+        TrackingInput? input = null, bool includeImages = false, Uri? ocrEndpoint = null,
+        bool useApiKey = false, string tokenScope = "https://cognitiveservices.azure.com/.default")
     {
         Handler.Replies.Enqueue((status, response ?? EmptyResponse));
         Http = new HttpClient(Handler);
         Input = input ?? new TrackingInput(InputBytes);
-        Client = new MistralDocumentExtractionClient(new Uri("https://unit.invalid/base/"), Credential,
-            "default-model", includeImages, Http, (delay, token) =>
+        _tokenScope = tokenScope;
+        Client = ocrEndpoint is null && !useApiKey
+            ? new MistralDocumentExtractionClient(new Uri("https://unit.invalid/base/"), Credential,
+                "default-model", includeImages, Http, DelayAsync)
+            : new MistralDocumentExtractionClient(new()
             {
-                Delays.Add(delay);
-                OnDelay?.Invoke(delay, token);
-                token.ThrowIfCancellationRequested();
-                return Task.CompletedTask;
-            });
+                OcrEndpoint = ocrEndpoint ?? new Uri("https://api.mistral.ai/v1/ocr"),
+                DefaultModel = "default-model",
+                IncludeImages = includeImages,
+                TokenScope = tokenScope,
+            }, useApiKey ? null : Credential, useApiKey ? "local-api-key" : null, Http, DelayAsync);
+
+        Task DelayAsync(TimeSpan delay, CancellationToken token)
+        {
+            Delays.Add(delay);
+            OnDelay?.Invoke(delay, token);
+            token.ThrowIfCancellationRequested();
+            return Task.CompletedTask;
+        }
     }
 
     public async Task AssertCleanAndBorrowedAsync(int requests, int responses, int credentialCalls = 1)
@@ -195,7 +217,7 @@ internal sealed class OfflineSession : IDisposable
         Assert.Equal(responses, Handler.Responses.Count);
         Assert.Equal(credentialCalls, Credential.Calls);
         Assert.All(Credential.Scopes, scopes =>
-            Assert.Equal(["https://cognitiveservices.azure.com/.default"], scopes));
+            Assert.Equal([_tokenScope], scopes));
         foreach (RecordedRequest request in Handler.Requests)
         {
             await Assert.ThrowsAsync<ObjectDisposedException>(() => request.Message.Content!.ReadAsByteArrayAsync());
@@ -211,6 +233,7 @@ internal sealed class OfflineSession : IDisposable
         Client.Dispose();
         Client.Dispose();
         Assert.Equal(0, Handler.DisposeCalls);
+        Assert.Equal(0, Credential.DisposeCalls);
         Assert.Equal(0, Input.DisposeCalls);
         Input.Position = 0;
         Assert.Equal(10, Input.ReadByte());

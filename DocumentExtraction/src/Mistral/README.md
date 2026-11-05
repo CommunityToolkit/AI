@@ -1,71 +1,83 @@
 # CommunityToolkit.DocumentExtraction.Mistral
 
-Extract **page text, tables and images from documents with Mistral OCR on Azure
-AI Foundry**. Results are returned as a provider-neutral `ExtractionDocument`
-graph, with native JSON available for service-specific fields. Use it when your
-application needs Mistral's document transcription through an Azure endpoint.
+Extract **page text, tables and images with Mistral OCR**, either directly from
+Mistral or through Microsoft Foundry. One `MistralDocumentExtractionClient`
+returns a provider-neutral `ExtractionDocument` graph for both hosts, with
+detached native JSON for service-specific fields.
 
 ## Install
 
 ```shell
 dotnet add package CommunityToolkit.DocumentExtraction.Mistral --prerelease
+```
+
+For the Entra ID example only, also install:
+
+```shell
 dotnet add package Azure.Identity
 ```
 
-`Azure.Identity` is the additional application dependency used by the
-`DefaultAzureCredential` examples. For `MEDE0001` or `EXTEXP0019` compiler
-diagnostics, see [experimental API opt-in](https://github.com/CommunityToolkit/AI/blob/main/DocumentExtraction/README.md#experimental-api-diagnostics).
+Targets **.NET 8 and .NET 10**. Runtime dependencies include `Azure.Core`
+**1.53.0**, `Microsoft.Extensions.DocumentExtraction.Abstractions`,
+`Microsoft.Extensions.Documents.Abstractions` and
+`Microsoft.Extensions.AI.Abstractions`. `Azure.Identity` is an additional
+application dependency, not a provider dependency. For `MEDE0001` or `EXTEXP0019`
+compiler diagnostics, see
+[experimental API opt-in](https://github.com/CommunityToolkit/AI/blob/main/DocumentExtraction/README.md#experimental-api-diagnostics).
 
-## Requirements and setup
+## Configure endpoint, model and authentication
 
-Targets **.NET 8 and .NET 10**. These packages are runtime dependencies installed
-transitively:
+Use `MistralDocumentExtractionClientOptions` to specify the **complete OCR
+operation URI** in `OcrEndpoint` and the endpoint's model/deployment selector in
+`DefaultModel`. The client sends requests to that exact URI, preserving its path
+and query; it does not append a route, infer a host, or discover a fallback.
 
-- `Azure.Core` **1.53.0**, providing the `TokenCredential` contract.
-- `Microsoft.Extensions.DocumentExtraction.Abstractions`,
-  `Microsoft.Extensions.Documents.Abstractions` and
-  `Microsoft.Extensions.AI.Abstractions` for extraction options, document
-  structure and content payloads.
+| Host | Complete operation URI | Authentication and model setup |
+|---|---|---|
+| Direct Mistral | `https://api.mistral.ai/v1/ocr` | Mistral API key, sent as `Authorization: Bearer`. `mistral-ocr-latest` is the documented native model alias; an explicit model can also be selected. |
+| Microsoft Foundry | Copy the OCR operation URI for your deployed model. Endpoint families can use `/providers/mistral/azure/ocr` or `/v1/ocr`; do not append both. | An authorized `TokenCredential`, or a bearer API key **if that endpoint supports key authentication**. Use the model/deployment selector accepted by the resource. |
 
-You need an Azure endpoint exposing `/providers/mistral/azure/ocr`, a
-model/deployment accepted by that endpoint, and an Entra identity authorized to
-call it. Set up the deployment and access before running extraction. The client
-defaults to `mistral-ocr-4-0`; use the model selector available in your resource.
-Direct Mistral and generic OpenAI-compatible endpoints use different routes and
-are not supported by this client.
+For Entra ID, configure a development sign-in or deployed identity and grant the
+resource's required data-plane access. `TokenScope` defaults to
+`https://cognitiveservices.azure.com/.default`; set it explicitly if your
+endpoint requires another audience. The credential manages token caching and
+refresh; the client consults it on each HTTP attempt. API-key authentication
+does not acquire an Entra token.
 
-Set `AZURE_MISTRAL_OCR_ENDPOINT` to the base endpoint (without the route suffix)
-and `AZURE_MISTRAL_OCR_MODEL` to its supported model/deployment selector.
-Authentication uses `TokenCredential` for
-`https://cognitiveservices.azure.com/.default`; direct Mistral API keys are not
-accepted. The example uses `DefaultAzureCredential`, requiring
-**`Azure.Identity` as an extra package** and a configured development sign-in or
-deployed identity. It is not a dependency of the provider.
+The `Uri, TokenCredential` constructor is a convenience for a Foundry **base
+endpoint**: it appends `/providers/mistral/azure/ocr`, uses the default cognitive
+services scope and defaults to `mistral-ocr-4-0`. Use the options-based
+constructors below for a complete operation URI or a different scope.
+Chat/Responses/OpenAI-compatible endpoints are not native OCR operations.
+Use HTTPS outside local transport testing.
 
 ## Examples
 
-### Extract page text
+### Direct Mistral: extract a PDF
 
-Complete console example. Provide `invoice.pdf` and the environment variables
-above. This uploads the file as a base64 data URL and can incur inference charges.
+Complete console example. Set `MISTRAL_API_KEY` and provide `invoice.pdf`.
+Optionally set `MISTRAL_OCR_MODEL` to a supported native model. This uploads the
+file and can incur inference charges.
 
 ```csharp
 using System;
 using System.IO;
-using System.Linq;
 using System.Threading;
-using Azure.Identity;
 using CommunityToolkit.DocumentExtraction.Mistral;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Documents;
 
-string endpoint = Environment.GetEnvironmentVariable("AZURE_MISTRAL_OCR_ENDPOINT")
-    ?? throw new InvalidOperationException("Set AZURE_MISTRAL_OCR_ENDPOINT.");
-string model = Environment.GetEnvironmentVariable("AZURE_MISTRAL_OCR_MODEL")
-    ?? throw new InvalidOperationException("Set AZURE_MISTRAL_OCR_MODEL.");
+string key = Environment.GetEnvironmentVariable("MISTRAL_API_KEY")
+    ?? throw new InvalidOperationException("Set MISTRAL_API_KEY.");
+string model = Environment.GetEnvironmentVariable("MISTRAL_OCR_MODEL")
+    ?? "mistral-ocr-latest";
+var settings = new MistralDocumentExtractionClientOptions
+{
+    OcrEndpoint = new Uri("https://api.mistral.ai/v1/ocr"),
+    DefaultModel = model,
+};
 using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(5));
-using var extractor = new MistralDocumentExtractionClient(
-    new Uri(endpoint), new DefaultAzureCredential(), defaultModel: model);
+using var extractor = new MistralDocumentExtractionClient(settings, key);
 using var input = File.OpenRead("invoice.pdf");
 ExtractionDocument document = await extractor.ExtractAsync(
     input, "invoice.pdf", "application/pdf", cancellationToken: timeout.Token);
@@ -79,24 +91,75 @@ foreach (var element in document.EnumerateContent())
 }
 ```
 
-This traversal includes table-local `TextContent`, not just text elements.
-Tables are retained as producer-supplied content, not synthesized into an
-addressed cell grid. Sections do not duplicate aggregate page text.
+This traversal includes table-local `TextContent`. Tables supplied separately by
+the service retain their literal Markdown or HTML; they are not synthesized into
+an addressed cell grid. Inline Markdown tables remain in page text. Sections do
+not duplicate aggregate page text.
 
-### Request images and bound image output
+### Microsoft Foundry: use a deployed model with Entra ID
 
-Continuation of the first example; the endpoint must support these options.
+Independent console example. Set `AZURE_MISTRAL_OCR_URI` to the **complete**
+operation URI and `AZURE_MISTRAL_OCR_MODEL` to the deployed model selector.
+`DefaultAzureCredential` requires the additional `Azure.Identity` package and
+the access setup described above.
 
 ```csharp
+using System;
+using System.IO;
+using System.Threading;
+using Azure.Identity;
+using CommunityToolkit.DocumentExtraction.Mistral;
+using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Documents;
+
+string endpoint = Environment.GetEnvironmentVariable("AZURE_MISTRAL_OCR_URI")
+    ?? throw new InvalidOperationException("Set AZURE_MISTRAL_OCR_URI.");
+string model = Environment.GetEnvironmentVariable("AZURE_MISTRAL_OCR_MODEL")
+    ?? throw new InvalidOperationException("Set AZURE_MISTRAL_OCR_MODEL.");
+var settings = new MistralDocumentExtractionClientOptions
+{
+    OcrEndpoint = new Uri(endpoint),
+    DefaultModel = model,
+    TokenScope = Environment.GetEnvironmentVariable("AZURE_MISTRAL_OCR_SCOPE")
+        ?? "https://cognitiveservices.azure.com/.default",
+};
+using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+using var extractor = new MistralDocumentExtractionClient(
+    settings, new DefaultAzureCredential());
+using var input = File.OpenRead("invoice.pdf");
+ExtractionDocument document = await extractor.ExtractAsync(
+    input, "invoice.pdf", "application/pdf", cancellationToken: timeout.Token);
+
+foreach (var element in document.EnumerateContent())
+{
+    if (element.Content is TextContent text)
+    {
+        Console.WriteLine(text.Text);
+    }
+}
+```
+
+For a Foundry operation supporting bearer API keys, use the same settings with
+`new MistralDocumentExtractionClient(settings, key)` instead. Keep keys in your
+application's secret configuration, not source code.
+
+### Process an image and request extracted image bytes
+
+Continuation of the **direct Mistral** example. Supply `scan.png`; the
+configured model and endpoint must support the requested image-output options.
+
+```csharp
+using System.Linq;
+using System.Text.Json;
 using Microsoft.Extensions.DocumentExtraction;
 
 var options = new DocumentExtractionOptions { ExtractorName = model };
 options.AdditionalProperties["includeImages"] = true;
 options.AdditionalProperties["imageLimit"] = 4;
 options.AdditionalProperties["imageMinSize"] = 100;
-using var illustratedInput = File.OpenRead("invoice.pdf");
-var illustratedDocument = await extractor.ExtractAsync(
-    illustratedInput, "invoice.pdf", "application/pdf", options, timeout.Token);
+using var imageInput = File.OpenRead("scan.png");
+ExtractionDocument illustratedDocument = await extractor.ExtractAsync(
+    imageInput, "scan.png", "image/png", options, timeout.Token);
 
 foreach (var image in illustratedDocument.EnumerateContent().OfType<ExtractionDocumentImageElement>())
 {
@@ -105,63 +168,57 @@ foreach (var image in illustratedDocument.EnumerateContent().OfType<ExtractionDo
         Console.WriteLine($"{bytes.MediaType}: {bytes.Data.Length} image bytes");
     }
 }
-```
 
-These are the only supported additional properties: `includeImages` is a bool;
-`imageLimit` and `imageMinSize` are non-negative ints. `ExtractorName` overrides
-the constructor's request selector. The limits govern service image output, not
-input buffering or a total request-memory cap.
-
-### Inspect native JSON and control HTTP lifetime
-
-Continuation of the first example. No extra package is required for JSON or HTTP.
-The caller owns the supplied `HttpClient`; the adapter borrows it.
-
-```csharp
-using System.Net.Http;
-using System.Text.Json;
-
-if (document.RawRepresentation is JsonElement native &&
+if (illustratedDocument.RawRepresentation is JsonElement native &&
     native.TryGetProperty("model", out var reportedModel))
 {
     Console.WriteLine($"Reported model: {reportedModel.GetString()}");
 }
-
-using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
-using var borrowedHttpExtractor = new MistralDocumentExtractionClient(
-    new Uri(endpoint), new DefaultAzureCredential(), defaultModel: model,
-    httpClient: http);
 ```
 
-The native JSON remains usable after extraction finishes. Read response fields
-such as `model` only when present; the requested model selector is not a
-substitute for a service-reported identity.
+`image/*` input uses `{"type":"image_url","image_url":"data:..."}`. Other input
+media types use `{"type":"document_url","document_url":"data:..."}`. Supply the
+actual media type: PDF uses `application/pdf`; image examples include
+`image/png`, `image/jpeg` and `image/avif`. The endpoint validates which formats
+it supports; not every host/model supports every native Mistral format.
+Identifiers label results, not remote URLs to fetch. This stream API sends
+base64 data URLs; it does not upload to a file service or fetch input URLs.
 
-## Limitations and troubleshooting
+The supported additional properties are `includeImages` (bool), `imageLimit`
+and `imageMinSize` (non-negative ints). `ExtractorName` overrides the constructor's
+request model. Limits govern service image output, not input buffering.
+`table_format`, header/footer extraction, blocks, confidence scores and
+annotations are not exposed as request options by this adapter; unsupported
+properties fail explicitly. Optional response fields depend on model and host.
+The requested model is not substituted for a service-reported identity.
 
-- The adapter buffers the input, base64 request and response in memory. Account
-  for file size and service input limits; supported formats depend on your
-  endpoint. Only HTTP 503 is retried, at most five total attempts; other HTTP
-  failures propagate as `HttpRequestException`.
-- Source page numbers are one-based. Table content remains Markdown in
-  table-local `TextContent`; it is not an addressed cell grid. Tables that cannot
-  be placed unambiguously in page text remain separate elements. Do not treat
-  Markdown as measured paragraph geometry.
-- Invalid/missing response structure and unsupported options fail explicitly.
-  For authentication/404 errors, check identity access, base endpoint, route and
-  model availability; using a direct Mistral endpoint is not supported.
-- Caller input remains open. A supplied HTTP client is borrowed; one created by
-  the provider is disposed with it. Returned documents require no disposal;
-  image bytes and JSON remain usable after the request finishes.
-- Cancellation covers input copying, token acquisition, requests, retry delays
-  and mapping. It does not roll back remote processing already accepted.
-  Native JSON and extracted text can contain sensitive data.
+## Limits, ownership and errors
+
+- The entire input, base64 request and response are buffered in memory. Check
+  your deployment's current file/page limits before submitting. Direct Mistral
+  and Foundry limits and model availability are not interchangeable. This client
+  does not split oversized documents or switch hosts/models automatically.
+- HTTP 503 is retried up to five total attempts. Other HTTP failures propagate
+  as `HttpRequestException`, including unsupported service options/formats.
+  Malformed/missing required response structure fails rather than returning an
+  empty success. For 401/403/404, check the exact operation URI, auth mechanism,
+  token audience, identity access and deployed model.
+- Source page numbers are one-based. Table/image geometry is preserved where
+  reported; page Markdown is not measured paragraph geometry. Ambiguously placed
+  tables remain separate elements. Native JSON and extracted text can contain
+  sensitive data.
+- Input streams, credentials and a supplied `httpClient` are borrowed. A client
+  created internally is disposed with the extractor. Returned documents require
+  no disposal; their JSON and image bytes remain usable after the request.
+- Cancellation covers input copying, token acquisition, HTTP requests, response
+  reading, retry delays and mapping. It cannot undo remote processing already
+  accepted. Both hosts receive the document bytes and can incur charges.
 
 ## Documentation and feedback
 
-- [Mistral OCR concepts](https://docs.mistral.ai/studio/document-processing/basic_ocr)
-  (direct-service examples use different authentication/routes from this adapter)
-- [Microsoft Foundry documentation](https://learn.microsoft.com/azure/ai-foundry/)
+- [Mistral OCR setup, input unions and model-dependent features](https://docs.mistral.ai/studio/document-processing/basic_ocr)
+- [Native OCR API reference](https://docs.mistral.ai/api/endpoint/ocr)
+- [Mistral models sold directly by Azure](https://learn.microsoft.com/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure#mistral-models-sold-by-azure)
 - [Azure Identity credential configuration](https://learn.microsoft.com/dotnet/azure/sdk/authentication/)
 - [Provider comparison and shared model](https://github.com/CommunityToolkit/AI/blob/main/DocumentExtraction/README.md)
 - [Report a Toolkit issue](https://github.com/CommunityToolkit/AI/issues)

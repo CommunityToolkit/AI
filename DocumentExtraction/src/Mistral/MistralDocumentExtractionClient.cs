@@ -16,24 +16,24 @@ using Microsoft.Extensions.Documents;
 namespace CommunityToolkit.DocumentExtraction.Mistral;
 
 /// <summary>
-/// A <see cref="DocumentExtractionClient"/> backed by Mistral OCR on Azure AI Foundry.
+/// A <see cref="DocumentExtractionClient"/> backed by native Mistral OCR, directly or through Microsoft Foundry.
 /// </summary>
 public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
 {
-    private const string ProviderName = "foundry-mistral-ocr";
-
-    private static readonly TokenRequestContext s_scope =
-        new(["https://cognitiveservices.azure.com/.default"]);
+    private const string ProviderName = "mistral-ocr";
 
     private readonly Uri _endpoint;
-    private readonly TokenCredential _credential;
+    private readonly TokenCredential? _credential;
+    private readonly string? _apiKey;
+    private readonly string _tokenScope;
     private readonly string _defaultModel;
     private readonly bool _includeImages;
     private readonly HttpClient _http;
     private readonly bool _ownsHttpClient;
     private readonly Func<TimeSpan, CancellationToken, Task> _delayAsync;
 
-    /// <summary>Creates an adapter using the supplied endpoint, credential, and optional borrowed HTTP client.</summary>
+    /// <summary>Creates a Foundry client from a base endpoint. Appends <c>/providers/mistral/azure/ocr</c> and uses the cognitive-services Entra scope.</summary>
+    /// <remarks>For a complete operation URI or another token scope, use the options-based constructor instead.</remarks>
     public MistralDocumentExtractionClient(
         Uri endpoint,
         TokenCredential credential,
@@ -50,6 +50,26 @@ public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
     {
     }
 
+    /// <summary>Creates a client for the exact operation URI in <paramref name="options"/>, authenticated with an API key sent as a bearer token.</summary>
+    /// <remarks>A supplied HTTP client is borrowed. The API key is used only for the configured endpoint; no endpoint discovery or fallback is performed.</remarks>
+    public MistralDocumentExtractionClient(
+        MistralDocumentExtractionClientOptions options,
+        string apiKey,
+        HttpClient? httpClient = null)
+        : this(options, null, ValidateApiKey(apiKey), httpClient, Task.Delay)
+    {
+    }
+
+    /// <summary>Creates a client for the exact operation URI and Entra token scope in <paramref name="options"/>.</summary>
+    /// <remarks>The credential and any supplied HTTP client are borrowed. Token acquisition is delegated to the credential on each attempt, allowing it to cache or refresh tokens.</remarks>
+    public MistralDocumentExtractionClient(
+        MistralDocumentExtractionClientOptions options,
+        TokenCredential credential,
+        HttpClient? httpClient = null)
+        : this(options, credential ?? throw new ArgumentNullException(nameof(credential)), null, httpClient, Task.Delay)
+    {
+    }
+
     internal MistralDocumentExtractionClient(
         Uri endpoint,
         TokenCredential credential,
@@ -57,19 +77,34 @@ public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
         bool includeImages,
         HttpClient? httpClient,
         Func<TimeSpan, CancellationToken, Task> delayAsync)
+        : this(CreateFoundryOptions(endpoint, defaultModel, includeImages),
+            credential ?? throw new ArgumentNullException(nameof(credential)), null, httpClient, delayAsync)
     {
-        ArgumentNullException.ThrowIfNull(endpoint);
-        ArgumentNullException.ThrowIfNull(credential);
+    }
+
+    internal MistralDocumentExtractionClient(
+        MistralDocumentExtractionClientOptions options,
+        TokenCredential? credential,
+        string? apiKey,
+        HttpClient? httpClient,
+        Func<TimeSpan, CancellationToken, Task> delayAsync)
+    {
+        ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(delayAsync);
-        ArgumentException.ThrowIfNullOrWhiteSpace(defaultModel);
-        if (!endpoint.IsAbsoluteUri || endpoint.Scheme is not ("http" or "https"))
+        ValidateEndpoint(options.OcrEndpoint, nameof(options.OcrEndpoint));
+        ArgumentException.ThrowIfNullOrWhiteSpace(options.DefaultModel, nameof(options.DefaultModel));
+        ArgumentException.ThrowIfNullOrWhiteSpace(options.TokenScope, nameof(options.TokenScope));
+        if ((credential is null) == (apiKey is null))
         {
-            throw new ArgumentException("The endpoint must be an absolute HTTP or HTTPS URI.", nameof(endpoint));
+            throw new ArgumentException("Supply exactly one credential or API key.");
         }
-        _endpoint = endpoint;
+
+        _endpoint = options.OcrEndpoint;
         _credential = credential;
-        _defaultModel = defaultModel;
-        _includeImages = includeImages;
+        _apiKey = apiKey;
+        _tokenScope = options.TokenScope;
+        _defaultModel = options.DefaultModel;
+        _includeImages = options.IncludeImages;
         _http = httpClient ?? new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
         _ownsHttpClient = httpClient is null;
         _delayAsync = delayAsync;
@@ -84,6 +119,14 @@ public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
         CancellationToken cancellationToken = default)
     {
         ProviderAdapterHelpers.ValidateInput(document, identifier, mediaType);
+        if (!MediaTypeHeaderValue.TryParse(mediaType, out MediaTypeHeaderValue? parsedMediaType)
+            || parsedMediaType.MediaType is not string inputType
+            || inputType.Contains('*'))
+        {
+            throw new ArgumentException("Supply a concrete media type for the input document.", nameof(mediaType));
+        }
+
+        bool isImage = inputType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
         DocumentExtractionOptions normalizedOptions = ProviderAdapterHelpers.NormalizeOptions(options);
         ProviderAdapterHelpers.RejectUnsupportedProperties(
             normalizedOptions,
@@ -108,8 +151,8 @@ public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
             ["model"] = model,
             ["document"] = new JsonObject
             {
-                ["type"] = "document_url",
-                ["document_url"] = dataUrl,
+                ["type"] = isImage ? "image_url" : "document_url",
+                [isImage ? "image_url" : "document_url"] = dataUrl,
             },
             ["include_image_base64"] = includeImages,
         };
@@ -267,19 +310,18 @@ public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
 
     private async Task<byte[]> SendAsync(JsonObject body, CancellationToken cancellationToken)
     {
-        AccessToken token = await _credential
-            .GetTokenAsync(s_scope, cancellationToken)
-            .ConfigureAwait(false);
-        string url = $"{_endpoint.ToString().TrimEnd('/')}/providers/mistral/azure/ocr";
         string json = body.ToJsonString();
 
         for (int attempt = 1; attempt <= 5; attempt++)
         {
-            using var request = new HttpRequestMessage(HttpMethod.Post, url)
+            string bearerToken = _apiKey ?? (await _credential!
+                .GetTokenAsync(new TokenRequestContext([_tokenScope]), cancellationToken)
+                .ConfigureAwait(false)).Token;
+            using var request = new HttpRequestMessage(HttpMethod.Post, _endpoint)
             {
                 Content = new StringContent(json, Encoding.UTF8, "application/json"),
             };
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
 
             using HttpResponseMessage response = await _http
                 .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
@@ -307,6 +349,44 @@ public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
         }
 
         throw new HttpRequestException("Mistral OCR retries were exhausted.");
+    }
+
+    private static string ValidateApiKey(string apiKey)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(apiKey);
+        if (apiKey.Any(character => char.IsWhiteSpace(character) || char.IsControl(character)))
+        {
+            throw new ArgumentException("The API key must be a single bearer token without whitespace or control characters.", nameof(apiKey));
+        }
+
+        return apiKey;
+    }
+
+    private static void ValidateEndpoint(Uri endpoint, string parameterName)
+    {
+        ArgumentNullException.ThrowIfNull(endpoint, parameterName);
+        if (!endpoint.IsAbsoluteUri || endpoint.Scheme is not ("http" or "https")
+            || endpoint.UserInfo.Length != 0 || endpoint.Fragment.Length != 0)
+        {
+            throw new ArgumentException("Supply an absolute HTTP or HTTPS URI without embedded credentials or a fragment.", parameterName);
+        }
+    }
+
+    private static MistralDocumentExtractionClientOptions CreateFoundryOptions(Uri endpoint, string defaultModel, bool includeImages)
+    {
+        ValidateEndpoint(endpoint, nameof(endpoint));
+        ArgumentException.ThrowIfNullOrWhiteSpace(defaultModel);
+        if (endpoint.Query.Length != 0)
+        {
+            throw new ArgumentException("A Foundry base endpoint cannot contain a query. Use OcrEndpoint for a complete operation URI.", nameof(endpoint));
+        }
+
+        return new()
+        {
+            OcrEndpoint = new Uri($"{endpoint.AbsoluteUri.TrimEnd('/')}/providers/mistral/azure/ocr"),
+            DefaultModel = defaultModel,
+            IncludeImages = includeImages,
+        };
     }
 
     private static (double? Width, double? Height) GetDimensions(JsonElement page)

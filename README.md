@@ -29,24 +29,18 @@ The following NuGet packages have been published:
 | [CommunityToolkit.VectorData.SqliteVec] | ![SqliteVec Version][v-sqlitevec] | ![SqliteVec Downloads][d-sqlitevec] |
 | [CommunityToolkit.VectorData.Weaviate] | ![Weaviate Version][v-weaviate] | ![Weaviate Downloads][d-weaviate] |
 
-## Preview document extraction providers
+## Document extraction providers
 
-The [document extraction providers](DocumentExtraction/README.md) add native
-PdfPig, Azure Content Understanding, Azure Document Intelligence, Mistral OCR,
-and Microsoft.Extensions.AI Vision packages. These are unreleased previews, not
-additions to the published NuGet package table. A pinned public-source bootstrap
-supplies the experimental core prerequisite until feed packages publish. Their
-acceptance tests are offline and require no cloud or model access.
-
-**Preview breaking change:** All five providers now derive from the abstract
-`Microsoft.Extensions.DocumentExtraction.DocumentExtractionClient` rather than
-implementing `IDocumentExtractionClient`. Update interface-typed variables,
-parameters, and service registrations to `DocumentExtractionClient`; custom
-clients must derive from it and override `ExtractAsync`. There is no interface
-compatibility shim. Extraction behavior and borrowed-client ownership are unchanged.
-The pinned public-source bootstrap includes this abstract root and the locked
-Documents prerequisite. These source-built preview dependencies are not public
-NuGet releases or a claim of upstream API approval.
+The [document extraction providers](DocumentExtraction/README.md) extract text,
+tables, images and source locations into a common `ExtractionDocument` graph.
+Choose lightweight PdfPig for existing PDF text, or its optional
+PdfPig.OnnxLayoutAnalysis companion for local, model-detected layout. Azure
+Content Understanding and Document Intelligence provide hosted document analysis.
+One Mistral package and `MistralDocumentExtractionClient` support native OCR
+through direct Mistral or Microsoft Foundry endpoints, with configurable operation
+URI, model and API-key or Entra authentication. Vision uses an application-supplied
+vision-capable `IChatClient`. See the provider guide for installation, hosting
+requirements, model assets and complete examples.
 
 ## Running Live Tests
 

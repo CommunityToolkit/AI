@@ -5,7 +5,7 @@
     <RootNamespace>$(AssemblyName)</RootNamespace>
     <TargetFrameworks>net10.0;net8.0</TargetFrameworks>
     <Title>Mistral document extraction provider</Title>
-    <Description>Mistral OCR on Azure AI Foundry for Microsoft.Extensions.DocumentExtraction.</Description>
+    <Description>Native Mistral OCR document extraction through direct Mistral or Microsoft Foundry endpoints.</Description>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Azure.Core" />

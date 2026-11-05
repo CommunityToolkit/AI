@@ -13,7 +13,7 @@ using Microsoft.Extensions.Documents;
 
 namespace CommunityToolkit.DocumentExtraction.Mistral.UnitTests;
 
-public sealed class MistralDocumentExtractionClientTests
+public sealed partial class MistralDocumentExtractionClientTests
 {
     // Wire fixture includes Unicode escapes and provider-only usage/model fields
     // to verify the detached native JSON as well as mapped semantic content.
@@ -253,7 +253,7 @@ public sealed class MistralDocumentExtractionClientTests
         Assert.Equal([8, 2], document.SourcePages.Select(p => p.PageNumber));
         Assert.Equal(["eighth", "second"], document.EnumerateContent().Select(Text));
         Assert.Equal(new ExtractionDocumentPageDimensions(720, 900), document.SourcePages[0].Dimensions);
-        Assert.Equal("invoice.pdf:foundry-mistral-ocr:page:8", document.SourcePages[0].Identifier);
+        Assert.Equal("invoice.pdf:mistral-ocr:page:8", document.SourcePages[0].Identifier);
         Assert.Null(document.SourcePages[1].Dimensions);
         Assert.Null(document.SourcePages[1].CoordinateUnit);
         Assert.Null(document.SourcePages[1].CoordinateOrigin);
@@ -310,7 +310,7 @@ public sealed class MistralDocumentExtractionClientTests
         Assert.Equal("genuine-wire-model", root.GetProperty("model").GetString());
         Assert.Equal(1, root.GetProperty("usage_info").GetProperty("pages_processed").GetInt32());
         Assert.Equal(4, Assert.Single(document.Sections).Elements.Count);
-        await session.AssertCleanAndBorrowedAsync(5, 5);
+        await session.AssertCleanAndBorrowedAsync(5, 5, 5);
     }
 
     [Fact]
@@ -329,7 +329,7 @@ public sealed class MistralDocumentExtractionClientTests
         Assert.All(session.Handler.Requests, AssertRequest);
         AssertFreshRequests(session.Handler.Requests);
         Assert.Empty(session.Handler.Replies);
-        await session.AssertCleanAndBorrowedAsync(5, 5);
+        await session.AssertCleanAndBorrowedAsync(5, 5, 5);
     }
 
     [Theory]
