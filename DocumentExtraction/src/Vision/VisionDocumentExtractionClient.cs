@@ -50,12 +50,12 @@ public sealed class VisionDocumentExtractionClient : DocumentExtractionClient
     private readonly bool _useStructuredOutput;
 
     /// <summary>Creates an adapter without taking ownership of the chat client.</summary>
-    public VisionDocumentExtractionClient(IChatClient chatClient, string? prompt = null, bool useStructuredOutput = false)
+    public VisionDocumentExtractionClient(IChatClient chatClient, VisionDocumentExtractionClientOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(chatClient);
         _chatClient = chatClient;
-        _prompt = prompt;
-        _useStructuredOutput = useStructuredOutput;
+        _prompt = options?.Prompt;
+        _useStructuredOutput = options?.UseStructuredOutput ?? false;
     }
 
     /// <inheritdoc/>

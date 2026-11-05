@@ -26,23 +26,23 @@ public sealed class AzureDocumentIntelligenceDocumentExtractionClient : Document
     public AzureDocumentIntelligenceDocumentExtractionClient(
         Uri endpoint,
         TokenCredential credential,
-        string defaultModel = "prebuilt-layout",
-        bool includeImages = false,
+        AzureDocumentIntelligenceDocumentExtractionClientOptions? options = null,
         DocumentIntelligenceClientOptions? clientOptions = null)
         : this(new DocumentIntelligenceClient(
-            endpoint, credential, clientOptions ?? new DocumentIntelligenceClientOptions()), defaultModel, includeImages)
+            endpoint, credential, clientOptions ?? new DocumentIntelligenceClientOptions()), options)
     {
     }
 
     /// <summary>Creates an adapter around a borrowed SDK client.</summary>
     public AzureDocumentIntelligenceDocumentExtractionClient(
-        DocumentIntelligenceClient client, string defaultModel = "prebuilt-layout", bool includeImages = false)
+        DocumentIntelligenceClient client, AzureDocumentIntelligenceDocumentExtractionClientOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(client);
+        string defaultModel = options is null ? "prebuilt-layout" : options.DefaultModel;
         ArgumentException.ThrowIfNullOrWhiteSpace(defaultModel);
         _client = client;
         _defaultModel = defaultModel;
-        _includeImages = includeImages;
+        _includeImages = options?.IncludeImages ?? false;
     }
 
     /// <inheritdoc/>

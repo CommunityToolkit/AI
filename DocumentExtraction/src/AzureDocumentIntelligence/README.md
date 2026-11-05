@@ -111,14 +111,19 @@ fail rather than being silently ignored.
 ### Retrieve figures and inspect the native result
 
 Alternative extraction, continuing with `endpoint` and `timeout` from above.
-`includeImages` enables additional figure downloads; it is a constructor setting,
+`IncludeImages` enables additional figure downloads; it is a client-options setting,
 not an additional-properties option.
 
 ```csharp
 using Azure.AI.DocumentIntelligence;
 
 using var imageExtractor = new AzureDocumentIntelligenceDocumentExtractionClient(
-    new Uri(endpoint), new DefaultAzureCredential(), includeImages: true);
+    new Uri(endpoint), new DefaultAzureCredential(),
+    new AzureDocumentIntelligenceDocumentExtractionClientOptions
+    {
+        DefaultModel = "prebuilt-layout",
+        IncludeImages = true,
+    });
 using var imageInput = File.OpenRead("invoice.pdf");
 var illustratedDocument = await imageExtractor.ExtractAsync(
     imageInput, "invoice.pdf", "application/pdf", cancellationToken: timeout.Token);
@@ -152,7 +157,12 @@ distinct from recognized image `Text`.
 
 The constructor also accepts an existing
 `Azure.AI.DocumentIntelligence.DocumentIntelligenceClient`, with optional
-`defaultModel` and `includeImages` parameters. Retrieve it through unkeyed
+`AzureDocumentIntelligenceDocumentExtractionClientOptions`. Options are copied at
+construction: `DefaultModel` defaults to `prebuilt-layout`, and `IncludeImages`
+to `false`; null or omitted options select those defaults. Native SDK transport
+and retry settings belong in the separate `DocumentIntelligenceClientOptions`
+`clientOptions` parameter or the configured borrowed SDK client.
+Retrieve the SDK client through unkeyed
 `GetService(typeof(DocumentIntelligenceClient))` when you need SDK operations.
 Inspect `AnalyzeResult` for service-specific fields beyond the shared layout model.
 

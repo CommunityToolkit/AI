@@ -34,7 +34,9 @@ The following NuGet packages have been published:
 The [document extraction providers](DocumentExtraction/README.md) extract text,
 tables, images and source locations into a common `ExtractionDocument` graph.
 Choose lightweight PdfPig for existing PDF text, or its optional
-PdfPig.OnnxLayoutAnalysis companion for local, model-detected layout. Azure
+PdfPig.OnnxLayoutAnalysis companion for local, model-detected layout with an
+explicitly selected application CPU or CUDA native runtime. PDF parsing,
+rendering and preprocessing remain CPU work. Azure
 Content Understanding and Document Intelligence provide hosted document analysis.
 One Mistral package and `MistralDocumentExtractionClient` support native OCR
 through direct Mistral or Microsoft Foundry endpoints, with configurable operation

@@ -15,13 +15,15 @@ PDFium, ONNX Runtime or model weights.
 
 ```shell
 dotnet add package CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis --prerelease
+dotnet add package Microsoft.ML.OnnxRuntime --version 1.23.2
 ```
 
 Targets **.NET 8 and .NET 10**. Runtime dependencies are brought in transitively:
 
 - `PdfPig` **0.1.15**: native PDF words and document layout analysis.
 - `Docnet.Core` **2.6.0**: PDFium page rasterization.
-- `Microsoft.ML.OnnxRuntime` **1.23.2**: CPU inference and managed tensor APIs.
+- `Microsoft.ML.OnnxRuntime.Managed` **1.23.2**: managed inference and tensor APIs,
+  **without an ONNX native runtime**.
 - `Microsoft.Extensions.DocumentExtraction.Abstractions`,
   `Microsoft.Extensions.Documents.Abstractions` and
   `Microsoft.Extensions.AI.Abstractions`: shared extraction and content types.
@@ -33,6 +35,32 @@ Windows x64 and Linux x64 are the acceptance targets. Do not assume that a
 managed `net8.0` or `net10.0` target guarantees native support for every RID,
 Alpine/musl, ARM, single-file publishing or Native AOT. Missing native libraries
 are errors, not a request to fall back to text-only extraction.
+
+### Select the application runtime
+
+The application, not this library, selects one compatible native distribution.
+For CPU inference, use the `Microsoft.ML.OnnxRuntime` **1.23.2** installation
+above. The model-path constructor creates a CPU-default session; it does not
+enable CUDA merely because a GPU is present.
+
+For CUDA, use **`Microsoft.ML.OnnxRuntime.Gpu` 1.23.2 instead of the CPU package**:
+
+```shell
+dotnet add package Microsoft.ML.OnnxRuntime.Gpu --version 1.23.2
+```
+
+Select one distribution in the application and its executable dependencies, not
+both CPU and GPU native packages. Install a supported NVIDIA driver, CUDA 12.x
+and cuDNN 9.x shared libraries, and use an OS/process architecture supported by
+the GPU package and PDFium. Check the
+[CUDA execution-provider compatibility requirements](https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#requirements)
+for the exact runtime release. Package restore is not a GPU capability check.
+CUDA session/provider setup errors propagate; the Toolkit does not catch them
+and retry a CPU session. ONNX Runtime can itself assign unsupported operators
+to CPU; selecting CUDA does not promise every operator runs on the GPU.
+
+PDF parsing, PDFium rendering, pixel preprocessing and document mapping remain
+CPU operations. Only model execution can use the configured execution provider.
 
 For `MEDE0001` or `EXTEXP0019` compiler diagnostics, see
 [experimental API opt-in](https://github.com/CommunityToolkit/AI/blob/main/DocumentExtraction/README.md#experimental-api-diagnostics).
@@ -153,8 +181,8 @@ Increasing DPI does not increase the model's fixed 640 x 640 input size.
 ### Share a caller-owned inference session
 
 Alternative lifetime setup for applications that already configure ONNX Runtime.
-The supplied session must have the same tensor/label contract. No extra NuGet
-package is needed.
+The supplied session must have the same tensor/label contract. This CPU example
+uses the application-selected `Microsoft.ML.OnnxRuntime` package above.
 
 ```csharp
 using Microsoft.ML.OnnxRuntime;
@@ -167,6 +195,24 @@ using var borrowedInput = File.OpenRead("document.pdf");
 var borrowedResult = await borrowedSessionExtractor.ExtractAsync(
     borrowedInput, "document.pdf", "application/pdf");
 Console.WriteLine($"Pages: {borrowedResult.SourcePages.Count}");
+```
+
+### Configure a caller-owned CUDA session
+
+Alternative to the CPU session example. Use the GPU package and native
+prerequisites above. `modelPath` is the same explicitly acquired Heron model;
+no detector contract or preprocessing changes are needed.
+
+```csharp
+using Microsoft.ML.OnnxRuntime;
+
+using var cudaOptions = SessionOptions.MakeSessionOptionWithCudaProvider(0);
+using var cudaSession = new InferenceSession(modelPath, cudaOptions);
+using var cudaExtractor = new PdfPigOnnxDocumentExtractionClient(cudaSession);
+using var cudaInput = File.OpenRead("document.pdf");
+var cudaDocument = await cudaExtractor.ExtractAsync(
+    cudaInput, "document.pdf", "application/pdf");
+Console.WriteLine($"Pages: {cudaDocument.SourcePages.Count}");
 ```
 
 The extractor does not dispose a supplied session. Keep it alive until all
@@ -216,7 +262,9 @@ extractor instead.
   Missing, invalid or incompatible models never trigger a download or a
   text-only fallback.
 - **Native-library load errors:** check process architecture and both native
-  runtime asset sets, including Linux shared-library prerequisites.
+  runtime asset sets, including Linux shared-library prerequisites. The Managed
+  dependency alone cannot run inference; add the CPU or GPU package in the
+  application. CUDA also requires matching driver/CUDA/cuDNN installation.
 - **Memory limits:** lower `RenderDpi` or process smaller PDFs; the model and
   input buffer also consume memory. Native parsing/rendering failures propagate.
 - **Cancellation:** tokens are checked during input copy, between pages,

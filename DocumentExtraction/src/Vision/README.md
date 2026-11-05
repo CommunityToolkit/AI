@@ -88,7 +88,7 @@ public static class ImageExtraction
 
 Default free-form mode asks for GitHub-flavored Markdown but returns the model's
 literal response in a text element. It does **not** parse Markdown into shared
-tables or headings. A custom `prompt` constructor argument replaces the default
+tables or headings. `VisionDocumentExtractionClientOptions.Prompt` replaces the default
 instruction; output remains model-generated and must not be trusted as exact OCR.
 
 ### Request structured tables from a PDF
@@ -114,7 +114,8 @@ public static class StructuredExtraction
         IChatClient chatClient, string pdfPath, string modelId,
         CancellationToken cancellationToken)
     {
-        using var extractor = new VisionDocumentExtractionClient(chatClient, useStructuredOutput: true);
+        using var extractor = new VisionDocumentExtractionClient(
+            chatClient, new VisionDocumentExtractionClientOptions { UseStructuredOutput = true });
         using var input = File.OpenRead(pdfPath);
         var options = new DocumentExtractionOptions { ExtractorName = modelId };
         var document = await extractor.ExtractAsync(
@@ -134,6 +135,10 @@ PDF pages are rendered locally as PNG and sent individually, with one chat call
 per page, in original page order. `ExtractorName` becomes `ChatOptions.ModelId`;
 it does not overwrite the genuine `ChatResponse.ModelId`. Additional properties
 are rejected.
+Client options are copied at construction. Null or omitted options select
+`Prompt = null` and `UseStructuredOutput = false`; a null prompt selects the
+built-in instruction for the chosen output mode. The supplied chat client
+remains borrowed, and both modes return `ExtractionDocument`.
 
 Structured mode requires a JSON object with a `pages` array; tables can contain
 addressed cells or table-local Markdown. Invalid output raises an error.

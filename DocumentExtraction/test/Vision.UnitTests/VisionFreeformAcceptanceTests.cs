@@ -18,7 +18,7 @@ public sealed class VisionFreeformAcceptanceTests
         var response = RecordingChatClient.Response(literal, explicitRaw ? sentinel : null);
         var chat = new RecordingChatClient(response);
         using var input = new BorrowedInput([137, 80, 78, 71, 1, 5, 9]);
-        using var client = new VisionDocumentExtractionClient(chat, prompt: "Literal transcription, please.");
+        using var client = new VisionDocumentExtractionClient(chat, new() { Prompt = "Literal transcription, please." });
         var options = new DocumentExtractionOptions { ExtractorName = "requested-route" };
         var result = await client.ExtractAsync(input, "invoice.scan.png", "IMAGE/PNG", options);
 

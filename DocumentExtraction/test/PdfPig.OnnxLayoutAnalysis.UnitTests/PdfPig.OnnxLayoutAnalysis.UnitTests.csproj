@@ -5,6 +5,7 @@
     <AssemblyName>CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis.UnitTests</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" />
     <ProjectReference Include="../../src/PdfPig.OnnxLayoutAnalysis/PdfPig.OnnxLayoutAnalysis.csproj" />
   </ItemGroup>
 </Project>

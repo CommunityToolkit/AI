@@ -66,7 +66,8 @@ string analyzer = Environment.GetEnvironmentVariable("AZURE_CONTENT_UNDERSTANDIN
 
 using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(5));
 using var extractor = new AzureContentUnderstandingDocumentExtractionClient(
-    new Uri(endpoint), new DefaultAzureCredential(), analyzerId: analyzer);
+    new Uri(endpoint), new DefaultAzureCredential(),
+    new AzureContentUnderstandingDocumentExtractionClientOptions { AnalyzerId = analyzer });
 using var input = File.OpenRead("invoice.pdf");
 ExtractionDocument document = await extractor.ExtractAsync(
     input, "invoice.pdf", "application/pdf", cancellationToken: timeout.Token);
@@ -84,6 +85,10 @@ foreach (var text in document.EnumerateContent().OfType<ExtractionDocumentTextEl
 Use a service-supported document/media-type combination. The constructor defaults
 to the `prebuilt-document` base analyzer; select a document analyzer with the
 capabilities you need rather than relying on that default.
+Toolkit options are copied at construction; null or omitted options select the
+defaults. For native transport/retry settings, pass the separate Azure SDK
+`ContentUnderstandingClientOptions` as `clientOptions`, or supply a configured
+borrowed SDK client alongside the Toolkit options.
 The traversal above lists text outside table cells; see
 [reading table cell content](https://github.com/CommunityToolkit/AI/blob/main/DocumentExtraction/README.md#read-table-cell-content)
 to include text and mixed content inside cells.

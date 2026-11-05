@@ -10,7 +10,7 @@
   <ItemGroup>
     <PackageReference Include="PdfPig" />
     <PackageReference Include="Docnet.Core" />
-    <PackageReference Include="Microsoft.ML.OnnxRuntime" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime.Managed" />
     <InternalsVisibleTo Include="$(AssemblyName).UnitTests" />
   </ItemGroup>
 </Project>

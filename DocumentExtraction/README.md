@@ -29,6 +29,10 @@ privacy and cost.
 `PdfPig.OnnxLayoutAnalysis` is optional: the basic PdfPig package does not bring
 in PDFium, ONNX Runtime or model weights. The companion detects layout regions,
 not table cells or scanned text; see its setup and result semantics before use.
+Its managed ONNX dependency does not choose a native runtime. Applications add
+`Microsoft.ML.OnnxRuntime` 1.23.2 for CPU or
+`Microsoft.ML.OnnxRuntime.Gpu` 1.23.2 for CUDA, then configure a caller-owned
+session for GPU execution. PDF rendering and preprocessing still run on CPU.
 
 ## Install
 
@@ -55,6 +59,13 @@ for an endpoint supporting Entra ID, a `TokenCredential` and the resource's toke
 scope. Direct Mistral uses `https://api.mistral.ai/v1/ocr`; Foundry operation paths
 depend on the deployment. No Chat/Responses adapter or second Mistral package is
 required.
+
+Azure Content Understanding, Document Intelligence and Vision accept their own
+typed `...DocumentExtractionClientOptions` for construction-time defaults.
+Settings are captured when the client is created; null options select defaults.
+Azure SDK `ClientOptions` remain separate for native transport/retry settings.
+Per-request `DocumentExtractionOptions` still supplies the supported selector
+and additional-property overrides described in each provider README.
 
 ## Extract a document
 

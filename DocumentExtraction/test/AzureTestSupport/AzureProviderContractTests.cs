@@ -10,12 +10,14 @@ using Microsoft.Extensions.Documents;
 using SdkClient = Azure.AI.ContentUnderstanding.ContentUnderstandingClient;
 using SdkOptions = Azure.AI.ContentUnderstanding.ContentUnderstandingClientOptions;
 using Adapter = CommunityToolkit.DocumentExtraction.AzureContentUnderstanding.AzureContentUnderstandingDocumentExtractionClient;
+using AdapterOptions = CommunityToolkit.DocumentExtraction.AzureContentUnderstanding.AzureContentUnderstandingDocumentExtractionClientOptions;
 using NativeResult = Azure.AI.ContentUnderstanding.AnalysisResult;
 using NativeContent = Azure.AI.ContentUnderstanding.DocumentContent;
 #else
 using SdkClient = Azure.AI.DocumentIntelligence.DocumentIntelligenceClient;
 using SdkOptions = Azure.AI.DocumentIntelligence.DocumentIntelligenceClientOptions;
 using Adapter = CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence.AzureDocumentIntelligenceDocumentExtractionClient;
+using AdapterOptions = CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence.AzureDocumentIntelligenceDocumentExtractionClientOptions;
 using NativeResult = Azure.AI.DocumentIntelligence.AnalyzeResult;
 #endif
 
@@ -35,13 +37,15 @@ public sealed class AzureDocumentIntelligenceDocumentExtractionClientTests
         var endpoint = new Uri("https://offline.test");
         credential ??= new FixedCredential();
 #if CONTENT_UNDERSTANDING
+        var adapterOptions = new AdapterOptions { AnalyzerId = selector ?? Adapter.DefaultAnalyzerId };
         return borrowed
-            ? new Adapter(new SdkClient(endpoint, credential, options), selector ?? Adapter.DefaultAnalyzerId)
-            : new Adapter(endpoint, credential, selector ?? Adapter.DefaultAnalyzerId, options);
+            ? new Adapter(new SdkClient(endpoint, credential, options), adapterOptions)
+            : new Adapter(endpoint, credential, adapterOptions, options);
 #else
+        var adapterOptions = new AdapterOptions { DefaultModel = selector ?? "prebuilt-layout", IncludeImages = images };
         return borrowed
-            ? new Adapter(new SdkClient(endpoint, credential, options), selector ?? "prebuilt-layout", images)
-            : new Adapter(endpoint, credential, selector ?? "prebuilt-layout", images, options);
+            ? new Adapter(new SdkClient(endpoint, credential, options), adapterOptions)
+            : new Adapter(endpoint, credential, adapterOptions, options);
 #endif
     }
 
@@ -51,6 +55,114 @@ public sealed class AzureDocumentIntelligenceDocumentExtractionClientTests
     private static Task<ExtractionDocument> Extract(Adapter client, Stream input, DocumentExtractionOptions? options = null,
         CancellationToken token = default)
         => client.ExtractAsync(input, "invoice.pdf", "application/pdf", options, token);
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task Constructor_NullOrDefaultOptions_PreservesDefaultsAndBorrowedSdk(bool borrowed, bool nullOptions)
+    {
+        var transport = Replay(AzureWireFixture.Bytes(AzureWireFixture.Create()));
+        var sdkOptions = new SdkOptions { Transport = transport };
+        sdkOptions.Retry.MaxRetries = 0;
+        var endpoint = new Uri("https://offline.test");
+        var credential = new FixedCredential();
+        var settings = nullOptions ? null : new AdapterOptions();
+#if CONTENT_UNDERSTANDING
+        Assert.Equal("prebuilt-document", new AdapterOptions().AnalyzerId);
+#else
+        Assert.Equal("prebuilt-layout", new AdapterOptions().DefaultModel);
+        Assert.False(new AdapterOptions().IncludeImages);
+#endif
+        var sdk = new SdkClient(endpoint, credential, sdkOptions);
+        using var client = borrowed ? new Adapter(sdk, settings) : new Adapter(endpoint, credential, settings, sdkOptions);
+        using var input = new MemoryStream([1, 2, 3]);
+        var result = await Extract(client, input);
+        Assert.Contains(AzureWireFixture.IsContentUnderstanding ? "prebuilt-document" : "prebuilt-layout",
+            transport.Requests[0].Uri.AbsolutePath);
+        Assert.DoesNotContain("output=figures", transport.Requests[0].Uri.Query);
+        Assert.Null(Assert.Single(result.EnumerateContent().OfType<ExtractionDocumentImageElement>()).Content);
+        if (borrowed)
+        {
+            Assert.Same(sdk, client.GetService(typeof(SdkClient)));
+        }
+
+        client.Dispose();
+        Assert.IsType<NativeResult>(result.RawRepresentation);
+        input.Position = 0;
+        Assert.Equal(1, input.ReadByte());
+        Assert.Equal(2, transport.Requests.Count);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Constructor_OptionsMutation_DoesNotChangeCapturedSelectorOrFigureSetting(bool borrowed)
+    {
+        var transport = new OfflineTransport(
+            TrackedResponse.Accepted(), new TrackedResponse(AzureWireFixture.Bytes(AzureWireFixture.Create())),
+            TrackedResponse.Accepted(), new TrackedResponse(AzureWireFixture.Bytes(AzureWireFixture.Create())));
+        var sdkOptions = new SdkOptions { Transport = transport };
+        sdkOptions.Retry.MaxRetries = 0;
+        var endpoint = new Uri("https://offline.test");
+        var credential = new FixedCredential();
+#if CONTENT_UNDERSTANDING
+        var settings = new AdapterOptions { AnalyzerId = "captured-selector" };
+#else
+        var settings = new AdapterOptions { DefaultModel = "captured-selector", IncludeImages = false };
+#endif
+        using var client = borrowed
+            ? new Adapter(new SdkClient(endpoint, credential, sdkOptions), settings)
+            : new Adapter(endpoint, credential, settings, sdkOptions);
+#if CONTENT_UNDERSTANDING
+        settings.AnalyzerId = "mutated-selector";
+#else
+        settings.DefaultModel = "mutated-selector";
+        settings.IncludeImages = true;
+#endif
+        using var input = new MemoryStream([1, 2, 3]);
+        var first = await Extract(client, input);
+        input.Position = 0;
+        var requestOptions = new DocumentExtractionOptions { ExtractorName = "request-selector" };
+        var second = await Extract(client, input, requestOptions);
+        Assert.Contains("captured-selector", transport.Requests[0].Uri.AbsolutePath);
+        Assert.Contains("request-selector", transport.Requests[2].Uri.AbsolutePath);
+        Assert.DoesNotContain("mutated-selector", transport.Requests[0].Uri.AbsolutePath);
+        Assert.All(transport.Requests, request => Assert.DoesNotContain("output=figures", request.Uri.Query));
+        Assert.Null(Assert.Single(first.EnumerateContent().OfType<ExtractionDocumentImageElement>()).Content);
+        Assert.Null(Assert.Single(second.EnumerateContent().OfType<ExtractionDocumentImageElement>()).Content);
+        Assert.Equal("request-selector", requestOptions.ExtractorName);
+        Assert.Equal(4, transport.Requests.Count);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" \t")]
+    public void Constructor_InvalidOptionSelector_FailsForBothConstructionPaths(string? selector)
+    {
+        var sdk = new SdkClient(new Uri("https://offline.test"), new FixedCredential());
+#if CONTENT_UNDERSTANDING
+        var settings = new AdapterOptions { AnalyzerId = selector! };
+#else
+        var settings = new AdapterOptions { DefaultModel = selector! };
+#endif
+        Assert.ThrowsAny<ArgumentException>(() => new Adapter(sdk, settings));
+        Assert.ThrowsAny<ArgumentException>(() =>
+            new Adapter(new Uri("https://offline.test"), new FixedCredential(), settings));
+    }
+
+    [Fact]
+    public void Constructors_ExposeOnlyToolkitOptionsAndDistinctNativeOptions()
+    {
+        var constructors = typeof(Adapter).GetConstructors();
+        Assert.Equal(2, constructors.Length);
+        Assert.Contains(constructors, constructor => constructor.GetParameters().Select(parameter => parameter.ParameterType)
+            .SequenceEqual([typeof(SdkClient), typeof(AdapterOptions)]));
+        Assert.Contains(constructors, constructor => constructor.GetParameters().Select(parameter => parameter.ParameterType)
+            .SequenceEqual([typeof(Uri), typeof(TokenCredential), typeof(AdapterOptions), typeof(SdkOptions)]));
+    }
 
     [Theory]
     [InlineData(false, null)]

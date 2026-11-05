@@ -28,19 +28,20 @@ public sealed class AzureContentUnderstandingDocumentExtractionClient : Document
     public AzureContentUnderstandingDocumentExtractionClient(
         Uri endpoint,
         TokenCredential credential,
-        string analyzerId = DefaultAnalyzerId,
+        AzureContentUnderstandingDocumentExtractionClientOptions? options = null,
         ContentUnderstandingClientOptions? clientOptions = null)
         : this(new Azure.AI.ContentUnderstanding.ContentUnderstandingClient(
-            endpoint, credential, clientOptions ?? new ContentUnderstandingClientOptions()), analyzerId)
+            endpoint, credential, clientOptions ?? new ContentUnderstandingClientOptions()), options)
     {
     }
 
     /// <summary>Creates an adapter around a borrowed SDK client.</summary>
     public AzureContentUnderstandingDocumentExtractionClient(
         Azure.AI.ContentUnderstanding.ContentUnderstandingClient client,
-        string analyzerId = DefaultAnalyzerId)
+        AzureContentUnderstandingDocumentExtractionClientOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(client);
+        string analyzerId = options is null ? DefaultAnalyzerId : options.AnalyzerId;
         ArgumentException.ThrowIfNullOrWhiteSpace(analyzerId);
         _client = client;
         _analyzerId = analyzerId;
