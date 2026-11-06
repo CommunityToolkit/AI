@@ -145,6 +145,38 @@ remains borrowed, and both modes return `ExtractionDocument`.
 
 Structured mode requires a JSON object with a `pages` array; tables can contain
 addressed cells or table-local Markdown. Invalid output raises an error.
+The private structured-response contract now uses **cell anchors and spans as
+the only authority for table dimensions**. It no longer accepts `rowCount` or
+`columnCount`, including in otherwise consistent responses. This intentional
+pre-preview prompt/schema change does not change public types. Custom `Prompt`
+values still replace the built-in instruction verbatim; structured mode always
+enforces the current schema, so update custom instructions that request old fields.
+Unknown or duplicate object properties are rejected, not silently discarded.
+
+Cell `rowIndex` and `columnIndex` are zero-based, including headers. Positive
+`rowSpan`/`columnSpan` count occupied positions including the anchor and default to
+one. A merged cell occurs once at its top-left anchor; header roles, null text,
+empty text and literal text are retained. The grid extent is the maximum of
+anchor plus span in each direction, not a second model prediction. An explicitly
+observed blank cell must be emitted; absent positions remain unknown, not invented
+blank observations. Sparse coordinates cannot bypass the **65,536 combined grid
+positions per response** limit (including unobserved holes); oversized grids fail
+before rectangular allocation. Each table also permits at most 65,536 anchors.
+Negative indices, invalid spans, arithmetic overflow, duplicate anchors and
+overlaps are errors with zero-based page/table/cell context. No cell is dropped,
+clamped or moved to repair an invalid response.
+
+Use either `cells` or `markdown` for a table, not both with non-null Markdown.
+Strict chat adapters can require every schema property: represent a literal
+Markdown table with `"cells": null` and string `markdown`, or addressed cells
+with an array `cells` and `"markdown": null`. Null `cells` is equivalent to
+omitting it only when literal Markdown is supplied; null or omitted `cells`
+without string Markdown is invalid. Non-null cell arrays combined with non-null
+Markdown remain invalid, including empty arrays or empty Markdown.
+Markdown-only tables remain literal table-local text with a zero-by-zero cell
+grid; the provider does not reconstruct cells from it. Empty cell arrays produce
+an empty grid. A valid derived grid proves internal consistency, not OCR accuracy,
+correct header relationships or faithful table recognition.
 **There is no fallback to free-form or extra inference call to repair it.**
 Validate important extracted facts: schema compliance does not establish accuracy.
 The response's `pages` array is model-reported structure, not an independently

@@ -12,13 +12,12 @@ public sealed class VisionStructuredAcceptanceTests
         """
         {"pages":[
           {"index":2,"markdown":"# Invoice Ω\nOnly prose, not cell text.","language":"fr","confidence":0.875,
-           "tables":[{"rowCount":2,"columnCount":2,"markdown":"must not duplicate cells",
-             "cells":[{"rowIndex":0,"columnIndex":0,"text":"Produit","columnSpan":2,"role":"columnHeader"},
+           "tables":[{"cells":[{"rowIndex":0,"columnIndex":0,"text":"Produit","columnSpan":2,"role":"columnHeader"},
                       {"rowIndex":1,"columnIndex":0,"text":"Thé","rowSpan":1,"columnSpan":1},
                       {"rowIndex":1,"columnIndex":1,"text":null,"role":"stub"}]}],
            "figures":[{"caption":"Figure 1: Revenue €"}]},
           {"markdown":"Second unnumbered panel","language":null,"confidence":1,
-           "tables":[{"rowCount":0,"columnCount":0,"markdown":"| literal | table |\n|---|---|"}],
+           "tables":[{"markdown":"| literal | table |\n|---|---|"}],
            "figures":[{"caption":null}]}]}
         """;
 
@@ -201,8 +200,8 @@ public sealed class VisionStructuredAcceptanceTests
     [InlineData("numeric-language", """{"pages":[{"language":42}]}""")]
     [InlineData("null-tables", """{"pages":[{"tables":null}]}""")]
     [InlineData("null-figures", """{"pages":[{"figures":null}]}""")]
-    [InlineData("null-cells", """{"pages":[{"tables":[{"rowCount":1,"columnCount":1,"cells":null}]}]}""")]
-    [InlineData("duplicate-anchor", """{"pages":[{"tables":[{"rowCount":1,"columnCount":1,"cells":[{"rowIndex":0,"columnIndex":0,"text":"A"},{"rowIndex":0,"columnIndex":0,"text":"B"}]}]}]}""")]
+    [InlineData("null-cells", """{"pages":[{"tables":[{"cells":null}]}]}""")]
+    [InlineData("duplicate-anchor", """{"pages":[{"tables":[{"cells":[{"rowIndex":0,"columnIndex":0,"text":"A"},{"rowIndex":0,"columnIndex":0,"text":"B"}]}]}]}""")]
     public async Task ExtractAsync_StrictShapeAndConflictingAnchors_RejectsWithoutFreeformFallback(string scenario, string json)
         => Assert.IsType<InvalidDataException>(await AssertStrictRejectionAsync(json, scenario));
 
@@ -222,9 +221,7 @@ public sealed class VisionStructuredAcceptanceTests
         Assert.Equal(new byte[] { 7, 8, 9 }, content.Data.ToArray());
         Assert.Equal(mediaType, content.MediaType);
         Assert.NotNull(error);
-        Assert.True(error is JsonException or InvalidDataException or InvalidOperationException or ArgumentException or OverflowException
-            or KeyNotFoundException or FormatException,
-            $"Expected a parsing/shape rejection, got {error.GetType().Name}: {error.Message}");
+        Assert.IsType<InvalidDataException>(error);
         return error;
     }
 
@@ -417,8 +414,7 @@ public sealed class VisionStructuredAcceptanceTests
     {
         const string json =
             """
-            {"pages":[{"confidence":0,"language":"en","tables":[{"rowCount":2,"columnCount":3,
-              "cells":[{"rowIndex":0,"columnIndex":0,"text":"North","rowSpan":2,"role":"rowHeader"},
+            {"pages":[{"confidence":0,"language":"en","tables":[{"cells":[{"rowIndex":0,"columnIndex":0,"text":"North","rowSpan":2,"role":"rowHeader"},
                        {"rowIndex":0,"columnIndex":1,"text":"Quarter","columnSpan":2,"role":"columnHeader"},
                        {"rowIndex":1,"columnIndex":1,"text":"Q1"},
                        {"rowIndex":1,"columnIndex":2,"text":"€125.50"}]}]},

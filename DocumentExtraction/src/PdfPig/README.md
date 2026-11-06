@@ -5,10 +5,9 @@ to a service**. Results are returned as a provider-neutral `ExtractionDocument`
 graph with text blocks, optional roles and source references.
 Use it for PDFs that already contain text; scanned images require an OCR provider.
 
-For local model-detected headings, tables and pictures, use the optional
-[`CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis`](https://github.com/CommunityToolkit/AI/blob/main/DocumentExtraction/src/PdfPig.OnnxLayoutAnalysis/README.md)
-package. It renders actual pages and requires an explicitly acquired ONNX model;
-this basic package remains independent of ONNX Runtime and native PDF rendering.
+Local model-driven layout, rendering and OCR/table inference are planned as a
+separate advanced companion, not part of this package. This basic provider has
+no ONNX Runtime, model weights or native PDF-rendering dependency.
 
 ## Install
 

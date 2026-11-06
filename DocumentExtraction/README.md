@@ -14,7 +14,6 @@ All packages target **.NET 8 and .NET 10**. Package IDs start with
 | Package | Client type | Use when you need | Processing and input |
 |---|---|---|---|
 | [PdfPig](src/PdfPig/README.md) | `PdfPigDocumentExtractionClient` | Existing PDF text and block geometry without a service | Local; searchable PDFs, no OCR |
-| [PdfPig.OnnxLayoutAnalysis](src/PdfPig.OnnxLayoutAnalysis/README.md) | `PdfPigOnnxDocumentExtractionClient` | Native PDF text with model-detected headings, tables and pictures | Local; actual page rasterization and an explicitly acquired Heron ONNX model, no OCR |
 | [AzureContentUnderstanding](src/AzureContentUnderstanding/README.md) | `ContentUnderstandingExtractionClient` | Document text, tables and layout from a Content Understanding analyzer | Azure; analyzer-supported document formats |
 | [AzureDocumentIntelligence](src/AzureDocumentIntelligence/README.md) | `DocumentIntelligenceExtractionClient` | OCR, layout, tables and optional figure downloads | Azure; model-supported document formats |
 | [Mistral](src/Mistral/README.md) | `MistralDocumentExtractionClient` | Native Mistral OCR page text, tables and images, directly or through Microsoft Foundry | Hosted; endpoint-supported documents and images |
@@ -28,17 +27,15 @@ support. PdfPig reads existing PDF text locally and does not recognize
 scanned text. Choose based on document format, required fidelity, latency,
 privacy and cost.
 
-`PdfPig.OnnxLayoutAnalysis` is optional: the basic PdfPig package does not bring
-in Skia rendering, ONNX Runtime or model weights. The companion detects layout regions,
-not table cells or scanned text; see its setup and result semantics before use.
-Its managed ONNX dependency does not choose a native runtime. Applications add
-`Microsoft.ML.OnnxRuntime` 1.23.2 for CPU or
-`Microsoft.ML.OnnxRuntime.Gpu` 1.23.2 for CUDA, then configure a caller-owned
-session for GPU execution. PDF rendering and preprocessing still run on CPU.
-The companion renders PDFs with `PdfPig.Rendering.Skia`, including
-native SkiaSharp/HarfBuzz assets and managed PDF image filters. This is not a
-native-free rendering stack. See the provider READMEs for platform and licensing
-requirements; basic PdfPig does not acquire these dependencies.
+This component contains **five providers**. Local model-driven layout, PDF
+rasterization and local OCR/table inference are deferred together to a separate
+advanced companion; none of those dependencies or model downloads are included
+here. The lightweight PdfPig provider remains a native-text parser, not OCR.
+
+These are unreleased preview packages using experimental upstream contracts.
+For exact source pins, a reproducible build and review boundaries, start with
+the [review guide](REVIEWING.md). The install examples describe the intended
+package API, not availability of the temporary core version on NuGet.org.
 
 ## Install
 
@@ -238,6 +235,6 @@ diagnostics. To use these APIs, opt in explicitly in your application project:
 When reporting a problem, include the provider, package versions, input media type
 and a minimal reproduction without credentials or sensitive document content.
 
-PDF segmentation, geometry and rendering integration include contributions by
+PDF segmentation and geometry mapping include contributions by
 [@luisquintanilla](https://github.com/luisquintanilla).
 Licensed under the [MIT license](https://github.com/CommunityToolkit/AI/blob/main/LICENSE).

@@ -603,6 +603,9 @@ public sealed class DocumentIntelligenceExtractionClientTests
         content["paragraphs"] = new JsonArray();
         content["tables"] = new JsonArray();
         content["figures"] = new JsonArray();
+#if CONTENT_UNDERSTANDING
+        content["markdown"] = "";
+#endif
         var transport = Replay(AzureWireFixture.Bytes(root));
         using var client = Create(transport);
         using var input = new MemoryStream([1, 2, 3]);
@@ -972,6 +975,9 @@ public sealed class DocumentIntelligenceExtractionClientTests
         if (!hasText)
         {
             content["paragraphs"] = new JsonArray();
+#if CONTENT_UNDERSTANDING
+            content["markdown"] = "";
+#endif
         }
         else
         {

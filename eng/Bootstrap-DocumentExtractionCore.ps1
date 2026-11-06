@@ -61,12 +61,14 @@ try {
         throw "The verified bootstrap requires SDK 10.0.401; upstream checkout selected '$sdk'. Supply its dotnet executable with -DotnetPath."
     }
     Write-Host "Packing unmodified public source $commit (tree $tree), SDK $sdk, version $version."
+    $restoreConfig = Join-Path $sourceDirectory 'NuGet.config'
     foreach ($id in $ids) {
         $project = Join-Path 'src\Libraries' "$id\$id.csproj"
         Invoke-Checked $DotnetPath @(
             'pack', $project, '--nologo', '--verbosity', 'quiet',
             "-p:PackageVersion=$version", '-p:VersionSuffix=review.20261104.4',
-            '-p:Features=', "-p:PackageOutputPath=$OutputDirectory"
+            '-p:Features=', "-p:PackageOutputPath=$OutputDirectory",
+            "-p:RestoreConfigFile=$restoreConfig"
         )
     }
 }

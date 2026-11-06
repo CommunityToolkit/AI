@@ -174,6 +174,21 @@ public sealed class ContentUnderstandingExtractionClient : DocumentExtractionCli
                     }
                 }
                 MapSections(output, content, frames, elements);
+                if (elements.Count == 0 && !content.Pages.Any(page => page.Lines.Count > 0) &&
+                    !string.IsNullOrEmpty(content.Markdown))
+                {
+                    // Whole-document Markdown has no measured page-local text boundaries.
+                    var section = new ExtractionDocumentSection();
+                    foreach (var page in content.Pages)
+                    {
+                        section.Sources.Add(new ExtractionDocumentSourceReference(
+                            frames[page.PageNumber].SourcePage, rawRepresentation: content));
+                    }
+
+                    ProviderAdapterHelpers.AddElement(section,
+                        new ExtractionDocumentTextElement(new TextContent(content.Markdown)), section.Sources);
+                    output.Sections.Add(section);
+                }
             }
 
             cancellationToken.ThrowIfCancellationRequested();

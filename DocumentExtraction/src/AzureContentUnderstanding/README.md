@@ -149,6 +149,16 @@ sections when the service supplies explicit child references.
 inspect `table.Cells` and recursively read each anchor's `Content` for those
 elements. Fields not projected into this graph remain available on `AnalysisResult`.
 
+When an analyzer returns whole-document Markdown without paragraphs, tables,
+figures or page lines (for example `prebuilt-document` without detailed output),
+the adapter preserves it literally as one text element in a document-wide section.
+That element references all reported pages without polygons; it does not assign
+Markdown fragments to individual pages or reconstruct tables from Markdown.
+When detailed children are present, those remain authoritative and aggregate
+Markdown is not appended again. Choose an analyzer such as `prebuilt-layout`
+when you need the service's structured layout details; this adapter does not
+change the analyzer configuration or request detailed output automatically.
+
 Figure descriptions are `ExtractionDocumentImageElement.AlternativeText`.
 This provider does not download figure image bytes. Only document results are
 supported; use the native SDK for audio/video analysis.

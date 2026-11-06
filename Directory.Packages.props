@@ -36,12 +36,6 @@
     <PackageVersion Include="Azure.AI.DocumentIntelligence" Version="1.0.0" />
     <PackageVersion Include="Azure.Core" Version="1.53.0" />
     <PackageVersion Include="PdfPig" Version="0.1.15" />
-    <PackageVersion Include="PdfPig.Rendering.Skia" Version="0.1.15.4" />
-    <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.23.2" />
-    <PackageVersion Include="Microsoft.ML.OnnxRuntime.Managed" Version="1.23.2" />
-    <PackageVersion Include="SkiaSharp" Version="3.119.1" />
-    <PackageVersion Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.1" />
-    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.2" />
   </ItemGroup>
 
   <ItemGroup Label="Build">

@@ -33,12 +33,9 @@ The following NuGet packages have been published:
 
 The [document extraction providers](DocumentExtraction/README.md) extract text,
 tables, images and source locations into a common `ExtractionDocument` graph.
-Choose lightweight PdfPig for existing PDF text, or its optional
-PdfPig.OnnxLayoutAnalysis companion for local, model-detected layout with an
-explicitly selected application CPU or CUDA native runtime. PDF parsing,
-rendering and preprocessing remain CPU work. The companion uses
-PdfPig with SkiaSharp for local PDF rendering; native Skia/font assets are still
-required, while basic PdfPig stays rendering-free. Azure
+Choose lightweight PdfPig for existing PDF text. Local model-driven layout,
+rendering and OCR/table inference are deferred to a separate advanced companion;
+they are not dependencies of these five providers. Azure
 Content Understanding and Document Intelligence provide hosted document analysis;
 their native SDK clients expose `AsDocumentExtractionClient()` through the
 corresponding Toolkit namespaces.
@@ -48,7 +45,9 @@ URI, model and API-key or Entra authentication. Vision forwards original PDF or
 image bytes in one request through an application-supplied `IChatClient`, without
 local PDF rendering. Its adapter/API/model must support the requested file format;
 image support alone does not establish PDF support. See the provider guide for installation, hosting
-requirements, model assets and complete examples.
+requirements and complete examples. These packages are unreleased previews;
+the [review guide](DocumentExtraction/REVIEWING.md) explains the pinned upstream
+contracts and reproducible source-build prerequisite.
 
 ## Running Live Tests
 

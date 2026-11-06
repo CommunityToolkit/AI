@@ -8,5 +8,6 @@
   <ItemGroup>
     <ProjectReference Include="../../src/AzureContentUnderstanding/AzureContentUnderstanding.csproj" />
     <Compile Include="../AzureTestSupport/*.cs" LinkBase="TestSupport" />
+    <EmbeddedResource Include="Fixtures/MarkdownOnlyDocument.json" LogicalName="MarkdownOnlyDocument.json" />
   </ItemGroup>
 </Project>
