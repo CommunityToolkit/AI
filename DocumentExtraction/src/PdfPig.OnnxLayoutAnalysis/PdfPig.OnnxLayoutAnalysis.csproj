@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Version>1.0.0-preview.2</Version>
+    <AssemblyName>CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis</AssemblyName>
+    <RootNamespace>$(AssemblyName)</RootNamespace>
+    <TargetFrameworks>net10.0;net8.0</TargetFrameworks>
+    <Title>Local ONNX PDF layout extraction</Title>
+    <Description>PdfPig text extraction with page-image Heron ONNX layout detection.</Description>
+    <!-- Get-Models.ps1 is explicitly user-run, never a NuGet install/init script. -->
+    <NoWarn>$(NoWarn);NU5111</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="PdfPig" />
+    <PackageReference Include="PdfPig.Rendering.Skia" />
+    <PackageReference Include="Clipper2" />
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" />
+    <Compile Include="..\Shared\PdfPageRenderer.cs" LinkBase="Shared" />
+    <None Include="..\Shared\PdfRendering.NOTICES.txt" Pack="true" PackagePath="\" />
+    <None Include="CuratedPipeline.NOTICES.txt" Pack="true" PackagePath="\" />
+    <None Include="Get-Models.ps1" Pack="true" PackagePath="tools\" />
+    <None Include="models.json" Pack="true" PackagePath="tools\" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime.Managed" />
+    <InternalsVisibleTo Include="$(AssemblyName).UnitTests" />
+  </ItemGroup>
+</Project>

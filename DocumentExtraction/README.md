@@ -27,10 +27,14 @@ support. PdfPig reads existing PDF text locally and does not recognize
 scanned text. Choose based on document format, required fidelity, latency,
 privacy and cost.
 
-This component contains **five providers**. Local model-driven layout, PDF
-rasterization and local OCR/table inference are deferred together to a separate
-advanced companion; none of those dependencies or model downloads are included
-here. The lightweight PdfPig provider remains a native-text parser, not OCR.
+The five providers above remain independent of the optional
+[PdfPig/ONNX advanced companion](src/PdfPig.OnnxLayoutAnalysis/README.md).
+The companion adds local model-driven layout, PDF rasterization and opt-in
+OCR/table inference with grouped options and a fluent builder. Its dependencies
+are confined to its own package; the lightweight PdfPig provider remains a
+native-text parser, not OCR. Models are never included or downloaded at runtime.
+The five-provider `DocumentExtraction.slnf` remains unchanged; companion builds
+use `PdfPig.OnnxLayoutAnalysis.slnf` and a separate CI workflow.
 
 These are unreleased preview packages using experimental upstream contracts.
 For exact source pins, a reproducible build and review boundaries, start with

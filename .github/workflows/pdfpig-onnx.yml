@@ -1,0 +1,107 @@
+name: PdfPig ONNX companion
+
+on:
+  pull_request:
+    branches: [main, luisquintanilla-toolkit-extraction-providers]
+    paths:
+      - 'DocumentExtraction/**'
+      - 'Directory.Build.*'
+      - 'Directory.Packages.props'
+      - 'CommunityToolkit.AI.slnx'
+      - 'global.json'
+      - 'eng/Bootstrap-DocumentExtractionCore.ps1'
+      - 'eng/New-DocumentExtractionNuGetConfig.ps1'
+      - 'nuget.config'
+      - '.github/workflows/pdfpig-onnx.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'DocumentExtraction/**'
+      - 'Directory.Build.*'
+      - 'Directory.Packages.props'
+      - 'CommunityToolkit.AI.slnx'
+      - 'global.json'
+      - 'eng/Bootstrap-DocumentExtractionCore.ps1'
+      - 'eng/New-DocumentExtractionNuGetConfig.ps1'
+      - 'nuget.config'
+      - '.github/workflows/pdfpig-onnx.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  bootstrap-core:
+    name: Pack pinned public upstream core
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/pdfpig-onnx-sdk
+        with:
+          dotnet-version: 10.0.401
+      - name: Pack original owning upstream projects
+        shell: pwsh
+        env:
+          CI: 'false'
+        run: ./eng/Bootstrap-DocumentExtractionCore.ps1 -OutputDirectory "${{ runner.temp }}/pdfpig-onnx-core" -DotnetPath "${{ runner.temp }}/pdfpig-onnx-sdk/dotnet.exe"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: pdfpig-onnx-core-source-packages
+          path: ${{ runner.temp }}/pdfpig-onnx-core/*.10.10.0-review.20261104.4.nupkg
+          if-no-files-found: error
+
+  companion:
+    name: Companion contracts and package (${{ matrix.os }})
+    needs: bootstrap-core
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v7
+        with:
+          name: pdfpig-onnx-core-source-packages
+          path: ${{ runner.temp }}/pdfpig-onnx-core
+      - name: Configure isolated public-source core feed
+        shell: pwsh
+        run: ./eng/New-DocumentExtractionNuGetConfig.ps1 -CorePackageDirectory "${{ runner.temp }}/pdfpig-onnx-core" -OutputPath "${{ runner.temp }}/pdfpig-onnx-nuget.config"
+      - name: Restore companion, contracts and example
+        run: dotnet restore DocumentExtraction/PdfPig.OnnxLayoutAnalysis.slnf --configfile "${{ runner.temp }}/pdfpig-onnx-nuget.config"
+      - name: Build both supported frameworks
+        run: dotnet build DocumentExtraction/PdfPig.OnnxLayoutAnalysis.slnf --no-restore -c Release
+      - name: Deterministic tests without curated weights
+        run: dotnet test DocumentExtraction/test/PdfPig.OnnxLayoutAnalysis.UnitTests --no-build --no-restore -c Release
+      - name: Offline provisioning checks
+        shell: pwsh
+        run: ./DocumentExtraction/src/PdfPig.OnnxLayoutAnalysis/Test-ModelProvisioning.ps1
+      - name: Pack companion and compile actual package consumer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          dotnet pack DocumentExtraction/src/PdfPig.OnnxLayoutAnalysis --no-build --no-restore -c Release --output "${{ runner.temp }}/pdfpig-onnx-core"
+          if ($LASTEXITCODE -ne 0) { throw 'Companion pack failed.' }
+          $configPath = "${{ runner.temp }}/pdfpig-onnx-nuget.config"
+          [xml] $config = Get-Content -LiteralPath $configPath -Raw
+          $mapping = $config.CreateElement('package')
+          $mapping.SetAttribute('pattern', 'CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis')
+          $config.configuration.packageSourceMapping.packageSource[0].AppendChild($mapping) | Out-Null
+          $config.Save($configPath)
+          dotnet build DocumentExtraction/samples/PdfPigOnnx -c Release -p:CompanionPackageVersion=1.0.0-preview.2 -p:RestoreConfigFile="$configPath"
+          if ($LASTEXITCODE -ne 0) { throw 'Packed new-API consumer failed.' }
+      - uses: actions/upload-artifact@v6
+        with:
+          name: pdfpig-onnx-preview-${{ matrix.os }}
+          path: ${{ runner.temp }}/pdfpig-onnx-core/CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis.*.nupkg
+          if-no-files-found: error
