@@ -40,9 +40,9 @@ public sealed class ContentUnderstandingExtractionClient : DocumentExtractionCli
         Azure.AI.ContentUnderstanding.ContentUnderstandingClient client,
         ContentUnderstandingExtractionOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(client);
+        Throw.IfNull(client);
         string analyzerId = options is null ? DefaultAnalyzerId : options.AnalyzerId;
-        ArgumentException.ThrowIfNullOrWhiteSpace(analyzerId);
+        Throw.IfNullOrWhitespace(analyzerId);
         _client = client;
         _analyzerId = analyzerId;
     }
@@ -69,7 +69,7 @@ public sealed class ContentUnderstandingExtractionClient : DocumentExtractionCli
             ProviderAdapterHelpers.GetProperty<string>(normalizedOptions, "processingLocation"));
 
         using var buffer = new MemoryStream();
-        await document.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
+        await document.CopyToAsync(buffer, 81920, cancellationToken).ConfigureAwait(false);
         Operation<AnalysisResult> operation = await _client
             .AnalyzeBinaryAsync(
                 WaitUntil.Completed,
@@ -339,7 +339,7 @@ public sealed class ContentUnderstandingExtractionClient : DocumentExtractionCli
         }
 
         var sources = new List<ExtractionDocumentSourceReference>();
-        foreach (DocumentSource parsed in DocumentSource.Parse(source))
+        foreach (DocumentSource parsed in DocumentSource.Parse(source!))
         {
             if (!frames.TryGetValue(parsed.PageNumber, out PageFrame? frame))
             {
@@ -385,7 +385,7 @@ public sealed class ContentUnderstandingExtractionClient : DocumentExtractionCli
     /// <inheritdoc/>
     public override object? GetService(Type serviceType, object? serviceKey = null)
     {
-        ArgumentNullException.ThrowIfNull(serviceType);
+        Throw.IfNull(serviceType);
         return serviceKey is null && serviceType == typeof(Azure.AI.ContentUnderstanding.ContentUnderstandingClient)
             ? _client : base.GetService(serviceType, serviceKey);
     }

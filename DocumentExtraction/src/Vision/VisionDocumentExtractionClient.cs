@@ -63,7 +63,7 @@ public sealed class VisionDocumentExtractionClient : DocumentExtractionClient
     /// <summary>Creates an adapter without taking ownership of the chat client.</summary>
     public VisionDocumentExtractionClient(IChatClient chatClient, VisionDocumentExtractionClientOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(chatClient);
+        Throw.IfNull(chatClient);
         _chatClient = chatClient;
         _prompt = options?.Prompt;
         _useStructuredOutput = options?.UseStructuredOutput ?? false;
@@ -84,7 +84,7 @@ public sealed class VisionDocumentExtractionClient : DocumentExtractionClient
         }
 
         using var buffer = new MemoryStream();
-        await document.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
+        await document.CopyToAsync(buffer, 81920, cancellationToken).ConfigureAwait(false);
         byte[] bytes = buffer.ToArray();
         var output = new ExtractionDocument(identifier);
         var chatOptions = new ChatOptions
@@ -145,7 +145,7 @@ public sealed class VisionDocumentExtractionClient : DocumentExtractionClient
             if (nativePage.TryGetProperty("confidence", out JsonElement confidence) && confidence.ValueKind != JsonValueKind.Null)
             {
                 if (confidence.ValueKind != JsonValueKind.Number || !confidence.TryGetDouble(out double value) ||
-                    !double.IsFinite(value) || value is < 0 or > 1)
+                    double.IsNaN(value) || double.IsInfinity(value) || value is < 0 or > 1)
                 {
                     throw Invalid($"{pageContext}.confidence", "must be a finite number in [0,1].");
                 }
@@ -374,7 +374,7 @@ public sealed class VisionDocumentExtractionClient : DocumentExtractionClient
     /// <inheritdoc/>
     public override object? GetService(Type serviceType, object? serviceKey = null)
     {
-        ArgumentNullException.ThrowIfNull(serviceType);
+        Throw.IfNull(serviceType);
         return base.GetService(serviceType, serviceKey) ?? _chatClient.GetService(serviceType, serviceKey);
     }
 }

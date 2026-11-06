@@ -37,9 +37,9 @@ public sealed class DocumentIntelligenceExtractionClient : DocumentExtractionCli
     public DocumentIntelligenceExtractionClient(
         DocumentIntelligenceClient client, DocumentIntelligenceExtractionOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(client);
+        Throw.IfNull(client);
         string defaultModel = options is null ? "prebuilt-layout" : options.DefaultModel;
-        ArgumentException.ThrowIfNullOrWhiteSpace(defaultModel);
+        Throw.IfNullOrWhitespace(defaultModel);
         _client = client;
         _defaultModel = defaultModel;
         _includeImages = options?.IncludeImages ?? false;
@@ -67,7 +67,7 @@ public sealed class DocumentIntelligenceExtractionClient : DocumentExtractionCli
             nameof(DocumentIntelligenceExtractionClient));
 
         using var buffer = new MemoryStream();
-        await document.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
+        await document.CopyToAsync(buffer, 81920, cancellationToken).ConfigureAwait(false);
 
         var analyzeOptions = new AnalyzeDocumentOptions(model, BinaryData.FromBytes(buffer.ToArray()))
         {
@@ -369,7 +369,7 @@ public sealed class DocumentIntelligenceExtractionClient : DocumentExtractionCli
     /// <inheritdoc/>
     public override object? GetService(Type serviceType, object? serviceKey = null)
     {
-        ArgumentNullException.ThrowIfNull(serviceType);
+        Throw.IfNull(serviceType);
         return serviceKey is null && serviceType == typeof(DocumentIntelligenceClient)
             ? _client : base.GetService(serviceType, serviceKey);
     }

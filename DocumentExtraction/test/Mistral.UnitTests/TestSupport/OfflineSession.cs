@@ -39,6 +39,20 @@ internal sealed class TrackingContent(byte[] bytes) : HttpContent
     public int DisposeCalls { get; private set; }
     public Action<CancellationToken>? BeforeRead { get; set; }
 
+    protected override Task<Stream> CreateContentReadStreamAsync()
+        => Task.FromResult<Stream>(new TrackingBodyStream(bytes, token => BeforeRead?.Invoke(token)));
+
+    private sealed class TrackingBodyStream(byte[] content, Action<CancellationToken> beforeRead)
+        : MemoryStream(content, writable: false)
+    {
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        {
+            beforeRead(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            return base.CopyToAsync(destination, bufferSize, cancellationToken);
+        }
+    }
+
     protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
         => SerializeToStreamAsync(stream, context, CancellationToken.None);
 

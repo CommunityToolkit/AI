@@ -10,9 +10,9 @@ internal static class ProviderAdapterHelpers
 {
     public static void ValidateInput(Stream document, string identifier, string mediaType)
     {
-        ArgumentNullException.ThrowIfNull(document);
-        ArgumentException.ThrowIfNullOrWhiteSpace(identifier);
-        ArgumentException.ThrowIfNullOrWhiteSpace(mediaType);
+        Throw.IfNull(document);
+        Throw.IfNullOrWhitespace(identifier);
+        Throw.IfNullOrWhitespace(mediaType);
         if (!document.CanRead)
         {
             throw new ArgumentException("The input document stream must be readable.", nameof(document));
@@ -57,7 +57,7 @@ internal static class ProviderAdapterHelpers
         var supported = new HashSet<string>(supportedProperties, StringComparer.Ordinal);
         string[] unsupported = options.AdditionalProperties.Keys
             .Where(key => !supported.Contains(key))
-            .Order(StringComparer.Ordinal)
+            .OrderBy(key => key, StringComparer.Ordinal)
             .ToArray();
         if (unsupported.Length > 0)
         {

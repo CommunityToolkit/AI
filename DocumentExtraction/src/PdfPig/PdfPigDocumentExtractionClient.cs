@@ -34,7 +34,7 @@ public sealed class PdfPigDocumentExtractionClient(
         ProviderAdapterHelpers.RejectUnsupportedProperties(request, nameof(PdfPigDocumentExtractionClient));
         _ = ProviderAdapterHelpers.ResolveExtractor(request, ProviderName, nameof(PdfPigDocumentExtractionClient), false);
         using var buffer = new MemoryStream();
-        await document.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
+        await document.CopyToAsync(buffer, 81920, cancellationToken).ConfigureAwait(false);
         using var pdfInput = new MemoryStream(buffer.ToArray(), writable: false);
         using PdfDocument pdf = PdfDocument.Open(pdfInput);
         var output = new ExtractionDocument(identifier);

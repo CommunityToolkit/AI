@@ -35,7 +35,7 @@ internal static class SectionHierarchy
             return;
         }
 
-        var paths = new Dictionary<string, ExtractionDocumentElement>(elements, StringComparer.Ordinal);
+        var paths = elements.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
         for (int index = 0; index < sections.Count; index++)
         {
             paths.Add($"/sections/{index}", sections[index].Section);
@@ -57,11 +57,12 @@ internal static class SectionHierarchy
             foreach (string reference in cell.Elements)
             {
                 ExtractionDocumentElement element = Resolve(reference);
-                if (!parents.TryAdd(element, container))
+                if (parents.ContainsKey(element))
                 {
                     throw new InvalidDataException($"The provider element '{reference}' belongs to more than one cell or is repeated.");
                 }
 
+                parents.Add(element, container);
                 cellOwners.Add(element, cell.Table);
                 container.Elements.Add(element);
             }
@@ -97,8 +98,10 @@ internal static class SectionHierarchy
             }
         }
 
-        foreach (var (element, claims) in sectionClaims)
+        foreach (var claim in sectionClaims)
         {
+            ExtractionDocumentElement element = claim.Key;
+            List<ExtractionDocumentSection> claims = claim.Value;
             if (claims.Count == 1)
             {
                 parents.Add(element, claims[0]);
@@ -208,8 +211,9 @@ internal static class SectionHierarchy
             var pending = new Stack<ExtractionDocumentElement>();
             var visited = new HashSet<ExtractionDocumentElement>();
             pending.Push(element);
-            while (pending.TryPop(out ExtractionDocumentElement? current))
+            while (pending.Count > 0)
             {
+                ExtractionDocumentElement current = pending.Pop();
                 if (ReferenceEquals(current, ancestor))
                 {
                     return true;

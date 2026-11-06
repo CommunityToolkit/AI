@@ -12,6 +12,10 @@ on:
       - 'global.json'
       - 'eng/Bootstrap-DocumentExtractionCore.ps1'
       - 'eng/New-DocumentExtractionNuGetConfig.ps1'
+      - 'eng/Test-DocumentExtractionPackages.ps1'
+      - 'eng/DocumentExtraction.PackageSmoke/**'
+      - 'eng/LegacySupport.props'
+      - 'Shared/**'
       - 'nuget.config'
       - '.github/workflows/document-extraction.yml'
   pull_request:
@@ -25,6 +29,10 @@ on:
       - 'global.json'
       - 'eng/Bootstrap-DocumentExtractionCore.ps1'
       - 'eng/New-DocumentExtractionNuGetConfig.ps1'
+      - 'eng/Test-DocumentExtractionPackages.ps1'
+      - 'eng/DocumentExtraction.PackageSmoke/**'
+      - 'eng/LegacySupport.props'
+      - 'Shared/**'
       - 'nuget.config'
       - '.github/workflows/document-extraction.yml'
   workflow_dispatch:
@@ -87,8 +95,13 @@ jobs:
         run: dotnet build DocumentExtraction/DocumentExtraction.slnf --no-restore -c Release
       - name: Offline tests
         run: dotnet test DocumentExtraction/DocumentExtraction.slnf --no-build --no-restore -c Release
+      - name: Offline tests using actual netstandard assets
+        run: dotnet test DocumentExtraction/DocumentExtraction.slnf --no-restore -c Release -p:DocumentExtractionTestAsset=netstandard2.0
       - name: Pack preview artifacts
         run: dotnet pack DocumentExtraction/DocumentExtraction.slnf --no-build --no-restore -c Release --output artifacts/document-extraction
+      - name: Verify packaged assets and experimental opt-in
+        shell: pwsh
+        run: ./eng/Test-DocumentExtractionPackages.ps1 -PackageDirectory artifacts/document-extraction -NuGetConfig "${{ runner.temp }}/document-extraction-nuget.config" -OutputDirectory "${{ runner.temp }}/document-extraction-package-checks"
       - uses: actions/upload-artifact@v6
         with:
           name: document-extraction-preview-packages-${{ matrix.os }}

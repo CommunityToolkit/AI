@@ -3,12 +3,20 @@
   <PropertyGroup>
     <DocumentExtractionBuild>true</DocumentExtractionBuild>
     <OutputType>Exe</OutputType>
-    <NoWarn>$(NoWarn);CS1591;xUnit1051;EXTEXP0019;MEDE0001</NoWarn>
+    <NoWarn>$(NoWarn);CS1591;xUnit1051;EXTEXP0019;MEDE0001;CTDE0001</NoWarn>
+    <DefineConstants Condition="'$(DocumentExtractionTestAsset)' == 'netstandard2.0'">$(DefineConstants);STANDARD_PROVIDER_ASSET</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
     <Using Include="Xunit" />
+    <Compile Include="$(MSBuildThisFileDirectory)ProviderAssetTests.cs" Link="ProviderAssetTests.cs" />
   </ItemGroup>
+  <ItemDefinitionGroup Condition="'$(DocumentExtractionTestAsset)' == 'netstandard2.0'">
+    <ProjectReference>
+      <SetTargetFramework>TargetFramework=netstandard2.0</SetTargetFramework>
+      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
+    </ProjectReference>
+  </ItemDefinitionGroup>
 </Project>

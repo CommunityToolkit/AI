@@ -18,7 +18,10 @@ diagnostics, see [experimental API opt-in](https://github.com/CommunityToolkit/A
 
 ## Requirements and setup
 
-Targets **.NET 8 and .NET 10**. These runtime packages are brought in transitively:
+Experimental APIs emit `CTDE0001`; opt in explicitly as described in the
+[component guide](../../README.md#experimental-api-diagnostics).
+
+Targets **.NET Standard 2.0, .NET 8 and .NET 10**. These runtime packages are brought in transitively:
 
 - `Azure.AI.DocumentIntelligence` **1.0.0** (its default service API is
   `2024-11-30`).

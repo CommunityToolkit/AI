@@ -323,7 +323,11 @@ public sealed partial class MistralDocumentExtractionClientTests
         }
 
         HttpRequestException error = await Assert.ThrowsAsync<HttpRequestException>(() => Extract(session, RequestedOptions()));
+#if STANDARD_PROVIDER_ASSET
+        Assert.Null(error.StatusCode);
+#else
         Assert.Equal(HttpStatusCode.ServiceUnavailable, error.StatusCode);
+#endif
         Assert.Contains("503", error.Message);
         Assert.Equal([3d, 6d, 9d, 12d], session.Delays.Select(d => d.TotalSeconds));
         Assert.All(session.Handler.Requests, AssertRequest);
@@ -341,7 +345,11 @@ public sealed partial class MistralDocumentExtractionClientTests
     {
         using var session = new OfflineSession(Encoding.UTF8.GetBytes("failure"), status);
         HttpRequestException error = await Assert.ThrowsAsync<HttpRequestException>(() => Extract(session));
+#if STANDARD_PROVIDER_ASSET
+        Assert.Null(error.StatusCode);
+#else
         Assert.Equal(status, error.StatusCode);
+#endif
         Assert.Contains(((int)status).ToString(System.Globalization.CultureInfo.InvariantCulture), error.Message);
         Assert.Empty(session.Delays);
         await session.AssertCleanAndBorrowedAsync(1, 1);
