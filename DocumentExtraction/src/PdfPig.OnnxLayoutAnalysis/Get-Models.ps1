@@ -16,7 +16,7 @@ function Assert-ModelFile {
     )
 
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf) -or
-        (Get-Item -LiteralPath $Path).Length -ne $Model.Bytes -or
+        (Get-Item -LiteralPath $Path -Force).Length -ne $Model.Bytes -or
         (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash -ne $Model.Hash) {
         throw "Unexpected model artifact: $Path. Expected $($Model.Bytes) bytes and SHA256 $($Model.Hash). Existing files are not overwritten."
     }

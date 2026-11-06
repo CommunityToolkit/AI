@@ -90,11 +90,14 @@ try {
         Assert-True ([System.IO.Path]::GetFileName($path) -match '^\.model\.onnx\.[0-9a-f]{32}\.partial$') 'Download must target a unique temporary file.'
         Assert-True (-not (Test-Path -LiteralPath $destination)) 'A final file was exposed before verification.'
         [System.IO.File]::WriteAllBytes($path, $bytes)
+        if ($IsWindows) {
+            [System.IO.File]::SetAttributes($path, [System.IO.FileAttributes]::Hidden)
+        }
     }
     Save-ModelFile -Directory $root -Model $model | Out-Null
     Assert-ModelFile -Path $destination -Model $model
     Assert-True (@(Get-ChildItem -LiteralPath $root -Force).Count -eq 1) 'A successful download left temporary files.'
-    Remove-Item -LiteralPath $destination
+    Remove-Item -LiteralPath $destination -Force
     $passed++
 
     $script:downloadAction = {
