@@ -13,7 +13,7 @@ using CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence;
 using CommunityToolkit.DocumentExtraction.Mistral;
 using CommunityToolkit.DocumentExtraction.PdfPig;
 using CommunityToolkit.DocumentExtraction.PdfPig.UnitTests;
-using CommunityToolkit.DocumentExtraction.Vision;
+using CommunityToolkit.DocumentExtraction.VisionLanguageModel;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DocumentExtraction;
 using Microsoft.Extensions.Documents;
@@ -24,7 +24,7 @@ if (args.Length != 2)
 }
 
 Type[] types = [typeof(PdfPigDocumentExtractionClient), typeof(ContentUnderstandingExtractionClient),
-    typeof(DocumentIntelligenceExtractionClient), typeof(MistralDocumentExtractionClient), typeof(VisionDocumentExtractionClient)];
+    typeof(DocumentIntelligenceExtractionClient), typeof(MistralDocumentExtractionClient), typeof(VisionLanguageModelDocumentExtractionClient)];
 string expectedFramework = args[0] == "netstandard2.0" ? ".NETStandard,Version=v2.0"
     : args[0] == "net8.0" ? ".NETCoreApp,Version=v8.0" : ".NETCoreApp,Version=v10.0";
 var assemblies = new List<object>();
@@ -92,9 +92,9 @@ if (!mistralResult.EnumerateContent().Any(element => element.Content is TextCont
 }
 
 using var chatClient = new OfflineChatClient();
-using DocumentExtractionClient vision = new VisionDocumentExtractionClient(chatClient);
-using DocumentExtractionClient structuredVision = new VisionDocumentExtractionClient(
-    chatClient, new VisionDocumentExtractionClientOptions { UseStructuredOutput = true });
+using DocumentExtractionClient vision = new VisionLanguageModelDocumentExtractionClient(chatClient);
+using DocumentExtractionClient structuredVision = new VisionLanguageModelDocumentExtractionClient(
+    chatClient, new VisionLanguageModelDocumentExtractionClientOptions { UseStructuredOutput = true });
 input.Position = 0;
 ExtractionDocument visionResult = await vision.ExtractAsync(input, "invoice", "application/pdf");
 if (!visionResult.EnumerateContent().Any(element => element.Content is TextContent text && text.Text == "offline invoice"))

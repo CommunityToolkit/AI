@@ -6,12 +6,12 @@
       "DocumentExtraction/src/AzureContentUnderstanding/AzureContentUnderstanding.csproj",
       "DocumentExtraction/src/AzureDocumentIntelligence/AzureDocumentIntelligence.csproj",
       "DocumentExtraction/src/Mistral/Mistral.csproj",
-      "DocumentExtraction/src/Vision/Vision.csproj",
+      "DocumentExtraction/src/VisionLanguageModel/VisionLanguageModel.csproj",
       "DocumentExtraction/test/PdfPig.UnitTests/PdfPig.UnitTests.csproj",
       "DocumentExtraction/test/AzureContentUnderstanding.UnitTests/AzureContentUnderstanding.UnitTests.csproj",
       "DocumentExtraction/test/AzureDocumentIntelligence.UnitTests/AzureDocumentIntelligence.UnitTests.csproj",
       "DocumentExtraction/test/Mistral.UnitTests/Mistral.UnitTests.csproj",
-      "DocumentExtraction/test/Vision.UnitTests/Vision.UnitTests.csproj"
+      "DocumentExtraction/test/VisionLanguageModel.UnitTests/VisionLanguageModel.UnitTests.csproj"
     ]
   }
 }

@@ -4,9 +4,9 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DocumentExtraction;
 using Microsoft.Extensions.Documents;
 
-namespace CommunityToolkit.DocumentExtraction.Vision.UnitTests;
+namespace CommunityToolkit.DocumentExtraction.VisionLanguageModel.UnitTests;
 
-public sealed class VisionStructuredAcceptanceTests
+public sealed class VisionLanguageModelStructuredAcceptanceTests
 {
     private const string Valid =
         """
@@ -35,7 +35,7 @@ public sealed class VisionStructuredAcceptanceTests
         byte[] bytes = pdf ? PdfFixture.Create() : [137, 80, 78, 71, 11, 22, 33];
         string mediaType = pdf ? "application/pdf" : "image/png";
         using var input = new BorrowedInput(bytes);
-        using var client = new VisionDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
+        using var client = new VisionLanguageModelDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
         var result = await client.ExtractAsync(input, "invoice", mediaType,
             new() { ExtractorName = "requested-structured-route" });
 
@@ -137,7 +137,7 @@ public sealed class VisionStructuredAcceptanceTests
     {
         var response = RecordingChatClient.Response(json, model: null);
         var chat = new RecordingChatClient(response);
-        using var client = new VisionDocumentExtractionClient(chat, new() { Prompt = "Use the strict schema.", UseStructuredOutput = true });
+        using var client = new VisionLanguageModelDocumentExtractionClient(chat, new() { Prompt = "Use the strict schema.", UseStructuredOutput = true });
         using var input = new BorrowedInput([1, 2, 3]);
         var result = await client.ExtractAsync(input, "named-image.png", "image/png", new() { ExtractorName = "not-returned-model" });
         Assert.Equal(count, result.SourcePages.Count);
@@ -210,7 +210,7 @@ public sealed class VisionStructuredAcceptanceTests
     {
         var chat = new RecordingChatClient(RecordingChatClient.Response(json), RecordingChatClient.Response("forbidden freeform fallback"));
         using var input = new BorrowedInput([7, 8, 9]);
-        var client = new VisionDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
+        var client = new VisionLanguageModelDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
         Exception? error = await Record.ExceptionAsync(() => client.ExtractAsync(input, identifier, mediaType));
         client.Dispose();
         input.AssertStillReadable(7);
@@ -237,7 +237,7 @@ public sealed class VisionStructuredAcceptanceTests
             : new InvalidOperationException("deterministic structured failure");
         var chat = new RecordingChatClient(failure, RecordingChatClient.Response("""{"pages":[]}"""));
         using var input = new BorrowedInput([4, 5, 6]);
-        var client = new VisionDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
+        var client = new VisionLanguageModelDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
         Assert.Same(failure, await Record.ExceptionAsync(() => client.ExtractAsync(input, "failure", mediaType)));
         Assert.IsType<ChatResponseFormatJson>(Assert.Single(chat.Requests).Options!.ResponseFormat);
         client.Dispose();
@@ -262,7 +262,7 @@ public sealed class VisionStructuredAcceptanceTests
             OnRequest = stage == "during-chat" ? _ => cancellation.Cancel() : null,
         };
         using var input = new BorrowedInput([8, 9, 10], stage == "during-copy" ? cancellation : null);
-        var client = new VisionDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
+        var client = new VisionLanguageModelDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
         if (stage == "before-copy")
         {
             cancellation.Cancel();
@@ -294,7 +294,7 @@ public sealed class VisionStructuredAcceptanceTests
         byte[] bytes = PdfFixture.Create();
         using var input = new BorrowedInput([0, .. bytes]);
         input.Position = 1;
-        using var client = new VisionDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
+        using var client = new VisionLanguageModelDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
         var result = await client.ExtractAsync(input, "native.pdf", "application/pdf");
         var request = Assert.Single(chat.Requests);
         Assert.Equal(new int?[] { 3, null, 1 }, result.SourcePages.Select(p => p.PageNumber));
@@ -339,7 +339,7 @@ public sealed class VisionStructuredAcceptanceTests
     {
         var chat = new RecordingChatClient(RecordingChatClient.Response(json), RecordingChatClient.Response("forbidden fallback"));
         using var input = new BorrowedInput(PdfFixture.Create());
-        using var client = new VisionDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
+        using var client = new VisionLanguageModelDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
         var result = await client.ExtractAsync(input, "native.pdf", "application/pdf");
         Assert.IsType<ChatResponseFormatJson>(Assert.Single(chat.Requests).Options!.ResponseFormat);
         Assert.Equal(count, result.SourcePages.Count);
@@ -363,7 +363,7 @@ public sealed class VisionStructuredAcceptanceTests
         var chat = new RecordingChatClient(response);
         byte[] bytes = PdfFixture.Create(empty: true);
         using var input = new BorrowedInput(bytes);
-        using var client = new VisionDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
+        using var client = new VisionLanguageModelDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
         var result = await client.ExtractAsync(input, "empty.pdf", "application/pdf");
         Assert.Equal("empty.pdf", result.Identifier);
         Assert.Same(response, result.RawRepresentation);
@@ -389,11 +389,11 @@ public sealed class VisionStructuredAcceptanceTests
     [Fact]
     public async Task GetServiceAndDispose_PreserveBorrowedChatAndValidateStructuredConstructor()
     {
-        Assert.Throws<ArgumentNullException>(() => new VisionDocumentExtractionClient(null!, new() { UseStructuredOutput = true }));
+        Assert.Throws<ArgumentNullException>(() => new VisionLanguageModelDocumentExtractionClient(null!, new() { UseStructuredOutput = true }));
         var chat = new RecordingChatClient(RecordingChatClient.Response("""{"pages":[{"markdown":"still usable"}]}"""));
-        var client = new VisionDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
+        var client = new VisionLanguageModelDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
         Assert.Same(client, client.GetService(typeof(DocumentExtractionClient)));
-        Assert.Same(client, client.GetService(typeof(VisionDocumentExtractionClient)));
+        Assert.Same(client, client.GetService(typeof(VisionLanguageModelDocumentExtractionClient)));
         Assert.Same(chat, client.GetService(typeof(IChatClient)));
         Assert.Null(client.GetService(typeof(string)));
         Assert.Null(client.GetService(typeof(IChatClient), "key"));
@@ -421,7 +421,7 @@ public sealed class VisionStructuredAcceptanceTests
               {"index":0,"confidence":1,"markdown":"Verified"}]}
             """;
         var chat = new RecordingChatClient(RecordingChatClient.Response(json));
-        using var client = new VisionDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
+        using var client = new VisionLanguageModelDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
         using var input = new BorrowedInput([6, 7, 8]);
         var result = await client.ExtractAsync(input, "boundaries.png", "image/png");
         var table = Assert.IsType<ExtractionDocumentTableElement>(Assert.Single(result.Sections[0].Elements));

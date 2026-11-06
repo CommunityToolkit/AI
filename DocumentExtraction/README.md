@@ -17,10 +17,10 @@ All packages include **.NET Standard 2.0, .NET 8 and .NET 10** assets. Package I
 | [AzureContentUnderstanding](src/AzureContentUnderstanding/README.md) | `ContentUnderstandingExtractionClient` | Document text, tables and layout from a Content Understanding analyzer | Azure; analyzer-supported document formats |
 | [AzureDocumentIntelligence](src/AzureDocumentIntelligence/README.md) | `DocumentIntelligenceExtractionClient` | OCR, layout, tables and optional figure downloads | Azure; model-supported document formats |
 | [Mistral](src/Mistral/README.md) | `MistralDocumentExtractionClient` | Native Mistral OCR page text, tables and images, directly or through Microsoft Foundry | Hosted; endpoint-supported documents and images |
-| [Vision](src/Vision/README.md) | `VisionDocumentExtractionClient` | Free-form transcription or structured tables with your own capable `IChatClient` | Local or hosted backend; original PDF/image bytes in one request, with format support required from the adapter/API/model |
+| [VisionLanguageModel](src/VisionLanguageModel/README.md) | `VisionLanguageModelDocumentExtractionClient` | Free-form transcription or structured tables with your own capable `IChatClient` | Local or hosted backend; original PDF/image bytes in one request, with format support required from the adapter/API/model |
 
 Azure and Mistral providers upload document content to the configured service and
-can incur charges. Vision sends original PDF/image bytes to your chosen backend
+can incur charges. Vision Language Model sends original PDF/image bytes to your chosen backend
 in one chat request; it does not parse or render PDFs locally. PDF support must
 be provided by the configured adapter, API and model, not inferred from image
 support. PdfPig reads existing PDF text locally and does not recognize
@@ -85,7 +85,7 @@ Substitute any package ID from the table. The providers bring in
 `Microsoft.Extensions.AI.Abstractions` transitively.
 
 Azure examples use the additional `Azure.Identity` package for
-`DefaultAzureCredential`. Vision requires an application-supplied chat adapter,
+`DefaultAzureCredential`. Vision Language Model requires an application-supplied chat adapter,
 configured model and credentials, plus support for the supplied PDF/image format.
 It has no local PDF-rendering dependency or fallback. Each provider README contains its setup,
 supported options and examples.
@@ -100,7 +100,7 @@ required.
 
 Azure Content Understanding and Document Intelligence accept typed
 `ContentUnderstandingExtractionOptions` and `DocumentIntelligenceExtractionOptions`;
-Vision accepts `VisionDocumentExtractionClientOptions` for construction-time defaults.
+Vision Language Model accepts `VisionLanguageModelDocumentExtractionClientOptions` for construction-time defaults.
 Settings are captured when the client is created; null options select defaults.
 Azure SDK `ClientOptions` remain separate for native transport/retry settings.
 For an existing native Azure SDK client, import its corresponding Toolkit
@@ -210,14 +210,14 @@ using DocumentExtractionClient extractor = new MistralDocumentExtractionClient(
 ```
 
 ```csharp
-using CommunityToolkit.DocumentExtraction.Vision;
+using CommunityToolkit.DocumentExtraction.VisionLanguageModel;
 
 // chatClient is an IChatClient whose adapter/API/model support the input format.
-using DocumentExtractionClient extractor = new VisionDocumentExtractionClient(
-    chatClient, new VisionDocumentExtractionClientOptions { UseStructuredOutput = true });
+using DocumentExtractionClient extractor = new VisionLanguageModelDocumentExtractionClient(
+    chatClient, new VisionLanguageModelDocumentExtractionClientOptions { UseStructuredOutput = true });
 ```
 
-Structured Vision requests and validates a defined JSON shape. Leave options
+Structured Vision Language Model requests and validates a defined JSON shape. Leave options
 unset for free-form transcription. Neither mode performs local PDF rendering
 or retries unsupported structured results through another inference request.
 
@@ -334,7 +334,7 @@ void PrintElement(ExtractionDocumentElement element)
 ```
 
 Source capabilities vary: PdfPig supplies PDF block geometry; Azure services
-supply their reported regions; Vision supplies model-reported source associations rather than
+supply their reported regions; Vision Language Model supplies model-reported source associations rather than
 measured paragraph polygons. Check for data instead of assuming every provider
 supplies the same level of detail.
 
@@ -360,7 +360,7 @@ dotnet add package Microsoft.Extensions.DocumentExtraction --prerelease
 Use `DocumentExtractionClientBuilder` to wrap the provider, and call
 `ExtractAsync` on the resulting pipeline. Native `GetService` access is for
 backend-specific operations; direct calls to those services bypass extraction
-middleware. The [Vision examples](src/Vision/README.md#add-extraction-logging-middleware)
+middleware. The [Vision Language Model examples](src/VisionLanguageModel/README.md#add-extraction-logging-middleware)
 show a logging pipeline.
 
 ## Experimental API diagnostics

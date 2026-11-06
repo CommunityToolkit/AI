@@ -1,14 +1,14 @@
-# CommunityToolkit.DocumentExtraction.Vision
+# CommunityToolkit.DocumentExtraction.VisionLanguageModel
 
 Extract **text and structured tables from original PDFs or images with a
-capable chat backend**. Results are returned as a provider-neutral
-`ExtractionDocument` graph. Use your application's `IChatClient` to choose a
+vision language model**. Results are returned as a provider-neutral
+`ExtractionDocument` graph. Use your application's MEAI `IChatClient` to choose a
 local or hosted backend, and select free-form transcription or structured output.
 
 ## Install
 
 ```shell
-dotnet add package CommunityToolkit.DocumentExtraction.Vision --prerelease
+dotnet add package CommunityToolkit.DocumentExtraction.VisionLanguageModel --prerelease
 ```
 
 Add your chosen backend's `IChatClient` adapter package separately. For
@@ -58,7 +58,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using CommunityToolkit.DocumentExtraction.Vision;
+using CommunityToolkit.DocumentExtraction.VisionLanguageModel;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Documents;
 
@@ -67,7 +67,7 @@ public static class ImageExtraction
     public static async Task<ExtractionDocument> ExtractAsync(
         IChatClient chatClient, string pngPath, CancellationToken cancellationToken)
     {
-        using var extractor = new VisionDocumentExtractionClient(chatClient);
+        using var extractor = new VisionLanguageModelDocumentExtractionClient(chatClient);
         using var input = File.OpenRead(pngPath);
         ExtractionDocument document = await extractor.ExtractAsync(
             input, Path.GetFileName(pngPath), "image/png",
@@ -90,7 +90,7 @@ public static class ImageExtraction
 
 Default free-form mode asks for GitHub-flavored Markdown but returns the model's
 literal response in a text element. It does **not** parse Markdown into shared
-tables or headings. `VisionDocumentExtractionClientOptions.Prompt` replaces the default
+tables or headings. `VisionLanguageModelDocumentExtractionClientOptions.Prompt` replaces the default
 instruction; output remains model-generated and must not be trusted as exact OCR.
 
 ### Request structured tables from a PDF
@@ -106,7 +106,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using CommunityToolkit.DocumentExtraction.Vision;
+using CommunityToolkit.DocumentExtraction.VisionLanguageModel;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DocumentExtraction;
 using Microsoft.Extensions.Documents;
@@ -117,8 +117,8 @@ public static class StructuredExtraction
         IChatClient chatClient, string pdfPath, string modelId,
         CancellationToken cancellationToken)
     {
-        using var extractor = new VisionDocumentExtractionClient(
-            chatClient, new VisionDocumentExtractionClientOptions { UseStructuredOutput = true });
+        using var extractor = new VisionLanguageModelDocumentExtractionClient(
+            chatClient, new VisionLanguageModelDocumentExtractionClientOptions { UseStructuredOutput = true });
         using var input = File.OpenRead(pdfPath);
         var options = new DocumentExtractionOptions { ExtractorName = modelId };
         var document = await extractor.ExtractAsync(
@@ -199,7 +199,7 @@ Supply `ILoggerFactory` from your application's logging setup. Avoid logging
 sensitive document content.
 
 ```csharp
-using CommunityToolkit.DocumentExtraction.Vision;
+using CommunityToolkit.DocumentExtraction.VisionLanguageModel;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DocumentExtraction;
 using Microsoft.Extensions.Logging;
@@ -208,7 +208,7 @@ public static class ExtractionPipeline
 {
     public static DocumentExtractionClient Create(
         IChatClient chatClient, ILoggerFactory loggerFactory)
-        => new DocumentExtractionClientBuilder(new VisionDocumentExtractionClient(chatClient))
+        => new DocumentExtractionClientBuilder(new VisionLanguageModelDocumentExtractionClient(chatClient))
             .UseLogging(loggerFactory)
             .Build();
 }

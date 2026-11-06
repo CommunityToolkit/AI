@@ -3,9 +3,9 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DocumentExtraction;
 using Microsoft.Extensions.Documents;
 
-namespace CommunityToolkit.DocumentExtraction.Vision.UnitTests;
+namespace CommunityToolkit.DocumentExtraction.VisionLanguageModel.UnitTests;
 
-public sealed class VisionFreeformAcceptanceTests
+public sealed class VisionLanguageModelFreeformAcceptanceTests
 {
     [Theory]
     [InlineData(false)]
@@ -17,7 +17,7 @@ public sealed class VisionFreeformAcceptanceTests
         var response = RecordingChatClient.Response(literal, explicitRaw ? sentinel : null);
         var chat = new RecordingChatClient(response);
         using var input = new BorrowedInput([137, 80, 78, 71, 1, 5, 9]);
-        using var client = new VisionDocumentExtractionClient(chat, new() { Prompt = "Literal transcription, please." });
+        using var client = new VisionLanguageModelDocumentExtractionClient(chat, new() { Prompt = "Literal transcription, please." });
         var options = new DocumentExtractionOptions { ExtractorName = "requested-route" };
         var result = await client.ExtractAsync(input, "invoice.scan.png", "IMAGE/PNG", options);
 
@@ -66,7 +66,7 @@ public sealed class VisionFreeformAcceptanceTests
     {
         var response = RecordingChatClient.Response(literal, model: null);
         var chat = new RecordingChatClient(response);
-        using var client = new VisionDocumentExtractionClient(chat);
+        using var client = new VisionLanguageModelDocumentExtractionClient(chat);
         using var input = new BorrowedInput([1, 2, 3]);
         var result = await client.ExtractAsync(input, "empty.png", "image/png", new() { ExtractorName = "not-a-returned-model" });
         var section = Assert.Single(result.Sections);
@@ -94,7 +94,7 @@ public sealed class VisionFreeformAcceptanceTests
         var failure = new InvalidOperationException("deterministic chat failure");
         var chat = new RecordingChatClient(failure, RecordingChatClient.Response("forbidden fallback"));
         using var input = new BorrowedInput([4, 5, 6]);
-        var client = new VisionDocumentExtractionClient(chat);
+        var client = new VisionLanguageModelDocumentExtractionClient(chat);
         Assert.Same(failure, await Assert.ThrowsAsync<InvalidOperationException>(
             () => client.ExtractAsync(input, "fail", mediaType)));
         Assert.Single(chat.Requests);
@@ -121,7 +121,7 @@ public sealed class VisionFreeformAcceptanceTests
             OnRequest = stage == "during-chat" ? _ => cancellation.Cancel() : null,
         };
         using var input = new BorrowedInput([8, 9, 10], stage == "during-copy" ? cancellation : null);
-        var client = new VisionDocumentExtractionClient(chat);
+        var client = new VisionLanguageModelDocumentExtractionClient(chat);
         if (stage == "before-copy")
         {
             cancellation.Cancel();
@@ -153,7 +153,7 @@ public sealed class VisionFreeformAcceptanceTests
     {
         var chat = new RecordingChatClient(RecordingChatClient.Response("unused"));
         using var input = new MemoryStream([1, 2, 3]);
-        using var client = new VisionDocumentExtractionClient(chat);
+        using var client = new VisionLanguageModelDocumentExtractionClient(chat);
         if (scenario == "unreadable")
         {
             input.Dispose();
@@ -193,7 +193,7 @@ public sealed class VisionFreeformAcceptanceTests
         byte[] bytes = PdfFixture.Create();
         using var input = new BorrowedInput([0, .. bytes]);
         input.Position = 1;
-        using var client = new VisionDocumentExtractionClient(chat);
+        using var client = new VisionLanguageModelDocumentExtractionClient(chat);
         var result = await client.ExtractAsync(input, "native.pdf", "APPLICATION/PDF", new() { ExtractorName = "pdf-route" });
         var request = Assert.Single(chat.Requests);
         Assert.Equal("pdf-route", request.Options!.ModelId);
@@ -229,7 +229,7 @@ public sealed class VisionFreeformAcceptanceTests
         var chat = new RecordingChatClient(response);
         byte[] bytes = PdfFixture.Create(empty: true);
         using var input = new BorrowedInput(bytes);
-        using var client = new VisionDocumentExtractionClient(chat);
+        using var client = new VisionLanguageModelDocumentExtractionClient(chat);
         var result = await client.ExtractAsync(input, "empty.pdf", "application/pdf");
         Assert.Equal("empty.pdf", result.Identifier);
         Assert.Same(response, result.RawRepresentation);
@@ -250,7 +250,7 @@ public sealed class VisionFreeformAcceptanceTests
         var chat = new RecordingChatClient(failure, RecordingChatClient.Response("forbidden fallback"));
         byte[] bytes = PdfFixture.Create();
         using var input = new BorrowedInput(bytes);
-        using var client = new VisionDocumentExtractionClient(chat);
+        using var client = new VisionLanguageModelDocumentExtractionClient(chat);
         Assert.Same(failure, await Assert.ThrowsAsync<NotSupportedException>(
             () => client.ExtractAsync(input, "native.pdf", "application/pdf")));
         var content = Assert.IsType<DataContent>(Assert.Single(chat.Requests).Messages[0].Contents[1]);
@@ -264,20 +264,20 @@ public sealed class VisionFreeformAcceptanceTests
     [Fact]
     public async Task GetServiceAndDispose_PreserveBorrowedChatAndValidateConstructor()
     {
-        Assert.Throws<ArgumentNullException>(() => new VisionDocumentExtractionClient(null!));
+        Assert.Throws<ArgumentNullException>(() => new VisionLanguageModelDocumentExtractionClient(null!));
         var chat = new RecordingChatClient(RecordingChatClient.Response("still usable"));
-        var client = new VisionDocumentExtractionClient(chat);
-        Assert.Equal(typeof(DocumentExtractionClient), typeof(VisionDocumentExtractionClient).BaseType);
-        Assert.Equal(typeof(DocumentExtractionClient), typeof(VisionDocumentExtractionClient).GetMethod(nameof(client.ExtractAsync))!.GetBaseDefinition().DeclaringType);
-        Assert.Equal(typeof(DocumentExtractionClient), typeof(VisionDocumentExtractionClient).GetMethod(nameof(client.GetService))!.GetBaseDefinition().DeclaringType);
-        Assert.Equal(typeof(DocumentExtractionClient), typeof(VisionDocumentExtractionClient).GetMethod(nameof(client.Dispose))!.DeclaringType);
-        Assert.Same(client, client.GetService(typeof(VisionDocumentExtractionClient)));
+        var client = new VisionLanguageModelDocumentExtractionClient(chat);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(VisionLanguageModelDocumentExtractionClient).BaseType);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(VisionLanguageModelDocumentExtractionClient).GetMethod(nameof(client.ExtractAsync))!.GetBaseDefinition().DeclaringType);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(VisionLanguageModelDocumentExtractionClient).GetMethod(nameof(client.GetService))!.GetBaseDefinition().DeclaringType);
+        Assert.Equal(typeof(DocumentExtractionClient), typeof(VisionLanguageModelDocumentExtractionClient).GetMethod(nameof(client.Dispose))!.DeclaringType);
+        Assert.Same(client, client.GetService(typeof(VisionLanguageModelDocumentExtractionClient)));
         Assert.Same(client, client.GetService(typeof(DocumentExtractionClient)));
         Assert.Same(client, client.GetService(typeof(object)));
         Assert.Same(chat, client.GetService(typeof(IChatClient)));
         Assert.Null(client.GetService(typeof(string)));
-        Assert.Null(client.GetService(typeof(VisionDocumentExtractionClient), "key"));
-        Assert.Equal((typeof(VisionDocumentExtractionClient), (object?)"key"), chat.ServiceRequests[^1]);
+        Assert.Null(client.GetService(typeof(VisionLanguageModelDocumentExtractionClient), "key"));
+        Assert.Equal((typeof(VisionLanguageModelDocumentExtractionClient), (object?)"key"), chat.ServiceRequests[^1]);
         Assert.Throws<ArgumentNullException>(() => client.GetService(null!));
         client.Dispose();
         client.Dispose();

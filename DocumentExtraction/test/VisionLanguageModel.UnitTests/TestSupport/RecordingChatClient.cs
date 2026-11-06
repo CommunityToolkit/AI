@@ -1,6 +1,6 @@
 using Microsoft.Extensions.AI;
 
-namespace CommunityToolkit.DocumentExtraction.Vision.UnitTests;
+namespace CommunityToolkit.DocumentExtraction.VisionLanguageModel.UnitTests;
 
 internal sealed class RecordingChatClient(params object[] results) : IChatClient
 {

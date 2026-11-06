@@ -1,13 +1,13 @@
 ---
-name: ctk-document-extraction-vision
-description: Extract PDFs or images with CommunityToolkit.DocumentExtraction.Vision and an application-supplied IChatClient. Use for freeform versus structured extraction, native completion checks, literal versus addressed tables, and diagnosing backend format/schema/token limitations.
+name: ctk-document-extraction-vision-language-model
+description: Extract original PDFs or images with a vision language model through CommunityToolkit.DocumentExtraction.VisionLanguageModel and an application-supplied MEAI IChatClient. Use for freeform versus structured extraction, native completion checks, literal versus addressed tables, and backend format/schema/token limitations; the adapter, API and model must support original inputs and structured mode requires schema-based responses.
 ---
 
-# Extract with a capable chat backend
+# Extract with a vision language model
 
 ## Establish the existing pipeline and goal
 
-Inspect the app's resolved Vision, MEAI and adapter versions, target framework,
+Inspect the app's resolved Vision Language Model, MEAI and adapter versions, target framework,
 model/API configuration and existing chat pipeline. Use the same installed
 provider skill/README; do not mix an unrelated adapter with experimental core
 contracts. This provider has netstandard2.0, net8.0 and net10.0 assets, but adapter
@@ -39,18 +39,18 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using CommunityToolkit.DocumentExtraction.Vision;
+using CommunityToolkit.DocumentExtraction.VisionLanguageModel;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Documents;
 
-public static class VisionExtraction
+public static class VisionLanguageModelExtraction
 {
     public static async Task<ExtractionDocument> ExtractAsync(
         IChatClient chatClient, string path, string mediaType, bool structured,
         Func<ChatResponse, bool> isNativeComplete,
         CancellationToken cancellationToken)
     {
-        using var extractor = new VisionDocumentExtractionClient(
+        using var extractor = new VisionLanguageModelDocumentExtractionClient(
             chatClient, new() { UseStructuredOutput = structured });
         using var input = File.OpenRead(path);
         var document = await extractor.ExtractAsync(

@@ -12,12 +12,12 @@
     <PackageReference Include="CommunityToolkit.DocumentExtraction.AzureContentUnderstanding" Version="1.0.0-preview.1" GeneratePathProperty="true" />
     <PackageReference Include="CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence" Version="1.0.0-preview.1" GeneratePathProperty="true" />
     <PackageReference Include="CommunityToolkit.DocumentExtraction.Mistral" Version="1.0.0-preview.1" GeneratePathProperty="true" />
-    <PackageReference Include="CommunityToolkit.DocumentExtraction.Vision" Version="1.0.0-preview.1" GeneratePathProperty="true" />
+    <PackageReference Include="CommunityToolkit.DocumentExtraction.VisionLanguageModel" Version="1.0.0-preview.1" GeneratePathProperty="true" />
     <Reference Include="CommunityToolkit.DocumentExtraction.PdfPig" HintPath="$(PkgCommunityToolkit_DocumentExtraction_PdfPig)/lib/$(ProviderAssetFramework)/CommunityToolkit.DocumentExtraction.PdfPig.dll" />
     <Reference Include="CommunityToolkit.DocumentExtraction.AzureContentUnderstanding" HintPath="$(PkgCommunityToolkit_DocumentExtraction_AzureContentUnderstanding)/lib/$(ProviderAssetFramework)/CommunityToolkit.DocumentExtraction.AzureContentUnderstanding.dll" />
     <Reference Include="CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence" HintPath="$(PkgCommunityToolkit_DocumentExtraction_AzureDocumentIntelligence)/lib/$(ProviderAssetFramework)/CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence.dll" />
     <Reference Include="CommunityToolkit.DocumentExtraction.Mistral" HintPath="$(PkgCommunityToolkit_DocumentExtraction_Mistral)/lib/$(ProviderAssetFramework)/CommunityToolkit.DocumentExtraction.Mistral.dll" />
-    <Reference Include="CommunityToolkit.DocumentExtraction.Vision" HintPath="$(PkgCommunityToolkit_DocumentExtraction_Vision)/lib/$(ProviderAssetFramework)/CommunityToolkit.DocumentExtraction.Vision.dll" />
+    <Reference Include="CommunityToolkit.DocumentExtraction.VisionLanguageModel" HintPath="$(PkgCommunityToolkit_DocumentExtraction_VisionLanguageModel)/lib/$(ProviderAssetFramework)/CommunityToolkit.DocumentExtraction.VisionLanguageModel.dll" />
     <Compile Include="../../DocumentExtraction/test/PdfPig.UnitTests/PdfFixture.cs" Link="PdfFixture.cs" />
   </ItemGroup>
   <Target Name="SelectActualProviderAsset" AfterTargets="ResolvePackageAssets">

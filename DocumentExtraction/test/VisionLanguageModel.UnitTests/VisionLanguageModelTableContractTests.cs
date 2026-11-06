@@ -3,9 +3,9 @@ using System.Text.Json.Nodes;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Documents;
 
-namespace CommunityToolkit.DocumentExtraction.Vision.UnitTests;
+namespace CommunityToolkit.DocumentExtraction.VisionLanguageModel.UnitTests;
 
-public sealed class VisionTableContractTests
+public sealed class VisionLanguageModelTableContractTests
 {
     [Theory]
     [InlineData(0)]
@@ -146,7 +146,7 @@ public sealed class VisionTableContractTests
         var chat = new RecordingChatClient(RecordingChatClient.Response(
             $$"""{"pages":[{},{"tables":[{"cells":[]},{{table}}]}]}"""));
         using var input = new BorrowedInput([1, 2, 3]);
-        using var client = new VisionDocumentExtractionClient(chat, new() { UseStructuredOutput = true, Prompt = "custom contract" });
+        using var client = new VisionLanguageModelDocumentExtractionClient(chat, new() { UseStructuredOutput = true, Prompt = "custom contract" });
         var error = await Assert.ThrowsAsync<InvalidDataException>(() => client.ExtractAsync(input, "bad.pdf", "application/pdf"));
         Assert.Contains("pages[1].tables[1]", error.Message);
         Assert.Contains(detail, error.Message);
@@ -170,7 +170,7 @@ public sealed class VisionTableContractTests
             ["cells"] = new JsonArray(new JsonObject { ["rowIndex"] = row, ["columnIndex"] = column, ["text"] = "observed" }),
         };
         var chat = new RecordingChatClient(RecordingChatClient.Response(Wrap(table)));
-        using var client = new VisionDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
+        using var client = new VisionLanguageModelDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
         using var input = new MemoryStream([1]);
         var error = await Assert.ThrowsAsync<InvalidDataException>(() => client.ExtractAsync(input, "old.pdf", "application/pdf"));
         Assert.Contains("pages[0].tables[0]", error.Message);
@@ -200,7 +200,7 @@ public sealed class VisionTableContractTests
         else
         {
             var chat = new RecordingChatClient(RecordingChatClient.Response(Wrap(table)));
-            using var client = new VisionDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
+            using var client = new VisionLanguageModelDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
             using var input = new MemoryStream([1]);
             var error = await Assert.ThrowsAsync<InvalidDataException>(() => client.ExtractAsync(input, "budget.png", "image/png"));
             Assert.Contains("65536", error.Message);
@@ -214,7 +214,7 @@ public sealed class VisionTableContractTests
         const string table = """{"cells":[{"rowIndex":0,"columnIndex":0,"rowSpan":256,"columnSpan":128}]}""";
         var response = RecordingChatClient.Response($$"""{"pages":[{"tables":[{{table}}]},{"tables":[{{table}},{"cells":[{"rowIndex":0,"columnIndex":0}]}]}]}""");
         var chat = new RecordingChatClient(response);
-        using var client = new VisionDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
+        using var client = new VisionLanguageModelDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
         using var input = new MemoryStream([1]);
         var error = await Assert.ThrowsAsync<InvalidDataException>(() => client.ExtractAsync(input, "budget.pdf", "application/pdf"));
         Assert.Contains("pages[1].tables[1].cells[0]", error.Message);
@@ -229,7 +229,7 @@ public sealed class VisionTableContractTests
             """{"rowIndex":0,"columnIndex":0}""", 65537)) + "]}";
         var chat = new RecordingChatClient(RecordingChatClient.Response(
             $$"""{"pages":[{"tables":[{{table}}]}]}"""));
-        using var client = new VisionDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
+        using var client = new VisionLanguageModelDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
         using var input = new MemoryStream([1]);
         var error = await Assert.ThrowsAsync<InvalidDataException>(() => client.ExtractAsync(input, "large.pdf", "application/pdf"));
         Assert.Contains("pages[0].tables[0].cells", error.Message);
@@ -301,7 +301,7 @@ public sealed class VisionTableContractTests
     public async Task ExtractAsync_MalformedModelOutput_HasContextualInvalidData(string json, string context)
     {
         var chat = new RecordingChatClient(RecordingChatClient.Response(json));
-        using var client = new VisionDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
+        using var client = new VisionLanguageModelDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
         using var input = new MemoryStream([1]);
         var error = await Assert.ThrowsAsync<InvalidDataException>(() => client.ExtractAsync(input, "bad.pdf", "application/pdf"));
         Assert.Contains(context, error.Message);
@@ -315,7 +315,7 @@ public sealed class VisionTableContractTests
     {
         var response = RecordingChatClient.Response(Wrap(table));
         var chat = new RecordingChatClient(response);
-        using var client = new VisionDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
+        using var client = new VisionLanguageModelDocumentExtractionClient(chat, new() { UseStructuredOutput = true });
         using var input = new MemoryStream([1, 2, 3]);
         var document = await client.ExtractAsync(input, "generated.pdf", "application/pdf");
         return (document, chat, response);
