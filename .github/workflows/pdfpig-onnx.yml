@@ -100,9 +100,9 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          dotnet pack DocumentExtraction/src/PdfPig.OnnxLayoutAnalysis --no-build --no-restore -c Release --output "${{ runner.temp }}/pdfpig-onnx-core"
+          dotnet pack DocumentExtraction/src/PdfPig.OnnxLayoutAnalysis --no-build --no-restore -c Release --output "${{ runner.temp }}/pdfpig-onnx-packages"
           if ($LASTEXITCODE -ne 0) { throw 'Companion pack failed.' }
-          $packagePath = Join-Path "${{ runner.temp }}/pdfpig-onnx-core" 'CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis.1.0.0-preview.2.nupkg'
+          $packagePath = Join-Path "${{ runner.temp }}/pdfpig-onnx-packages" 'CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis.1.0.0-preview.2.nupkg'
           $archive = [IO.Compression.ZipFile]::OpenRead($packagePath)
           try {
             foreach ($name in @(
@@ -125,7 +125,7 @@ jobs:
             $archive.Dispose()
           }
           $configPath = "${{ runner.temp }}/pdfpig-onnx-nuget.config"
-          ./eng/Test-DocumentExtractionPackages.ps1 -PackageDirectory "${{ runner.temp }}/pdfpig-onnx-core" -NuGetConfig "$configPath" -OutputDirectory "${{ runner.temp }}/pdfpig-onnx-consumers" -ConsumerProject ./DocumentExtraction/samples/PdfPigOnnx.PackageSmoke/PdfPigOnnx.PackageSmoke.csproj
+          ./eng/Test-DocumentExtractionPackages.ps1 -PackageDirectory "${{ runner.temp }}/pdfpig-onnx-packages" -NuGetConfig "$configPath" -OutputDirectory "${{ runner.temp }}/pdfpig-onnx-consumers" -ConsumerProject ./DocumentExtraction/samples/PdfPigOnnx.PackageSmoke/PdfPigOnnx.PackageSmoke.csproj
       - uses: actions/upload-artifact@v6
         with:
           name: pdfpig-onnx-consumers-${{ matrix.os }}
@@ -136,5 +136,5 @@ jobs:
       - uses: actions/upload-artifact@v6
         with:
           name: pdfpig-onnx-preview-${{ matrix.os }}
-          path: ${{ runner.temp }}/pdfpig-onnx-core/CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis.*.nupkg
+          path: ${{ runner.temp }}/pdfpig-onnx-packages/CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis.*.nupkg
           if-no-files-found: error
