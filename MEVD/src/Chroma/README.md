@@ -24,6 +24,7 @@ For more information, see the [Microsoft.Extensions.VectorData documentation](ht
 
 ## Limitations
 
+- Hybrid search needs BM25 indexes, which distributed Chroma, the one Chroma Cloud runs on, and the servers that declare sparse vector indexes have. For distributed Chroma installed elsewhere, like with the Helm chart of Chroma or an operator, set `Distributed=true` in the connection string, or `WithDistributedChroma()` in the options of the client. On a single Chroma server, a collection does not offer `IKeywordHybridSearchable`, and a hybrid search throws an `InvalidOperationException` that says why.
 - On Chroma Cloud, a vector search returns at most 300 results, `Skip` included, the default quota of Chroma Cloud: beyond that, Chroma Cloud answers with a quota error.
 - Chroma does not store empty lists, so an empty array or list comes back as `null`.
 - A data property whose storage name is empty, or starts with `#`, `$` or `chroma:`, throws a `NotSupportedException` when the collection object is created. Chroma rejects the first ones in a write, and drops the `chroma:` keys from every read, so such a property would always come back as `null`.
@@ -35,7 +36,7 @@ For more information, see the [Microsoft.Extensions.VectorData documentation](ht
 - On Chroma Cloud, a record has at most 32 metadata keys, and a null value counts as one. The provider writes every data property, null or not. A write with null values that would take a record beyond 32 keys throws an `ArgumentException`. With `WithReadsBeyondKeyQuota()`, the client reads such a record first and sends only the null values of the keys it has. Two writes of the same record at the same time can then mix.
 - On Chroma Cloud, a metadata key has at most 36 bytes in UTF-8. With a data property whose storage name is longer, the collection is created, but every upsert throws a `VectorStoreException` with the quota error of Chroma Cloud.
 - With two or more full-text properties, each has a BM25 index of its own, whose key is its storage name with `_bm25`. On Chroma Cloud, a storage name of more than 31 bytes makes that key longer than 36 bytes: the collection is created without that index, and a hybrid search on that property throws an `InvalidOperationException` that says why.
-- On Chroma Cloud, `Contains` on the full-text property throws an `ArgumentException` for a text of fewer than 3 characters. Once Chroma Cloud has indexed the records, such a filter would find no record, and its negation every record.
+- On distributed Chroma, the one Chroma Cloud runs on, `Contains` on the full-text property throws an `ArgumentException` for a text of fewer than 3 characters: on Chroma Cloud, and elsewhere with `Distributed=true` in the connection string or `WithDistributedChroma()` in the options of the client. Once the server has indexed the records, such a filter would find no record, and its negation every record.
 
 The connection string does not set `WithUpsertStrategy` and `WithReadsBeyondKeyQuota()`. Set them on the options of a `ChromaClient` created in code, and pass it to the vector store:
 
