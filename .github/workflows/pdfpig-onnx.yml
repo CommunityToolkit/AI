@@ -86,12 +86,33 @@ jobs:
       - name: Offline provisioning checks
         shell: pwsh
         run: ./DocumentExtraction/src/PdfPig.OnnxLayoutAnalysis/Test-ModelProvisioning.ps1
-      - name: Pack companion and compile actual package consumer
+      - name: Pack, inspect archive and compile actual package consumer
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           dotnet pack DocumentExtraction/src/PdfPig.OnnxLayoutAnalysis --no-build --no-restore -c Release --output "${{ runner.temp }}/pdfpig-onnx-core"
           if ($LASTEXITCODE -ne 0) { throw 'Companion pack failed.' }
+          $packagePath = Join-Path "${{ runner.temp }}/pdfpig-onnx-core" 'CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis.1.0.0-preview.2.nupkg'
+          $archive = [IO.Compression.ZipFile]::OpenRead($packagePath)
+          try {
+            foreach ($name in @(
+              'tools/Get-Models.ps1', 'tools/models.json',
+              'README.md', 'CuratedPipeline.NOTICES.txt', 'PdfRendering.NOTICES.txt',
+              'lib/net8.0/CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis.dll',
+              'lib/net10.0/CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis.dll'
+            )) {
+              $entry = $archive.GetEntry($name)
+              if ($null -eq $entry -or $entry.Length -eq 0) { throw "Missing exact packed asset: $name" }
+            }
+            foreach ($entry in $archive.Entries) {
+              if ($entry.FullName.Contains('//') -or $entry.FullName.Contains('\')) { throw "Noncanonical packed path: $($entry.FullName)" }
+              if ($entry.FullName -match '\.(onnx|safetensors)$') { throw "Unexpected model weights: $($entry.FullName)" }
+            }
+            Write-Host 'Exact packed setup, notices and both TFM assets verified; no weights.'
+          }
+          finally {
+            $archive.Dispose()
+          }
           $configPath = "${{ runner.temp }}/pdfpig-onnx-nuget.config"
           [xml] $config = Get-Content -LiteralPath $configPath -Raw
           $mapping = $config.CreateElement('package')

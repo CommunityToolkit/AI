@@ -19,8 +19,8 @@
     <Compile Include="..\Shared\PdfPageRenderer.cs" LinkBase="Shared" />
     <None Include="..\Shared\PdfRendering.NOTICES.txt" Pack="true" PackagePath="\" />
     <None Include="CuratedPipeline.NOTICES.txt" Pack="true" PackagePath="\" />
-    <None Include="Get-Models.ps1" Pack="true" PackagePath="tools\" />
-    <None Include="models.json" Pack="true" PackagePath="tools\" />
+    <None Include="Get-Models.ps1" Pack="true" PackagePath="tools" />
+    <None Include="models.json" Pack="true" PackagePath="tools" />
     <PackageReference Include="Microsoft.ML.OnnxRuntime.Managed" />
     <InternalsVisibleTo Include="$(AssemblyName).UnitTests" />
   </ItemGroup>
