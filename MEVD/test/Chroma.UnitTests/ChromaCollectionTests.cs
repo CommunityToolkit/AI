@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -37,6 +37,7 @@ public class ChromaCollectionTests
         this._chromaClientMock
             .Setup(x => x.Options)
             .Returns(new ChromaConfigurationOptions("http://localhost:8000"));
+        this.SetupSparseVectorIndexes(false);
         this._chromaClientMock
             .Setup(x => x.GetCollectionClient(TestCollectionName))
             .Returns(this._collectionClientMock.Object);
@@ -263,20 +264,47 @@ public class ChromaCollectionTests
     }
 
     [Theory]
-    [InlineData("https://api.trychroma.com", true)]
-    [InlineData("http://localhost:8000", false)]
-    public void GetServiceOffersHybridSearchOnlyWithFullTextPropertiesOnChromaCloud(string uri, bool offered)
+    [InlineData(true)]
+    [InlineData(false)]
+    public void GetServiceOffersHybridSearchOnlyWithFullTextPropertiesOnAServerWithSparseVectorIndexes(bool sparseVectorIndexes)
     {
-        // Arrange.
-        this._chromaClientMock
-            .Setup(x => x.Options)
-            .Returns(new ChromaConfigurationOptions(uri));
+        // Arrange: the client tells whether the server takes sparse vector indexes, like the BM25 ones.
+        this.SetupSparseVectorIndexes(sparseVectorIndexes);
         using var fullText = this.CreateCollection<string, FullTextHotel>();
         using var noFullText = this.CreateCollection<string, ChromaHotel<string>>();
 
         // Act and assert.
-        Assert.Equal(offered, fullText.GetService(typeof(IKeywordHybridSearchable<FullTextHotel>)) is not null);
+        Assert.Equal(sparseVectorIndexes, fullText.GetService(typeof(IKeywordHybridSearchable<FullTextHotel>)) is not null);
         Assert.Null(noFullText.GetService(typeof(IKeywordHybridSearchable<ChromaHotel<string>>)));
+    }
+
+    [Fact]
+    public void GetServiceFollowsTheAnswerOfTheClient()
+    {
+        // Arrange: a server that did not answer yet, for which the client answers from its options, and answers again later.
+        this._chromaClientMock
+            .SetupSequence(x => x.SupportsSparseVectorIndexes())
+            .Returns(false)
+            .Returns(true);
+        using var sut = this.CreateCollection<string, FullTextHotel>();
+
+        // Act and assert: the collection keeps no answer of its own, the client keeps the answer of the server.
+        Assert.Null(sut.GetService(typeof(IKeywordHybridSearchable<FullTextHotel>)));
+        Assert.NotNull(sut.GetService(typeof(IKeywordHybridSearchable<FullTextHotel>)));
+    }
+
+    [Fact]
+    public void GetServiceDoesNotAskTheClientWithoutFullTextProperties()
+    {
+        // Arrange.
+        this.SetupSparseVectorIndexes(true);
+        using var sut = this.CreateCollection<string, ChromaHotel<string>>();
+
+        // Act.
+        Assert.Null(sut.GetService(typeof(IKeywordHybridSearchable<ChromaHotel<string>>)));
+
+        // Assert.
+        this._chromaClientMock.Verify(x => x.SupportsSparseVectorIndexes(), Times.Never);
     }
 
     [Fact]
@@ -284,9 +312,7 @@ public class ChromaCollectionTests
     {
         // Arrange: an existing collection can have its BM25 indexes under keys that the client did not generate, so a
         // generated key beyond 36 bytes does not hide hybrid search; the search itself reports a missing index.
-        this._chromaClientMock
-            .Setup(x => x.Options)
-            .Returns(new ChromaConfigurationOptions("https://api.trychroma.com"));
+        this.SetupChromaCloud();
         using var oneFits = this.CreateCollection<string, LongFullTextHotel>();
         using var noneFits = this.CreateCollection<string, TooLongFullTextHotel>();
 
@@ -477,22 +503,38 @@ public class ChromaCollectionTests
 
         // Act and assert.
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await sut.HybridSearchAsync(new ReadOnlyMemory<float>([1, 2, 3, 4]), ["pool"], top: 1, cancellationToken: this._testCancellationToken).ToListAsync());
-        Assert.Contains("Only Chroma Cloud has BM25 indexes.", exception.Message);
+        Assert.Contains("Only distributed Chroma, the one Chroma Cloud runs on, and the servers that declare sparse vector indexes have BM25 indexes.", exception.Message);
+        Assert.Contains("Distributed=true", exception.Message);
+    }
+
+    [Fact]
+    public async Task HybridSearchOnDistributedChromaSaysTheCollectionWasCreatedWithoutTheBm25IndexAsync()
+    {
+        // Arrange: distributed Chroma installed elsewhere, which has no quota on the keys, so even a long key is no reason.
+        this._chromaClientMock
+            .Setup(x => x.Options)
+            .Returns(new ChromaConfigurationOptions("http://localhost:8000").WithDistributedChroma());
+        this.SetupSparseVectorIndexes(true);
+        using var sut = this.CreateHybridCollection<LongFullTextHotel>(Bm25Index("Review_with_a_long_name_xxxxxxx_bm25", "Review_with_a_long_name_xxxxxxx"));
+
+        // Act and assert.
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await sut.HybridSearchAsync(new ReadOnlyMemory<float>([1, 2, 3, 4]), ["pool"], top: 1, new() { AdditionalProperty = h => h.Description }, this._testCancellationToken).ToListAsync());
+        Assert.Contains("created without it", exception.Message);
+        Assert.DoesNotContain("bytes", exception.Message);
+        Assert.DoesNotContain("Only distributed Chroma", exception.Message);
     }
 
     [Fact]
     public async Task HybridSearchOnChromaCloudSaysTheCollectionWasCreatedWithoutTheBm25IndexAsync()
     {
         // Arrange: Chroma Cloud, with a key that fits but no index, as in a collection that another client created.
-        this._chromaClientMock
-            .Setup(x => x.Options)
-            .Returns(new ChromaConfigurationOptions("https://api.trychroma.com"));
+        this.SetupChromaCloud();
         using var sut = this.CreateHybridCollection<FullTextHotel>();
 
         // Act and assert.
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await sut.HybridSearchAsync(new ReadOnlyMemory<float>([1, 2, 3, 4]), ["pool"], top: 1, cancellationToken: this._testCancellationToken).ToListAsync());
         Assert.Contains("created without it", exception.Message);
-        Assert.DoesNotContain("Only Chroma Cloud", exception.Message);
+        Assert.DoesNotContain("Only distributed Chroma", exception.Message);
     }
 
     [Fact]
@@ -510,9 +552,7 @@ public class ChromaCollectionTests
     public async Task HybridSearchSaysWhyChromaCloudHasNoBm25IndexOnALongStorageNameAsync()
     {
         // Arrange: Chroma Cloud, with only the index of the property that fits.
-        this._chromaClientMock
-            .Setup(x => x.Options)
-            .Returns(new ChromaConfigurationOptions("https://api.trychroma.com"));
+        this.SetupChromaCloud();
         using var sut = this.CreateHybridCollection<LongFullTextHotel>(Bm25Index("Review_with_a_long_name_xxxxxxx_bm25", "Review_with_a_long_name_xxxxxxx"));
 
         // Act and assert.
@@ -679,6 +719,26 @@ public class ChromaCollectionTests
             .Callback<ChromaQuery, CancellationToken>((q, _) => query = q)
             .ReturnsAsync(new List<IReadOnlyList<ChromaCollectionQueryEntry>> { results });
         return () => query!;
+    }
+
+    // Whether the server takes sparse vector indexes, as the client tells it.
+    private void SetupSparseVectorIndexes(bool sparseVectorIndexes)
+    {
+        this._chromaClientMock
+            .Setup(x => x.SupportsSparseVectorIndexes())
+            .Returns(sparseVectorIndexes);
+        this._chromaClientMock
+            .Setup(x => x.SupportsSparseVectorIndexesAsync(this._testCancellationToken))
+            .ReturnsAsync(sparseVectorIndexes);
+    }
+
+    // Chroma Cloud, which takes sparse vector indexes.
+    private void SetupChromaCloud()
+    {
+        this._chromaClientMock
+            .Setup(x => x.Options)
+            .Returns(new ChromaConfigurationOptions("https://api.trychroma.com"));
+        this.SetupSparseVectorIndexes(true);
     }
 
     // The collection is not read.
