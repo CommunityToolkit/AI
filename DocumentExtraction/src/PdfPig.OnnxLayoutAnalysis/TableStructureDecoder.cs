@@ -29,8 +29,8 @@ internal static class TableStructureDecoder
         PdfRectangle tableBounds, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
-        ArgumentNullException.ThrowIfNull(proposals);
-        ArgumentNullException.ThrowIfNull(tokens);
+        Throw.IfNull(proposals);
+        Throw.IfNull(tokens);
         if (proposals.Count > MaximumProposals || tokens.Count > MaximumTokens)
         {
             throw new InvalidDataException("Table structure exceeds the proposal or token budget.");
@@ -43,7 +43,7 @@ internal static class TableStructureDecoder
         {
             token.ThrowIfCancellationRequested();
             if (proposal is null || proposal.Label is < 0 or > 5 ||
-                !float.IsFinite(proposal.Confidence) || proposal.Confidence is < 0.5f or > 1)
+                !OnnxCompatibility.IsFinite(proposal.Confidence) || proposal.Confidence is < 0.5f or > 1)
             {
                 throw new InvalidDataException("Invalid accepted table proposal.");
             }
@@ -280,9 +280,9 @@ internal static class TableStructureDecoder
 
     private static void ValidateBounds(PdfRectangle bounds)
     {
-        if (!double.IsFinite(bounds.Left) || !double.IsFinite(bounds.Right) ||
-            !double.IsFinite(bounds.Bottom) || !double.IsFinite(bounds.Top) ||
-            !double.IsFinite(bounds.Width) || !double.IsFinite(bounds.Height) ||
+        if (!OnnxCompatibility.IsFinite(bounds.Left) || !OnnxCompatibility.IsFinite(bounds.Right) ||
+            !OnnxCompatibility.IsFinite(bounds.Bottom) || !OnnxCompatibility.IsFinite(bounds.Top) ||
+            !OnnxCompatibility.IsFinite(bounds.Width) || !OnnxCompatibility.IsFinite(bounds.Height) ||
             bounds.Width <= 0 || bounds.Height <= 0)
         {
             throw new InvalidDataException("Table geometry must have finite, positive bounds.");

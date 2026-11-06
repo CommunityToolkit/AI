@@ -9,7 +9,7 @@ public sealed class OnnxTableStructureOptions
     /// <summary>Gets or sets the required local pinned table structure model path.</summary>
     public string? ModelPath { get; set; }
 
-    internal void Validate() => ArgumentException.ThrowIfNullOrWhiteSpace(ModelPath);
+    internal void Validate() => Throw.IfNullOrWhitespace(ModelPath);
 
     internal OnnxTableStructureOptions Copy() => new() { ModelPath = ModelPath };
 }

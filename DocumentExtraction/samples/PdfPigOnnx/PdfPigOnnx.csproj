@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
     <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <DocumentExtractionBuild>true</DocumentExtractionBuild>
-    <NoWarn>$(NoWarn);EXTEXP0019;MEDE0001</NoWarn>
+    <NoWarn>$(NoWarn);CTDE0001;EXTEXP0019;MEDE0001</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.ML.OnnxRuntime" />

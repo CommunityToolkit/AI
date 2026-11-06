@@ -5,6 +5,12 @@ using CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Documents;
 
+if (args is ["--synthetic-smoke"])
+{
+    await SyntheticSmoke.RunAsync();
+    return;
+}
+
 if (args.Length < 2)
 {
     throw new ArgumentException("Usage: PdfPigOnnx <models-directory> <document.pdf> [--ocr] [--tables] [--columns]");

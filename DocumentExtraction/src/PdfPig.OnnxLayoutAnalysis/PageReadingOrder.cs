@@ -25,9 +25,9 @@ internal static class PageReadingOrder
         {
             token.ThrowIfCancellationRequested();
             var (bounds, element) = elements[i];
-            if (!double.IsFinite(bounds.Left) || !double.IsFinite(bounds.Right) ||
-                !double.IsFinite(bounds.Bottom) || !double.IsFinite(bounds.Top) ||
-                !double.IsFinite(bounds.Width) || !double.IsFinite(bounds.Height) ||
+            if (!OnnxCompatibility.IsFinite(bounds.Left) || !OnnxCompatibility.IsFinite(bounds.Right) ||
+                !OnnxCompatibility.IsFinite(bounds.Bottom) || !OnnxCompatibility.IsFinite(bounds.Top) ||
+                !OnnxCompatibility.IsFinite(bounds.Width) || !OnnxCompatibility.IsFinite(bounds.Height) ||
                 bounds.Width <= 0 || bounds.Height <= 0)
             {
                 throw new InvalidDataException($"Column reading order element [{i}] has invalid bounds.");
@@ -43,8 +43,9 @@ internal static class PageReadingOrder
             pending.Push(nodes);
         }
 
-        while (pending.TryPop(out Node[]? group))
+        while (pending.Count > 0)
         {
+            Node[] group = pending.Pop();
             token.ThrowIfCancellationRequested();
             if (group.Length == 1)
             {
@@ -69,8 +70,8 @@ internal static class PageReadingOrder
 
             if (cut >= 0)
             {
-                pending.Push(sorted[cut..]);
-                pending.Push(sorted[..cut]);
+                pending.Push(sorted.Skip(cut).ToArray());
+                pending.Push(sorted.Take(cut).ToArray());
             }
             else
             {
@@ -120,17 +121,20 @@ internal static class PageReadingOrder
             }
         }
 
-        var ready = new PriorityQueue<int, (double Top, double Left, int Ordinal)>();
+        var ready = new SortedSet<(double Top, double Left, int Ordinal, int Index)>();
         for (int i = 0; i < nodes.Length; i++)
         {
             if (incoming[i] == 0)
             {
-                ready.Enqueue(i, (-nodes[i].Bounds.Top, nodes[i].Bounds.Left, nodes[i].Ordinal));
+                ready.Add((-nodes[i].Bounds.Top, nodes[i].Bounds.Left, nodes[i].Ordinal, i));
             }
         }
 
-        while (ready.TryDequeue(out int index, out _))
+        while (ready.Count > 0)
         {
+            var next = ready.Min;
+            ready.Remove(next);
+            int index = next.Index;
             token.ThrowIfCancellationRequested();
             emitted[index] = true;
             yield return nodes[index];
@@ -138,7 +142,7 @@ internal static class PageReadingOrder
             {
                 if (!emitted[i] && Precedes(nodes[index].Bounds, nodes[i].Bounds) && --incoming[i] == 0)
                 {
-                    ready.Enqueue(i, (-nodes[i].Bounds.Top, nodes[i].Bounds.Left, nodes[i].Ordinal));
+                    ready.Add((-nodes[i].Bounds.Top, nodes[i].Bounds.Left, nodes[i].Ordinal, i));
                 }
             }
         }

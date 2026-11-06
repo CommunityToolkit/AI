@@ -70,7 +70,7 @@ internal static class HeronModel
             {
                 token.ThrowIfCancellationRequested();
                 float confidence = scores[0, i];
-                if (!float.IsFinite(confidence) || confidence is < 0 or > 1)
+                if (!OnnxCompatibility.IsFinite(confidence) || confidence is < 0 or > 1)
                 {
                     throw new InvalidDataException("Heron returned invalid confidence.");
                 }
@@ -84,7 +84,7 @@ internal static class HeronModel
                 float left = boxes[0, i, 0], top = boxes[0, i, 1];
                 float right = boxes[0, i, 2], bottom = boxes[0, i, 3];
                 if (label < 0 || label >= s_labels.Length ||
-                    !float.IsFinite(left) || !float.IsFinite(top) || !float.IsFinite(right) || !float.IsFinite(bottom) ||
+                    !OnnxCompatibility.IsFinite(left) || !OnnxCompatibility.IsFinite(top) || !OnnxCompatibility.IsFinite(right) || !OnnxCompatibility.IsFinite(bottom) ||
                     left >= right || top >= bottom)
                 {
                     throw new InvalidDataException("Heron returned an invalid label or region.");

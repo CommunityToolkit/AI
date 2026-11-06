@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Security.Cryptography;
 using Microsoft.ML.OnnxRuntime;
 
 namespace CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis;
@@ -22,7 +21,7 @@ internal static class LocalOnnxSession
     internal static void Verify(string path, string expectedHash)
     {
         using var file = File.OpenRead(path);
-        if (!string.Equals(Convert.ToHexString(SHA256.HashData(file)), expectedHash, StringComparison.Ordinal))
+        if (!string.Equals(OnnxCompatibility.Sha256Hex(file), expectedHash, StringComparison.Ordinal))
         {
             throw new InvalidDataException($"The local model '{path}' is not the pinned curated artifact (expected SHA256 {expectedHash}).");
         }

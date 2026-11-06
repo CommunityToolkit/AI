@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Security.Cryptography;
 using System.Text;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
@@ -87,9 +86,9 @@ internal sealed class PaddleOcrModel : IDisposable
 
     internal static IReadOnlyList<string> ReadDictionary(string characters)
     {
-        string normalized = characters.Replace("\r\n", "\n", StringComparison.Ordinal).TrimEnd('\n');
+        string normalized = characters.Replace("\r\n", "\n").TrimEnd('\n');
         var entries = normalized.Split('\n');
-        string digest = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(normalized + "\n")));
+        string digest = OnnxCompatibility.Sha256Hex(Encoding.UTF8.GetBytes(normalized + "\n"));
         if (entries.Length != 18383 || entries.Any(string.IsNullOrEmpty) ||
             digest != "D1979E9F794C464C0D2E0B70A7FE14DD978E9DC644C0E71F14158CDF8342AF1B")
         {

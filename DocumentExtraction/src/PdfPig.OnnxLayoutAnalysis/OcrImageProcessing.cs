@@ -218,8 +218,8 @@ internal static class OcrImageProcessing
             }
 
             var source = OrderQuad(box.Select(p => new RasterPoint(
-                Math.Clamp(p.X * originalWidth / resizedWidth, 0, originalWidth - 1),
-                Math.Clamp(p.Y * originalHeight / resizedHeight, 0, originalHeight - 1))).ToArray());
+                OnnxCompatibility.Clamp(p.X * originalWidth / resizedWidth, 0, originalWidth - 1),
+                OnnxCompatibility.Clamp(p.Y * originalHeight / resizedHeight, 0, originalHeight - 1))).ToArray());
             results.Add(new(Array.AsReadOnly(source), score));
         }
 
@@ -231,7 +231,7 @@ internal static class OcrImageProcessing
         token.ThrowIfCancellationRequested();
         ValidateRaster(raster);
         if (quad.Points.Count != 4 || quad.Points.Any(p =>
-            !double.IsFinite(p.X) || !double.IsFinite(p.Y) || Math.Abs(p.X) > int.MaxValue || Math.Abs(p.Y) > int.MaxValue))
+            !OnnxCompatibility.IsFinite(p.X) || !OnnxCompatibility.IsFinite(p.Y) || Math.Abs(p.X) > int.MaxValue || Math.Abs(p.Y) > int.MaxValue))
         {
             throw new InvalidDataException("OCR rectification requires four finite, bounded source corners.");
         }
@@ -271,7 +271,7 @@ internal static class OcrImageProcessing
                 }
 
                 double divisor = inverse[6] * x + inverse[7] * y + inverse[8];
-                if (!double.IsFinite(divisor) || Math.Abs(divisor) < 1e-12)
+                if (!OnnxCompatibility.IsFinite(divisor) || Math.Abs(divisor) < 1e-12)
                 {
                     throw new InvalidDataException("OCR perspective transform crosses infinity inside the crop.");
                 }
@@ -341,13 +341,13 @@ internal static class OcrImageProcessing
         for (int y = 0; y < height; y++)
         {
             token.ThrowIfCancellationRequested();
-            double sy = Math.Clamp((y + .5) * sourceHeight / height - .5, 0, sourceHeight - 1);
+            double sy = OnnxCompatibility.Clamp((y + .5) * sourceHeight / height - .5, 0, sourceHeight - 1);
             int y0 = (int)sy;
             int y1 = Math.Min(y0 + 1, sourceHeight - 1);
             double fy = sy - y0;
             for (int x = 0; x < width; x++)
             {
-                double sx = Math.Clamp((x + .5) * sourceWidth / width - .5, 0, sourceWidth - 1);
+                double sx = OnnxCompatibility.Clamp((x + .5) * sourceWidth / width - .5, 0, sourceWidth - 1);
                 int x0 = (int)sx;
                 int x1 = Math.Min(x0 + 1, sourceWidth - 1);
                 double fx = sx - x0;
@@ -379,7 +379,7 @@ internal static class OcrImageProcessing
         return (byte)((bytes[index + channel] * alpha + 255 * (255 - alpha) + 127) / 255);
     }
 
-    private static byte ToByte(double value) => (byte)Math.Clamp(Math.Round(value), 0, 255);
+    private static byte ToByte(double value) => (byte)OnnxCompatibility.Clamp(Math.Round(value), 0, 255);
 
     private readonly record struct BoundaryEdge(long Start, long End, int Direction, RasterPoint Foreground);
 
@@ -538,10 +538,10 @@ internal static class OcrImageProcessing
         ref long work, CancellationToken token)
     {
         var rounded = rectangle.Select(p => new RasterPoint(Math.Round(p.X), Math.Round(p.Y))).ToArray();
-        int minY = Math.Clamp((int)rounded.Min(p => p.Y), 0, height - 1);
-        int maxY = Math.Clamp((int)rounded.Max(p => p.Y), 0, height - 1);
-        int minX = Math.Clamp((int)rounded.Min(p => p.X), 0, width - 1);
-        int maxX = Math.Clamp((int)rounded.Max(p => p.X), 0, width - 1);
+        int minY = OnnxCompatibility.Clamp((int)rounded.Min(p => p.Y), 0, height - 1);
+        int maxY = OnnxCompatibility.Clamp((int)rounded.Max(p => p.Y), 0, height - 1);
+        int minX = OnnxCompatibility.Clamp((int)rounded.Min(p => p.X), 0, width - 1);
+        int maxX = OnnxCompatibility.Clamp((int)rounded.Max(p => p.X), 0, width - 1);
         if ((work += (long)(maxY - minY + 1) * (maxX - minX + 1)) > MaximumScorePixels)
         {
             throw new InvalidDataException("DB rectangle probability-mask pixel budget exceeded.");
@@ -595,7 +595,7 @@ internal static class OcrImageProcessing
             {
                 // The full map was validated before contour work. Reuse only the proven one-ULP
                 // upper-bound normalization, without mutating raw output or counting it twice.
-                sum += MathF.Min(probabilities[0, 0, y, x], 1f);
+                sum += Math.Min(probabilities[0, 0, y, x], 1f);
                 count++;
             }
         }
@@ -686,7 +686,7 @@ internal static class OcrImageProcessing
         }
 
         result[8] = 1;
-        if (result.Any(v => !double.IsFinite(v)))
+        if (result.Any(v => !OnnxCompatibility.IsFinite(v)))
         {
             throw new InvalidDataException("OCR perspective homography is not finite.");
         }
@@ -696,15 +696,15 @@ internal static class OcrImageProcessing
 
     private static byte CubicSample(PageRaster raster, double x, double y, int channel)
     {
-        if (!double.IsFinite(x) || !double.IsFinite(y))
+        if (!OnnxCompatibility.IsFinite(x) || !OnnxCompatibility.IsFinite(y))
         {
             throw new InvalidDataException("OCR perspective sampling coordinate is not finite.");
         }
 
         // OpenCV INTER_CUBIC's a=-.75 kernel and 1/32-pixel phases, with BORDER_REPLICATE.
         // Evaluate coefficients in double rather than OpenCV's platform-specific fixed-point SIMD.
-        x = Math.Round(Math.Clamp(x, -2, raster.Width + 1d) * 32) / 32;
-        y = Math.Round(Math.Clamp(y, -2, raster.Height + 1d) * 32) / 32;
+        x = Math.Round(OnnxCompatibility.Clamp(x, -2, raster.Width + 1d) * 32) / 32;
+        y = Math.Round(OnnxCompatibility.Clamp(y, -2, raster.Height + 1d) * 32) / 32;
         int ix = (int)Math.Floor(x), iy = (int)Math.Floor(y);
         double value = 0;
         for (int dy = -1; dy <= 2; dy++)
@@ -713,8 +713,8 @@ internal static class OcrImageProcessing
             for (int dx = -1; dx <= 2; dx++)
             {
                 value += Channel(raster.Bgra, raster.Width,
-                    Math.Clamp(ix + dx, 0, raster.Width - 1),
-                    Math.Clamp(iy + dy, 0, raster.Height - 1), channel, true) *
+                    OnnxCompatibility.Clamp(ix + dx, 0, raster.Width - 1),
+                    OnnxCompatibility.Clamp(iy + dy, 0, raster.Height - 1), channel, true) *
                     Cubic(x - (ix + dx)) * wy;
             }
         }

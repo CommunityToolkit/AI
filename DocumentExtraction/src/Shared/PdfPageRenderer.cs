@@ -33,7 +33,7 @@ internal static class PdfPageRenderer
         token.ThrowIfCancellationRequested();
         var page = document.GetPageSize(number);
         double width = Math.Ceiling(page.Width * scale), height = Math.Ceiling(page.Height * scale);
-        if (!double.IsFinite(width) || !double.IsFinite(height) || width <= 0 || height <= 0 ||
+        if (!OnnxCompatibility.IsFinite(width) || !OnnxCompatibility.IsFinite(height) || width <= 0 || height <= 0 ||
             width > int.MaxValue || height > int.MaxValue || width * height > maximumPixels)
         {
             throw new InvalidDataException("Rendered PDF page exceeds the configured pixel limit or has invalid dimensions.");

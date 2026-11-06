@@ -35,7 +35,7 @@ public sealed class PdfPigOcrProbabilityAdjustment
     /// <summary>Gets the first original float32 value without normalization.</summary>
     public float FirstRawValue { get; }
     /// <summary>Gets the exact original float32 bit pattern of the first adjusted value.</summary>
-    public uint FirstRawValueBits => BitConverter.SingleToUInt32Bits(FirstRawValue);
+    public uint FirstRawValueBits => OnnxCompatibility.SingleToUInt32Bits(FirstRawValue);
     /// <summary>Gets the minimum original tensor value without normalization.</summary>
     public float MinimumRawValue { get; }
     /// <summary>Gets the maximum original tensor value without normalization.</summary>

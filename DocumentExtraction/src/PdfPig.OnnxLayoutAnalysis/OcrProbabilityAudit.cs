@@ -5,7 +5,7 @@ namespace CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis;
 
 internal sealed class OcrProbabilityAudit
 {
-    private static readonly float s_maximum = float.BitIncrement(1f);
+    private const float MaximumProbability = 1.00000011920928955078125f;
     internal int AdjustmentCount { get; private set; }
     internal int FirstAdjustedIndex { get; private set; } = -1;
     internal float MinimumRawValue { get; private set; } = float.PositiveInfinity;
@@ -14,10 +14,10 @@ internal sealed class OcrProbabilityAudit
 
     internal float Normalize(float value, int flattenedIndex)
     {
-        if (!float.IsFinite(value) || value < 0 || value > s_maximum)
+        if (!OnnxCompatibility.IsFinite(value) || value < 0 || value > MaximumProbability)
         {
             throw new InvalidDataException(
-                $"Invalid OCR probability {value:R} (float32 bits 0x{BitConverter.SingleToUInt32Bits(value):X8}).");
+                $"Invalid OCR probability {value:R} (float32 bits 0x{OnnxCompatibility.SingleToUInt32Bits(value):X8}).");
         }
 
         MinimumRawValue = Math.Min(MinimumRawValue, value);

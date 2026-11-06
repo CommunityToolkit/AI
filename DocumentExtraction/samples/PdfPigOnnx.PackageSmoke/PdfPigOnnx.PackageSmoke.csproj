@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <DocumentExtractionBuild>true</DocumentExtractionBuild>
+    <IsPackable>false</IsPackable>
+    <ProviderAssetFramework Condition="'$(ProviderAssetFramework)' == ''">$(TargetFramework)</ProviderAssetFramework>
+    <CompanionPackageVersion Condition="'$(CompanionPackageVersion)' == ''">1.0.0-preview.2</CompanionPackageVersion>
+    <NoWarn>$(NoWarn);EXTEXP0019;MEDE0001</NoWarn>
+    <NoWarn Condition="'$(EnableExperimentalOptIn)' != 'false'">$(NoWarn);CTDE0001</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis" VersionOverride="$(CompanionPackageVersion)" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" />
+    <Reference Include="CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis">
+      <HintPath>$(PkgCommunityToolkit_DocumentExtraction_PdfPig_OnnxLayoutAnalysis)\lib\$(ProviderAssetFramework)\CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Compile Include="..\PdfPigOnnx\SyntheticSmoke.cs" Link="SyntheticSmoke.cs" />
+    <AssemblyMetadata Include="CompanionPackageAsset" Value="$([MSBuild]::NormalizePath('$(PkgCommunityToolkit_DocumentExtraction_PdfPig_OnnxLayoutAnalysis)', 'lib', '$(ProviderAssetFramework)', 'CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis.dll'))" />
+  </ItemGroup>
+  <Target Name="SelectExplicitCompanionAsset" AfterTargets="ResolvePackageAssets">
+    <ItemGroup>
+      <ResolvedCompileFileDefinitions Remove="@(ResolvedCompileFileDefinitions)" Condition="'%(ResolvedCompileFileDefinitions.NuGetPackageId)' == 'CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis'" />
+      <RuntimeCopyLocalItems Remove="@(RuntimeCopyLocalItems)" Condition="'%(RuntimeCopyLocalItems.NuGetPackageId)' == 'CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis'" />
+    </ItemGroup>
+  </Target>
+</Project>

@@ -37,7 +37,7 @@ public sealed class OnnxLayoutOptions
 
     internal OnnxLayoutOptions Snapshot(bool requireLayoutModel = false)
     {
-        if (!float.IsFinite(ConfidenceThreshold) || ConfidenceThreshold is < 0 or > 1)
+        if (!OnnxCompatibility.IsFinite(ConfidenceThreshold) || ConfidenceThreshold is < 0 or > 1)
         {
             throw new ArgumentOutOfRangeException(nameof(ConfidenceThreshold));
         }
@@ -54,7 +54,7 @@ public sealed class OnnxLayoutOptions
 
         if (requireLayoutModel)
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(LayoutModelPath);
+            Throw.IfNullOrWhitespace(LayoutModelPath);
         }
 
         Ocr?.Validate();

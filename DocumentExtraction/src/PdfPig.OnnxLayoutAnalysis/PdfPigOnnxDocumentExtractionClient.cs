@@ -26,7 +26,7 @@ public sealed class PdfPigOnnxDocumentExtractionClient : DocumentExtractionClien
     /// <param name="options">The required layout path and optional capabilities, validated and copied during construction. No download is performed.</param>
     public PdfPigOnnxDocumentExtractionClient(OnnxLayoutOptions options)
     {
-        ArgumentNullException.ThrowIfNull(options);
+        Throw.IfNull(options);
         _options = options.Snapshot(requireLayoutModel: true);
         _session = LocalOnnxSession.Create(_options.LayoutModelPath!, _options.SessionOptions);
         try
@@ -50,7 +50,7 @@ public sealed class PdfPigOnnxDocumentExtractionClient : DocumentExtractionClien
     /// <param name="options">Rendering and confidence settings, copied during construction.</param>
     public PdfPigOnnxDocumentExtractionClient(InferenceSession session, OnnxLayoutOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(session);
+        Throw.IfNull(session);
         _options = (options ?? new()).Snapshot();
         if (_options.LayoutModelPath is not null)
         {
@@ -87,11 +87,11 @@ public sealed class PdfPigOnnxDocumentExtractionClient : DocumentExtractionClien
         _ = ProviderAdapterHelpers.ResolveExtractor(request, "pdfpig-onnx-heron", nameof(PdfPigOnnxDocumentExtractionClient), false);
         lock (_sync)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
         }
 
         using var buffer = new MemoryStream();
-        await document.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
+        await document.CopyToAsync(buffer, 81920, cancellationToken).ConfigureAwait(false);
         byte[] bytes = buffer.ToArray();
         using var pdf = PdfPageRenderer.Open(bytes);
         var output = new ExtractionDocument(identifier);
@@ -128,7 +128,7 @@ public sealed class PdfPigOnnxDocumentExtractionClient : DocumentExtractionClien
                 {
                     lock (_sync)
                     {
-                        ObjectDisposedException.ThrowIf(_disposed, this);
+                        ThrowIfDisposed();
                         try
                         {
                             recognized = _ocr.Extract(number, raster, cancellationToken, probabilityAdjustments);
@@ -143,7 +143,7 @@ public sealed class PdfPigOnnxDocumentExtractionClient : DocumentExtractionClien
 
             lock (_sync)
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                ThrowIfDisposed();
                 cancellationToken.ThrowIfCancellationRequested();
                 detections = HeronModel.Detect(_session, raster, _options.ConfidenceThreshold, cancellationToken,
                     _options.UseCorrectedLayoutCoordinates);
@@ -177,7 +177,7 @@ public sealed class PdfPigOnnxDocumentExtractionClient : DocumentExtractionClien
                     PdfPigTableStructure structure;
                     lock (_sync)
                     {
-                        ObjectDisposedException.ThrowIf(_disposed, this);
+                        ThrowIfDisposed();
                         try
                         {
                             structure = _tables.Analyze(raster, region, tokens, cancellationToken);
@@ -213,13 +213,21 @@ public sealed class PdfPigOnnxDocumentExtractionClient : DocumentExtractionClien
     private TableStructureModel? CreateTables() => _options.TableStructure is { } table ?
         new(table.ModelPath!, _options.SessionOptions) : null;
 
+    private void ThrowIfDisposed()
+    {
+        if (_disposed)
+        {
+            throw new ObjectDisposedException(GetType().FullName);
+        }
+    }
+
     /// <inheritdoc/>
     public override object? GetService(Type serviceType, object? serviceKey = null)
     {
-        ArgumentNullException.ThrowIfNull(serviceType);
+        Throw.IfNull(serviceType);
         lock (_sync)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ThrowIfDisposed();
             return serviceKey is null && serviceType == typeof(InferenceSession)
                 ? _session : base.GetService(serviceType, serviceKey);
         }

@@ -17,13 +17,13 @@ public sealed class OnnxOcrOptions
 
     internal void Validate()
     {
-        if (!Enum.IsDefined(Mode))
+        if (!Enum.IsDefined(typeof(OnnxOcrMode), Mode))
         {
             throw new ArgumentOutOfRangeException(nameof(Mode));
         }
 
-        ArgumentException.ThrowIfNullOrWhiteSpace(DetectorModelPath);
-        ArgumentException.ThrowIfNullOrWhiteSpace(RecognizerModelPath);
+        Throw.IfNullOrWhitespace(DetectorModelPath);
+        Throw.IfNullOrWhitespace(RecognizerModelPath);
     }
 
     internal OnnxOcrOptions Copy() => new()

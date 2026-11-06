@@ -13,14 +13,14 @@ public sealed class PdfPigOnnxDocumentExtractionClientBuilder
     /// <param name="options">Root settings, including the required layout path. Supplied ORT SessionOptions remain borrowed until each Build completes.</param>
     public PdfPigOnnxDocumentExtractionClientBuilder(OnnxLayoutOptions options)
     {
-        ArgumentNullException.ThrowIfNull(options);
+        Throw.IfNull(options);
         _options = options.Copy();
     }
 
     /// <summary>Configures OCR, enabling it when the resulting recipe is built.</summary>
     public PdfPigOnnxDocumentExtractionClientBuilder WithOcr(Action<OnnxOcrOptions> configure)
     {
-        ArgumentNullException.ThrowIfNull(configure);
+        Throw.IfNull(configure);
         var options = _options.Ocr?.Copy() ?? new();
         configure(options);
         _options.Ocr = options.Copy();
@@ -30,7 +30,7 @@ public sealed class PdfPigOnnxDocumentExtractionClientBuilder
     /// <summary>Configures table structure, enabling it when the resulting recipe is built.</summary>
     public PdfPigOnnxDocumentExtractionClientBuilder WithTableStructure(Action<OnnxTableStructureOptions> configure)
     {
-        ArgumentNullException.ThrowIfNull(configure);
+        Throw.IfNull(configure);
         var options = _options.TableStructure?.Copy() ?? new();
         configure(options);
         _options.TableStructure = options.Copy();
