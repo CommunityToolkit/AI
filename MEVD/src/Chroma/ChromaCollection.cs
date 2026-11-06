@@ -55,9 +55,6 @@ public class ChromaCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
     /// <summary>The properties to create a BM25 index for when the collection is created.</summary>
     private readonly List<DataPropertyModel> _bm25Properties;
 
-    /// <summary>Whether the collection offers hybrid search, computed the first time it is asked.</summary>
-    private bool? _offersHybridSearch;
-
     /// <summary>Whether the collection was disposed: it releases its share of the client only once.</summary>
     private int _disposed;
 
@@ -411,7 +408,7 @@ public class ChromaCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
             async () =>
             {
                 var index = await _records.FindBm25IndexAsync(textProperty.StorageName, cancellationToken).ConfigureAwait(false)
-                    ?? throw new InvalidOperationException(NoBm25IndexMessage(textProperty));
+                    ?? throw new InvalidOperationException(await NoBm25IndexMessageAsync(textProperty, cancellationToken).ConfigureAwait(false));
                 return await _records.SearchAsync(
                     new ChromaSearch
                     {
@@ -493,19 +490,28 @@ public class ChromaCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         }
     }
 
-    // Hybrid search needs the BM25 indexes, which only Chroma Cloud has. An existing collection can have them under keys
-    // that the client did not generate, so a missing index is reported by the hybrid search itself, not here.
+    // Hybrid search needs the BM25 indexes, which distributed Chroma, the one Chroma Cloud runs on, and the servers that declare
+    // sparse vector indexes have. The client tells it from the server, the same whatever was called before, and keeps the answer:
+    // it is not kept here, because while the server does not answer, the client answers from its options and asks the server again
+    // later. An existing collection can have the indexes under keys that the client did not generate, so a missing index is
+    // reported by the hybrid search itself, not here.
     private bool OffersHybridSearch
-        => _offersHybridSearch ??= _chromaClient.Client.Options.IsChromaCloud && _bm25Properties.Count > 0;
+        => _bm25Properties.Count > 0 && _chromaClient.Client.SupportsSparseVectorIndexes();
 
-    // Why the collection has no BM25 index on the property: on Chroma Cloud, the key of the index can be beyond its quota, or
-    // the collection was created without the index.
-    private string NoBm25IndexMessage(DataPropertyModel textProperty)
+    // Why the collection has no BM25 index on the property: the server has no sparse vector indexes, on Chroma Cloud the key of
+    // the index can be beyond its quota, or the collection was created without the index.
+    private async Task<string> NoBm25IndexMessageAsync(DataPropertyModel textProperty, CancellationToken cancellationToken)
     {
         var message = $"The Chroma collection '{Name}' has no BM25 index on the text of the property '{textProperty.ModelName}', which hybrid search needs. ";
+        if (!await _chromaClient.Client.SupportsSparseVectorIndexesAsync(cancellationToken).ConfigureAwait(false))
+        {
+            return message + "Only distributed Chroma, the one Chroma Cloud runs on, and the servers that declare sparse vector indexes have BM25 indexes. "
+                + "For distributed Chroma installed elsewhere, set Distributed=true in the connection string, or WithDistributedChroma() in the options of the client.";
+        }
+
         if (!_chromaClient.Client.Options.IsChromaCloud)
         {
-            return message + "Only Chroma Cloud has BM25 indexes.";
+            return message + "The collection was created without it, for example by another client.";
         }
 
         var key = ChromaCollectionCreateMapping.GetBm25IndexKey(textProperty, _mapper.DocumentProperty);
