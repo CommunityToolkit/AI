@@ -8,7 +8,7 @@ backend-specific response formats.
 
 ## Choose a provider
 
-All packages target **.NET 8 and .NET 10**. Package IDs start with
+All packages include **.NET Standard 2.0, .NET 8 and .NET 10** assets. Package IDs start with
 `CommunityToolkit.DocumentExtraction.`.
 
 | Package | Client type | Use when you need | Processing and input |
@@ -36,10 +36,44 @@ native-text parser, not OCR. Models are never included or downloaded at runtime.
 The five-provider `DocumentExtraction.slnf` remains unchanged; companion builds
 use `PdfPig.OnnxLayoutAnalysis.slnf` and a separate CI workflow.
 
-These are unreleased preview packages using experimental upstream contracts.
-For exact source pins, a reproducible build and review boundaries, start with
-the [review guide](REVIEWING.md). The install examples describe the intended
-package API, not availability of the temporary core version on NuGet.org.
+These are unreleased preview packages using experimental contracts. The install
+examples describe the intended package API, not availability of the temporary
+core version on NuGet.org. See [building from source](#building-from-source).
+
+### Framework support
+
+The .NET Standard 2.0 asset makes the managed provider APIs available to compatible
+applications; it is not a new .NET Framework 4.6.2 target or a certification of
+every legacy host, backend SDK or native dependency. Tests run on .NET 8 and .NET 10,
+including the full offline suites explicitly loading the netstandard provider
+assemblies. A separate package consumer verifies the actual packed assets.
+Use a supported application runtime and check each backend's platform policy.
+Mistral's HTTP failures include status in the exception message on every target;
+the typed `HttpRequestException.StatusCode` property is available on modern assets.
+
+## Experimental API diagnostics
+
+All `CommunityToolkit.DocumentExtraction.*` production assemblies are explicitly
+marked experimental with **`CTDE0001`**, including their clients, options and
+extension methods. APIs may change or be removed without the compatibility
+guarantees of a stable release. Prerelease package versions alone do not provide
+this compiler diagnostic.
+
+Opt in at the smallest appropriate source scope:
+
+```csharp
+#pragma warning disable CTDE0001 // Opt into experimental Toolkit extraction APIs.
+using var extractor = new CommunityToolkit.DocumentExtraction.PdfPig.PdfPigDocumentExtractionClient();
+#pragma warning restore CTDE0001
+```
+
+Applications deliberately using the whole family can instead add
+`CTDE0001` to their project's `NoWarn`. The underlying experimental contracts
+have separate diagnostics: `MEDE0001` for Extraction and `EXTEXP0019` for
+Documents. Suppress those only where you knowingly use those upstream APIs;
+opting into `CTDE0001` does not suppress them. The diagnostic metadata is emitted
+on all package TFMs; an internal legacy attribute preserves the same compiler
+contract on netstandard without adding a public shim API.
 
 ## Install
 
@@ -115,6 +149,90 @@ provider fetches. Supply a readable stream and the actual media type.
 `DocumentExtractionOptions.ExtractorName` selects an analyzer/model where the
 provider supports it. Provider-specific options belong in `AdditionalProperties`;
 unsupported options raise errors.
+
+### Construct another provider
+
+Choose one construction below in place of PdfPig in the preceding example.
+Supply an already configured native SDK/chat client or your application's
+credentials. Construction does not issue a service request; `ExtractAsync` does.
+The supplied clients are borrowed.
+
+```csharp
+using CommunityToolkit.DocumentExtraction.AzureContentUnderstanding;
+
+// contentUnderstandingClient is an Azure.AI.ContentUnderstanding.ContentUnderstandingClient.
+using DocumentExtractionClient extractor =
+    new ContentUnderstandingExtractionClient(contentUnderstandingClient);
+```
+
+```csharp
+using CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence;
+
+// documentIntelligenceClient is an Azure.AI.DocumentIntelligence.DocumentIntelligenceClient.
+using DocumentExtractionClient extractor =
+    new DocumentIntelligenceExtractionClient(documentIntelligenceClient);
+```
+
+```csharp
+using CommunityToolkit.DocumentExtraction.Mistral;
+
+using DocumentExtractionClient extractor = new MistralDocumentExtractionClient(
+    new MistralDocumentExtractionClientOptions
+    {
+        OcrEndpoint = new Uri("https://api.mistral.ai/v1/ocr"),
+        DefaultModel = "mistral-ocr-latest",
+    },
+    apiKey,
+    httpClient);
+```
+
+```csharp
+using CommunityToolkit.DocumentExtraction.Vision;
+
+// chatClient is an IChatClient whose adapter/API/model support the input format.
+using DocumentExtractionClient extractor = new VisionDocumentExtractionClient(
+    chatClient, new VisionDocumentExtractionClientOptions { UseStructuredOutput = true });
+```
+
+Structured Vision requests and validates a defined JSON shape. Leave options
+unset for free-form transcription. Neither mode performs local PDF rendering
+or retries unsupported structured results through another inference request.
+
+## Building from source
+
+The temporary core version `10.10.0-review.20261104.4` is not a released public
+dependency. The bootstrap packs the original owning AI Abstractions, Documents
+Abstractions, Extraction Abstractions and Extraction projects from public
+`https://github.com/luisquintanilla/extensions.git`, commit
+`c03481c76b63c6820e1de6ed9da09d5ff1e9f495`, tree
+`f2e9d521223db1cf33fa8bcec5667da26b92cc49`, using SDK **10.0.401**.
+It preserves upstream imports and the scoped `Features=` compiler workaround,
+and explicitly uses the pinned tree's public NuGet configuration.
+No replacement projects or copied production DLLs are used.
+
+From the repository root with PowerShell 7, Git, the Toolkit SDK from `global.json`,
+and .NET 8/.NET 10 runtimes installed:
+
+```powershell
+$coreFeed = Join-Path $env:TEMP 'toolkit-extraction-core'
+$config = Join-Path $env:TEMP 'toolkit-extraction-nuget.config'
+./eng/Bootstrap-DocumentExtractionCore.ps1 -OutputDirectory $coreFeed -DotnetPath 'C:\path\to\dotnet-10.0.401\dotnet.exe'
+./eng/New-DocumentExtractionNuGetConfig.ps1 -CorePackageDirectory $coreFeed -OutputPath $config
+dotnet restore DocumentExtraction/DocumentExtraction.slnf --configfile $config
+dotnet test DocumentExtraction/DocumentExtraction.slnf -c Release --no-restore
+dotnet test DocumentExtraction/DocumentExtraction.slnf -c Release --no-restore -p:DocumentExtractionTestAsset=netstandard2.0
+dotnet pack DocumentExtraction/DocumentExtraction.slnf -c Release --no-build --no-restore --output artifacts/document-extraction
+./eng/Test-DocumentExtractionPackages.ps1 -PackageDirectory artifacts/document-extraction -NuGetConfig $config -OutputDirectory artifacts/document-extraction-package-checks
+```
+
+The package check requires a new output directory and restores into its own
+package cache. It verifies consumer diagnostics without opt-in, then compiles
+and executes opted-in consumers against modern and actual netstandard assets.
+All extraction checks are offline; the source/bootstrap and dependency restore
+need public network access. CI performs this on Windows and Linux with a
+same-run source-built core artifact. Artifacts expire and are not a public feed.
+Formal upstream approval and released dependency versions remain prerequisites
+for merging/releasing against stable contracts.
 
 ## Work with the result
 

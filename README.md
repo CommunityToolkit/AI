@@ -45,9 +45,9 @@ URI, model and API-key or Entra authentication. Vision forwards original PDF or
 image bytes in one request through an application-supplied `IChatClient`, without
 local PDF rendering. Its adapter/API/model must support the requested file format;
 image support alone does not establish PDF support. See the provider guide for installation, hosting
-requirements and complete examples. These packages are unreleased previews;
-the [review guide](DocumentExtraction/REVIEWING.md) explains the pinned upstream
-contracts and reproducible source-build prerequisite.
+requirements and complete examples. These unreleased, explicitly experimental
+packages include .NET Standard 2.0, .NET 8 and .NET 10 assets; the component
+guide explains `CTDE0001` opt-in and the pinned source-build prerequisite.
 
 ## Running Live Tests
 

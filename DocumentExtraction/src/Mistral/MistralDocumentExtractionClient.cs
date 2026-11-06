@@ -89,11 +89,11 @@ public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
         HttpClient? httpClient,
         Func<TimeSpan, CancellationToken, Task> delayAsync)
     {
-        ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(delayAsync);
+        Throw.IfNull(options);
+        Throw.IfNull(delayAsync);
         ValidateEndpoint(options.OcrEndpoint, nameof(options.OcrEndpoint));
-        ArgumentException.ThrowIfNullOrWhiteSpace(options.DefaultModel, nameof(options.DefaultModel));
-        ArgumentException.ThrowIfNullOrWhiteSpace(options.TokenScope, nameof(options.TokenScope));
+        Throw.IfNullOrWhitespace(options.DefaultModel, nameof(options.DefaultModel));
+        Throw.IfNullOrWhitespace(options.TokenScope, nameof(options.TokenScope));
         if ((credential is null) == (apiKey is null))
         {
             throw new ArgumentException("Supply exactly one credential or API key.");
@@ -121,7 +121,7 @@ public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
         ProviderAdapterHelpers.ValidateInput(document, identifier, mediaType);
         if (!MediaTypeHeaderValue.TryParse(mediaType, out MediaTypeHeaderValue? parsedMediaType)
             || parsedMediaType.MediaType is not string inputType
-            || inputType.Contains('*'))
+            || inputType.IndexOf('*') >= 0)
         {
             throw new ArgumentException("Supply a concrete media type for the input document.", nameof(mediaType));
         }
@@ -143,7 +143,7 @@ public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
             "includeImages") ?? _includeImages;
 
         using var buffer = new MemoryStream();
-        await document.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
+        await document.CopyToAsync(buffer, 81920, cancellationToken).ConfigureAwait(false);
         string dataUrl = $"data:{mediaType};base64,{Convert.ToBase64String(buffer.ToArray())}";
 
         var requestBody = new JsonObject
@@ -235,7 +235,7 @@ public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
                             : FindUnique(markdown, $"[{tableId}]({tableId})");
                         if (match is null && !string.IsNullOrEmpty(tableMarkdown))
                         {
-                            match = FindUnique(markdown, tableMarkdown);
+                            match = FindUnique(markdown, tableMarkdown!);
                         }
 
                         if (match is { } candidate && replacements.Any(replacement =>
@@ -263,12 +263,12 @@ public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
                 foreach ((int start, int length, ExtractionDocumentTableElement table) in
                     replacements.OrderBy(item => item.Start))
                 {
-                    AddText(markdown[cursor..start]);
+                    AddText(markdown.Substring(cursor, start - cursor));
                     AddTable(table);
                     cursor = start + length;
                 }
 
-                AddText(markdown[cursor..]);
+                AddText(markdown.Substring(cursor));
                 foreach (ExtractionDocumentTableElement table in unplacedTables)
                 {
                     AddTable(table);
@@ -326,9 +326,21 @@ public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
             using HttpResponseMessage response = await _http
                 .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
                 .ConfigureAwait(false);
+#if NETSTANDARD2_0
+            cancellationToken.ThrowIfCancellationRequested();
+            byte[] responseBytes;
+            using (Stream content = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+            using (var buffer = new MemoryStream())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await content.CopyToAsync(buffer, 81920, cancellationToken).ConfigureAwait(false);
+                responseBytes = buffer.ToArray();
+            }
+#else
             byte[] responseBytes = await response.Content
                 .ReadAsByteArrayAsync(cancellationToken)
                 .ConfigureAwait(false);
+#endif
 
             if (response.StatusCode == HttpStatusCode.ServiceUnavailable && attempt < 5)
             {
@@ -341,8 +353,12 @@ public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
             {
                 throw new HttpRequestException(
                     $"Mistral OCR returned {(int)response.StatusCode} ({response.ReasonPhrase}).",
+#if !NETSTANDARD2_0
                     null,
                     response.StatusCode);
+#else
+                    null);
+#endif
             }
 
             return responseBytes;
@@ -353,7 +369,7 @@ public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
 
     private static string ValidateApiKey(string apiKey)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(apiKey);
+        Throw.IfNullOrWhitespace(apiKey);
         if (apiKey.Any(character => char.IsWhiteSpace(character) || char.IsControl(character)))
         {
             throw new ArgumentException("The API key must be a single bearer token without whitespace or control characters.", nameof(apiKey));
@@ -364,7 +380,7 @@ public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
 
     private static void ValidateEndpoint(Uri endpoint, string parameterName)
     {
-        ArgumentNullException.ThrowIfNull(endpoint, parameterName);
+        Throw.IfNull(endpoint, parameterName);
         if (!endpoint.IsAbsoluteUri || endpoint.Scheme is not ("http" or "https")
             || endpoint.UserInfo.Length != 0 || endpoint.Fragment.Length != 0)
         {
@@ -375,7 +391,7 @@ public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
     private static MistralDocumentExtractionClientOptions CreateFoundryOptions(Uri endpoint, string defaultModel, bool includeImages)
     {
         ValidateEndpoint(endpoint, nameof(endpoint));
-        ArgumentException.ThrowIfNullOrWhiteSpace(defaultModel);
+        Throw.IfNullOrWhitespace(defaultModel);
         if (endpoint.Query.Length != 0)
         {
             throw new ArgumentException("A Foundry base endpoint cannot contain a query. Use OcrEndpoint for a complete operation URI.", nameof(endpoint));
@@ -420,7 +436,7 @@ public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
 
         string raw = base64.GetString()!;
         int comma = raw.IndexOf(',');
-        return Convert.FromBase64String(comma >= 0 ? raw[(comma + 1)..] : raw);
+        return Convert.FromBase64String(comma >= 0 ? raw.Substring(comma + 1) : raw);
     }
 
     private static ExtractionDocumentSourceReference CreateImageSource(

@@ -19,7 +19,10 @@ provider itself. For `MEDE0001` or `EXTEXP0019` compiler diagnostics, see
 
 ## Requirements and setup
 
-Targets **.NET 8 and .NET 10**. Runtime dependencies are installed transitively:
+Experimental APIs emit `CTDE0001`; opt in explicitly as described in the
+[component guide](../../README.md#experimental-api-diagnostics).
+
+Targets **.NET Standard 2.0, .NET 8 and .NET 10**. Runtime dependencies are installed transitively:
 
 - `Azure.AI.ContentUnderstanding` **1.1.0**.
 - `Microsoft.Extensions.DocumentExtraction.Abstractions`,

@@ -3,7 +3,7 @@
     <Version>1.0.0-preview.1</Version>
     <AssemblyName>CommunityToolkit.DocumentExtraction.AzureContentUnderstanding</AssemblyName>
     <RootNamespace>$(AssemblyName)</RootNamespace>
-    <TargetFrameworks>net10.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>net10.0;net8.0;netstandard2.0</TargetFrameworks>
     <Title>Azure Content Understanding document extraction provider</Title>
     <Description>Azure Content Understanding extraction for Microsoft.Extensions.DocumentExtraction.</Description>
   </PropertyGroup>

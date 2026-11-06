@@ -17,7 +17,10 @@ For the Entra ID example only, also install:
 dotnet add package Azure.Identity
 ```
 
-Targets **.NET 8 and .NET 10**. Runtime dependencies include `Azure.Core`
+Experimental APIs emit `CTDE0001`; opt in explicitly as described in the
+[component guide](../../README.md#experimental-api-diagnostics).
+
+Targets **.NET Standard 2.0, .NET 8 and .NET 10**. Runtime dependencies include `Azure.Core`
 **1.53.0**, `Microsoft.Extensions.DocumentExtraction.Abstractions`,
 `Microsoft.Extensions.Documents.Abstractions` and
 `Microsoft.Extensions.AI.Abstractions`. `Azure.Identity` is an additional
