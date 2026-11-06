@@ -42,10 +42,10 @@ internal sealed class ChromaTestStore : TestStore
     public ChromaClient Client => this._client ?? throw new InvalidOperationException("Not initialized");
 
     /// <summary>
-    /// Whether the tests run against Chroma Cloud, the only Chroma with the Search API and the sparse vector indexes that hybrid search needs.
+    /// Whether the server takes the sparse vector indexes that hybrid search needs: distributed Chroma, the one Chroma Cloud runs on,
+    /// and the servers that declare them. The client tells it when the store starts.
     /// </summary>
-    public static bool IsChromaCloud => ChromaTestEnvironment.IsConnectionStringDefined
-        && ChromaConfigurationOptions.FromConnectionString(ChromaTestEnvironment.ConnectionString!).Uri.Host.EndsWith(".trychroma.com", StringComparison.OrdinalIgnoreCase);
+    public bool SupportsSparseVectorIndexes { get; private set; }
 
     public ChromaVectorStore GetVectorStore(ChromaVectorStoreOptions options)
         => new(this.Client, ownsClient: false, options); // The client is shared, it's not owned by the vector store.
@@ -69,6 +69,7 @@ internal sealed class ChromaTestStore : TestStore
         }
 
         this._client = new ChromaClient(options);
+        this.SupportsSparseVectorIndexes = await this._client.SupportsSparseVectorIndexesAsync();
 
         // It's a shared static instance, we don't want any of the tests to dispose the client.
         this.DefaultVectorStore = new ChromaVectorStore(this._client, ownsClient: false);

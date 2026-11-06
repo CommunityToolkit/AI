@@ -6,7 +6,7 @@ This project contains conformance tests for the Chroma Vector Store implementati
 
 By default, the tests will automatically use a testcontainer to spin up a Chroma instance. Docker must be running on your machine for this to work.
 
-The hybrid search tests need Chroma Cloud, the only Chroma with the sparse vector indexes that hybrid search uses: they run only when `Chroma:ConnectionString` has a Chroma Cloud address, like `https://api.trychroma.com`, and are skipped otherwise.
+The hybrid search tests need the sparse vector indexes that hybrid search uses, which distributed Chroma, the one Chroma Cloud runs on, and the servers that declare sparse vector indexes have: they run only when `Chroma:ConnectionString` points to such a server, like Chroma Cloud at `https://api.trychroma.com`, or distributed Chroma installed elsewhere with `Distributed=true`, and are skipped otherwise.
 
 ### Using an External Chroma Instance
 

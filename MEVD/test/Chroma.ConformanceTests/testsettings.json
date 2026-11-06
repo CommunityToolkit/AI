@@ -1,6 +1,6 @@
 {
   // Optional: Provide a connection string to use an external Chroma instance instead of testcontainers
-  // This is useful for running tests against Chroma Cloud, which hybrid search needs
+  // This is useful for running tests against distributed Chroma, the one Chroma Cloud runs on, which hybrid search needs
   // If not specified, tests will automatically use a testcontainer
   "Chroma": {
     "ConnectionString": ""
