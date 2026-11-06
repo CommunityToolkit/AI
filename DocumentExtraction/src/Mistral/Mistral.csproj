@@ -8,6 +8,8 @@
     <Description>Native Mistral OCR document extraction through direct Mistral or Microsoft Foundry endpoints.</Description>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="skills\ctk-document-extraction-mistral\SKILL.md" />
+    <None Include="skills\ctk-document-extraction-mistral\SKILL.md" Pack="true" PackagePath="skills\ctk-document-extraction-mistral\" />
     <PackageReference Include="Azure.Core" />
     <InternalsVisibleTo Include="$(AssemblyName).UnitTests" />
   </ItemGroup>

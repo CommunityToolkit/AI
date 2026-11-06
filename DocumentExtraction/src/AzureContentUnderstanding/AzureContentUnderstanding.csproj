@@ -8,6 +8,8 @@
     <Description>Azure Content Understanding extraction for Microsoft.Extensions.DocumentExtraction.</Description>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="skills\ctk-document-extraction-azure-content-understanding\SKILL.md" />
+    <None Include="skills\ctk-document-extraction-azure-content-understanding\SKILL.md" Pack="true" PackagePath="skills\ctk-document-extraction-azure-content-understanding\" />
     <PackageReference Include="Azure.AI.ContentUnderstanding" />
     <InternalsVisibleTo Include="$(AssemblyName).UnitTests" />
   </ItemGroup>

@@ -8,6 +8,8 @@
     <Description>Native PDF text extraction for Microsoft.Extensions.DocumentExtraction.</Description>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="skills\ctk-document-extraction-pdfpig\SKILL.md" />
+    <None Include="skills\ctk-document-extraction-pdfpig\SKILL.md" Pack="true" PackagePath="skills\ctk-document-extraction-pdfpig\" />
     <PackageReference Include="PdfPig" />
     <InternalsVisibleTo Include="$(AssemblyName).UnitTests" />
   </ItemGroup>

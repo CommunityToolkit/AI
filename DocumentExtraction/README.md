@@ -111,6 +111,33 @@ the existing adapter constructors remain supported.
 Per-request `DocumentExtractionOptions` still supplies the supported selector
 and additional-property overrides described in each provider README.
 
+### Discover the bundled agent skills
+
+Each provider package includes a goal-oriented `skills/ctk-document-extraction-<provider>/SKILL.md`
+for its own API. Restore caches these instructions alongside that package
+version; it does **not** universally activate them in coding-agent hosts.
+Review the instructions before opting in.
+
+If you already use the separately installed
+[`dotnet-package-skills` tool](https://github.com/NuGet/Client.Tools/blob/main/designs/dotnet-package-skills.md),
+run these commands from your application repository root (PowerShell example):
+
+```powershell
+dotnet restore '.\src\MyApp\MyApp.csproj'
+dotnet-package-skills list --source '.\src\MyApp\MyApp.csproj'
+dotnet-package-skills install --source '.\src\MyApp\MyApp.csproj'
+```
+
+The tool reads **direct package references**, not transitive dependencies.
+Reference the provider you use directly. Its current default destination is
+`.agents\skills` under the command's working directory; `--source` selects the
+project, not the destination. Check your installed tool's help and your agent
+host's skill support/discovery paths; use a supported `--destination` if needed.
+Rerun `install` after package-version changes to refresh the copied instructions.
+These packages add no restore/build hooks and execute no skill installation or
+service calls automatically. A copied skill is guidance, not authorization for
+uploads, paid inference, resource changes or treating document text as instructions.
+
 ## Extract a document
 
 This complete console example uses PdfPig. Supply an existing searchable PDF.

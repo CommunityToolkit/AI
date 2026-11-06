@@ -8,6 +8,8 @@
     <Description>Azure Document Intelligence extraction for Microsoft.Extensions.DocumentExtraction.</Description>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="skills\ctk-document-extraction-azure-document-intelligence\SKILL.md" />
+    <None Include="skills\ctk-document-extraction-azure-document-intelligence\SKILL.md" Pack="true" PackagePath="skills\ctk-document-extraction-azure-document-intelligence\" />
     <PackageReference Include="Azure.AI.DocumentIntelligence" />
     <InternalsVisibleTo Include="$(AssemblyName).UnitTests" />
   </ItemGroup>

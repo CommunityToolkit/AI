@@ -8,6 +8,8 @@
     <Description>Free-form and structured extraction from original PDF and image inputs using a capable IChatClient.</Description>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="skills\ctk-document-extraction-vision\SKILL.md" />
+    <None Include="skills\ctk-document-extraction-vision\SKILL.md" Pack="true" PackagePath="skills\ctk-document-extraction-vision\" />
     <InternalsVisibleTo Include="$(AssemblyName).UnitTests" />
   </ItemGroup>
 </Project>
