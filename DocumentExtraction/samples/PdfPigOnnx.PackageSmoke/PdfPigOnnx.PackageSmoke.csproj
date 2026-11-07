@@ -12,6 +12,9 @@
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis" VersionOverride="$(CompanionPackageVersion)" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.ML.OnnxRuntime" />
+    <!-- Validate the fourth owning core package without adding it to the provider's dependencies. -->
+    <PackageReference Include="Microsoft.Extensions.DocumentExtraction" VersionOverride="11.0.0-review.20261106.1" />
+    <PackageReference Include="System.Text.Json" />
     <Reference Include="CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis">
       <HintPath>$(PkgCommunityToolkit_DocumentExtraction_PdfPig_OnnxLayoutAnalysis)\lib\$(ProviderAssetFramework)\CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis.dll</HintPath>
       <Private>true</Private>

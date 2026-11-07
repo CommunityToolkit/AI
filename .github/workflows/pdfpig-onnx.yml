@@ -52,7 +52,7 @@ jobs:
         env:
           DOTNET_INSTALL_DIR: ${{ runner.temp }}/pdfpig-onnx-sdk
         with:
-          dotnet-version: 10.0.401
+          dotnet-version: 11.0.100-rc.3.26522.148
       - name: Pack original owning upstream projects
         shell: pwsh
         env:
@@ -61,7 +61,9 @@ jobs:
       - uses: actions/upload-artifact@v6
         with:
           name: pdfpig-onnx-core-source-packages
-          path: ${{ runner.temp }}/pdfpig-onnx-core/*.10.10.0-review.20261104.4.nupkg
+          path: |
+            ${{ runner.temp }}/pdfpig-onnx-core/*.11.0.0-review.20261106.1.nupkg
+            ${{ runner.temp }}/pdfpig-onnx-core/core-bootstrap.json
           if-no-files-found: error
 
   companion:
@@ -91,7 +93,9 @@ jobs:
       - name: Deterministic tests without curated weights
         run: dotnet test DocumentExtraction/test/PdfPig.OnnxLayoutAnalysis.UnitTests --no-build --no-restore -c Release
       - name: Run the same contracts against actual netstandard assets on .NET 10
-        run: dotnet test DocumentExtraction/test/PdfPig.OnnxLayoutAnalysis.UnitTests --no-restore -c Release -p:DocumentExtractionTestAsset=netstandard2.0
+        run: |
+          dotnet restore DocumentExtraction/test/PdfPig.OnnxLayoutAnalysis.UnitTests --configfile "${{ runner.temp }}/pdfpig-onnx-nuget.config" -p:DocumentExtractionTestAsset=netstandard2.0
+          dotnet test DocumentExtraction/test/PdfPig.OnnxLayoutAnalysis.UnitTests --no-restore -c Release -p:DocumentExtractionTestAsset=netstandard2.0
       - name: Offline provisioning checks
         shell: pwsh
         run: ./DocumentExtraction/src/PdfPig.OnnxLayoutAnalysis/Test-ModelProvisioning.ps1
@@ -128,7 +132,7 @@ jobs:
             $archive.Dispose()
           }
           $configPath = "${{ runner.temp }}/pdfpig-onnx-nuget.config"
-          ./eng/Test-DocumentExtractionPackages.ps1 -PackageDirectory "${{ runner.temp }}/pdfpig-onnx-packages" -NuGetConfig "$configPath" -OutputDirectory "${{ runner.temp }}/pdfpig-onnx-consumers" -ConsumerProject ./DocumentExtraction/samples/PdfPigOnnx.PackageSmoke/PdfPigOnnx.PackageSmoke.csproj
+          ./eng/Test-DocumentExtractionPackages.ps1 -PackageDirectory "${{ runner.temp }}/pdfpig-onnx-packages" -CorePackageDirectory "${{ runner.temp }}/pdfpig-onnx-core" -NuGetConfig "$configPath" -OutputDirectory "${{ runner.temp }}/pdfpig-onnx-consumers" -ConsumerProject ./DocumentExtraction/samples/PdfPigOnnx.PackageSmoke/PdfPigOnnx.PackageSmoke.csproj
       - uses: actions/upload-artifact@v6
         with:
           name: pdfpig-onnx-consumers-${{ matrix.os }}

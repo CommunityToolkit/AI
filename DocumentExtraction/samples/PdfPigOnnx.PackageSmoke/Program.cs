@@ -7,6 +7,9 @@ using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Text.Json;
 using CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis;
+using Microsoft.Extensions.AI;
+using Microsoft.Extensions.DocumentExtraction;
+using Microsoft.Extensions.Documents;
 
 if (args.Length != 2)
 {
@@ -57,6 +60,21 @@ await File.WriteAllTextAsync(receiptPath, JsonSerializer.Serialize(new
     LoadedAssemblySha256 = loadedHash,
     PackageAsset = packageAsset,
     PackageAssetSha256 = packageHash,
+    CoreAssemblies = new[]
+    {
+        typeof(DocumentExtractionClient).Assembly,
+        typeof(ExtractionDocument).Assembly,
+        typeof(TextContent).Assembly,
+        Assembly.Load("Microsoft.Extensions.DocumentExtraction"),
+    }.Select(core => new
+    {
+        Name = core.GetName().Name,
+        Path = core.Location,
+        InformationalVersion = core.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
+        Target = core.GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName,
+        Sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(core.Location))),
+    }).ToArray(),
+    CoreProbeScope = "Three abstraction assemblies used by extraction; fourth implementation assembly loaded only for owning-package metadata/hash validation, not middleware execution.",
     ExperimentalDiagnostic = diagnostic,
     ExperimentalUrl = url,
     SyntheticExtraction = "passed: 1 rendered page, 300 contract regions, native literal retained",
