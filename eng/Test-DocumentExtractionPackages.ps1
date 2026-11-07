@@ -107,7 +107,7 @@ foreach ($pair in @(
     $receipt = Get-Content (Join-Path $OutputDirectory "$name.json") -Raw | ConvertFrom-Json
     foreach ($binding in $receipt.assemblies) {
         $assemblyName = [IO.Path]::GetFileNameWithoutExtension($binding.path)
-        $matches = @($archives | Where-Object { $_.Name -like "$assemblyName.*.nupkg" })
+        $matches = @($archives | Where-Object { $_.Name -like "$assemblyName.[0-9]*.nupkg" })
         if ($matches.Count -ne 1) {
             throw "Expected one matching provider archive for $assemblyName."
         }
