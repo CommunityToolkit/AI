@@ -20,7 +20,8 @@ dotnet add package Azure.Identity
 Experimental APIs emit `CTDE0001`; opt in explicitly as described in the
 [component guide](../../README.md#experimental-api-diagnostics).
 
-Targets **.NET Standard 2.0, .NET 8 and .NET 10**. Runtime dependencies include `Azure.Core`
+Targets **.NET Standard 2.0 and .NET 10**. See the [runtime support and HTTP status migration policy](../../README.md#framework-support).
+Runtime dependencies include `Azure.Core`
 **1.53.0**, `Microsoft.Extensions.DocumentExtraction.Abstractions`,
 `Microsoft.Extensions.Documents.Abstractions` and
 `Microsoft.Extensions.AI.Abstractions`. `Azure.Identity` is an additional
@@ -98,6 +99,35 @@ This traversal includes table-local `TextContent`. Tables supplied separately by
 the service retain their literal Markdown or HTML; they are not synthesized into
 an addressed cell grid. Inline Markdown tables remain in page text. Sections do
 not duplicate aggregate page text.
+
+### Table/image placement and byte fidelity
+
+Exact native table markers (`[tbl-id](tbl-id)`) and image markers
+(`![img-0.jpeg](img-0.jpeg)`) are replaced in page-text order only when ownership
+is unambiguous. A table link does not match the suffix inside image syntax.
+Matching is ordinal, case-sensitive text matching, not a Markdown parser.
+All surrounding text, including whitespace-only spans/pages, is retained
+verbatim; empty spans do not create text elements.
+
+Missing image IDs, absent/repeated markers, duplicate nonempty IDs across native
+table/image records, and overlapping candidates do not choose a first winner.
+Ambiguous markers remain literal text. Every unplaced native element is appended
+after page text/placed elements, in native table-array order followed by native
+image-array order. Tables retain the existing unique literal-content fallback
+when no native table marker exists (including tables without IDs); repeated
+table markers do not enable fallback. Duplicate IDs and overlaps also disqualify
+literal fallback. Rejected/repeated candidates still participate in overlap
+checks so another record cannot arbitrarily consume their text.
+
+Image `image_base64` data URIs preserve the declared MIME and exact decoded bytes,
+without sniffing or transcoding. Valid non-base64 data URIs are also supported
+using `DataContent` decoding; malformed data URIs/base64 fail during extraction,
+without silently falling back. Untyped raw base64 remains supported and is
+labeled `image/png` **only as a historical compatibility assumption**, not proof
+of its actual format (raw JPEG bytes, for example, are not converted to PNG).
+Missing/non-string image bytes produce an image with null `Content`.
+Detached native JSON, page references and reported image polygons are retained
+regardless of placement.
 
 ### Microsoft Foundry: use a deployed model with Entra ID
 
@@ -208,7 +238,7 @@ The requested model is not substituted for a service-reported identity.
   token audience, identity access and deployed model.
 - Source page numbers are one-based. Table/image geometry is preserved where
   reported; page Markdown is not measured paragraph geometry. Ambiguously placed
-  tables remain separate elements. Native JSON and extracted text can contain
+  tables/images remain separate elements. Native JSON and extracted text can contain
   sensitive data.
 - Input streams, credentials and a supplied `httpClient` are borrowed. A client
   created internally is disposed with the extractor. Returned documents require

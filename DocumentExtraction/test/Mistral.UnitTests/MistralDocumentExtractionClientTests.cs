@@ -164,16 +164,281 @@ public sealed partial class MistralDocumentExtractionClientTests
     }
 
     [Fact]
-    public async Task ExtractAsync_OverlappingTables_AppendsAmbiguousTableWithoutLosingRemainder()
+    public async Task ExtractAsync_OverlappingTables_AppendsAllAmbiguousTablesWithoutLosingText()
     {
         using var session = new OfflineSession(PageResponse("before abcdef after",
             [new { content = "abc" }, new { content = "abcdef" }]));
         ExtractionDocument document = await Extract(session);
         ExtractionDocumentSection section = Assert.Single(document.Sections);
-        Assert.Equal(["before ", "abc", "def after", "abcdef"], section.Elements.Select(Text));
-        Assert.IsType<ExtractionDocumentTextElement>(section.Elements[2]);
+        Assert.Equal(["before abcdef after", "abc", "abcdef"], section.Elements.Select(Text));
+        Assert.IsType<ExtractionDocumentTextElement>(section.Elements[0]);
         Assert.All(section.Elements.OfType<ExtractionDocumentTableElement>(), AssertLiteralTable);
         Assert.Equal(2, section.Elements.OfType<ExtractionDocumentTableElement>().Count());
+        await session.AssertCleanAndBorrowedAsync(1, 1);
+    }
+
+    [Theory]
+    [InlineData("data:image/jpeg;base64,/9j/AA==", "image/jpeg", "/9j/AA==")]
+    [InlineData("data:image/png;base64,iVBORw==", "image/png", "iVBORw==")]
+    [InlineData("data:image/jpeg,%FF%D8%FF%00", "image/jpeg", "/9j/AA==")]
+    [InlineData("/9j/AA==", "image/png", "/9j/AA==")]
+    public async Task ExtractAsync_ImageMarker_PreservesWhitespaceDeclaredMimeBytesAndDetachedGeometry(
+        string encoded, string mime, string expectedBase64)
+    {
+        using var session = new OfflineSession(PageResponse(" \t![img-0.jpeg](img-0.jpeg)\r\n", [], [
+            new { id = "img-0.jpeg", image_base64 = encoded, top_left_x = 1.5, top_left_y = 2, bottom_right_x = 30, bottom_right_y = 40 }]));
+        ExtractionDocument document = await Extract(session);
+        ExtractionDocumentSection section = Assert.Single(document.Sections);
+        Assert.Equal(3, section.Elements.Count);
+        Assert.Equal(" \t", Text(section.Elements[0]));
+        Assert.Equal("\r\n", Text(section.Elements[2]));
+        var image = Assert.IsType<ExtractionDocumentImageElement>(section.Elements[1]);
+        var data = Assert.IsType<DataContent>(image.Content);
+        Assert.Equal(mime, data.MediaType);
+        Assert.Equal(Convert.FromBase64String(expectedBase64), data.Data.ToArray());
+        Assert.Null(image.Source);
+        ExtractionDocumentSourceReference source = Assert.Single(image.Sources);
+        Assert.Same(Assert.Single(document.SourcePages), source.Page);
+        Assert.Equal(new ExtractionDocumentPoint[] { new(1.5, 2), new(30, 2), new(30, 40), new(1.5, 40) }, source.Polygon);
+        await session.AssertCleanAndBorrowedAsync(1, 1);
+        session.Http.Dispose();
+        Assert.Equal(encoded, Assert.IsType<JsonElement>(source.GetRawRepresentation()).GetProperty("image_base64").GetString());
+        Assert.Equal(" \t![img-0.jpeg](img-0.jpeg)\r\n",
+            Assert.IsType<JsonElement>(Assert.Single(section.Sources).GetRawRepresentation()).GetProperty("markdown").GetString());
+        Assert.Equal(Convert.FromBase64String(expectedBase64), data.Data.ToArray());
+    }
+
+    [Theory]
+    [InlineData("data:image/png;base64,not base64!")]
+    [InlineData("data:image/jpeg;base64,AA")]
+    [InlineData("data:image/png;base64")]
+    [InlineData("data:image/png;base64,AA==,AA==")]
+    [InlineData("not-a-data-uri,AA==")]
+    [InlineData("not base64!")]
+    public async Task ExtractAsync_InvalidImageEncoding_FailsEagerlyWithoutFallbackAndCleansUp(string encoded)
+    {
+        using var session = new OfflineSession(PageResponse("![i](i)", [], [new { id = "i", image_base64 = encoded }]));
+        await Assert.ThrowsAnyAsync<FormatException>(() => Extract(session));
+        Assert.Empty(session.Delays);
+        await session.AssertCleanAndBorrowedAsync(1, 1);
+    }
+
+    [Theory]
+    [InlineData("""{"id":"i"}""")]
+    [InlineData("""{"id":"i","image_base64":null}""")]
+    [InlineData("""{"id":"i","image_base64":42}""")]
+    public async Task ExtractAsync_ImageMarkerWithoutBytes_PlacesNativeImageWithNullContent(string json)
+    {
+        using JsonDocument fixture = JsonDocument.Parse(json);
+        using var session = new OfflineSession(PageResponse("before![i](i)after", [], [fixture.RootElement]));
+        ExtractionDocument document = await Extract(session);
+        ExtractionDocumentSection section = Assert.Single(document.Sections);
+        Assert.Equal(3, section.Elements.Count);
+        Assert.Equal("before", Text(section.Elements[0]));
+        Assert.Equal("after", Text(section.Elements[2]));
+        var image = Assert.IsType<ExtractionDocumentImageElement>(section.Elements[1]);
+        Assert.Null(image.Content);
+        var source = Assert.Single(image.Sources);
+        Assert.Empty(source.Polygon);
+        Assert.Same(document.SourcePages[0], source.Page);
+        Assert.Equal(json, Assert.IsType<JsonElement>(source.GetRawRepresentation()).GetRawText());
+        await session.AssertCleanAndBorrowedAsync(1, 1);
+    }
+
+    [Fact]
+    public async Task ExtractAsync_ImageTableInterleaving_UsesMarkdownOrderNotRecordOrder()
+    {
+        const string markdown = "A![i2](i2) B[t2](t2)\t![i1](i1)\n[t1](t1)Z";
+        using var session = new OfflineSession(PageResponse(markdown,
+            [new { id = "t1", content = "one" }, new { id = "t2", content = "two" }],
+            [new { id = "i1", image_base64 = "AQ==" }, new { id = "i2", image_base64 = "Ag==" }]));
+        ExtractionDocument document = await Extract(session);
+        ExtractionDocumentSection section = Assert.Single(document.Sections);
+        Assert.Equal(9, section.Elements.Count);
+        Assert.Equal(["A", " B", "\t", "\n", "Z"],
+            section.Elements.OfType<ExtractionDocumentTextElement>().Select(Text));
+        Assert.Equal(["i2", "t2", "i1", "t1"], section.Elements
+            .Where(e => e is not ExtractionDocumentTextElement)
+            .Select(e => Assert.IsType<JsonElement>(Assert.Single(e.Sources).GetRawRepresentation()).GetProperty("id").GetString()));
+        Assert.Equal(["two", "one"], section.Elements.OfType<ExtractionDocumentTableElement>().Select(Text));
+        Assert.Equal([2, 1], section.Elements.OfType<ExtractionDocumentImageElement>()
+            .Select(e => (int)Assert.IsType<DataContent>(e.Content).Data.Span[0]));
+        Assert.All(section.Elements.SelectMany(e => e.Sources), s => Assert.Same(document.SourcePages[0], s.Page));
+        await session.AssertCleanAndBorrowedAsync(1, 1);
+    }
+
+    [Theory]
+    [InlineData("missing")]
+    [InlineData("empty")]
+    [InlineData("absent")]
+    [InlineData("repeated")]
+    [InlineData("duplicate")]
+    [InlineData("case-sensitive")]
+    public async Task ExtractAsync_UnownedImageMarkers_PreserveLiteralTextAndAppendEveryRecord(string scenario)
+    {
+        string markdown = scenario switch
+        {
+            "repeated" => "before![i](i) between![i](i)after",
+            "absent" => "literal [i](i) and ![other](other)",
+            "case-sensitive" => "before![I](I)after",
+            _ => "before![i](i)after",
+        };
+        object[] images = scenario switch
+        {
+            "missing" => [new { image_base64 = "AQ==" }],
+            "empty" => [new { id = "", image_base64 = "AQ==" }],
+            "duplicate" => [new { id = "i", image_base64 = "AQ==" }, new { id = "i", image_base64 = "Ag==" }],
+            _ => [new { id = "i", image_base64 = "AQ==" }],
+        };
+        using var session = new OfflineSession(PageResponse(markdown, [], images));
+        ExtractionDocument document = await Extract(session);
+        ExtractionDocumentSection section = Assert.Single(document.Sections);
+        Assert.Equal(markdown, Text(section.Elements[0]));
+        Assert.Equal(images.Length + 1, section.Elements.Count);
+        Assert.Equal(Enumerable.Range(1, images.Length), section.Elements.Skip(1)
+            .Select(e => (int)Assert.IsType<DataContent>(Assert.IsType<ExtractionDocumentImageElement>(e).Content).Data.Span[0]));
+        Assert.All(section.Elements.SelectMany(e => e.Sources), s => Assert.Same(document.SourcePages[0], s.Page));
+        await session.AssertCleanAndBorrowedAsync(1, 1);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExtractAsync_TableMarkerInsideImageSyntax_DoesNotClaimImageOrDropBang(bool literalFallback)
+    {
+        using var session = new OfflineSession(PageResponse("before![i](i)after",
+            [new { id = literalFallback ? "other" : "i", content = "[i](i)" }]));
+        ExtractionDocument document = await Extract(session);
+        ExtractionDocumentSection section = Assert.Single(document.Sections);
+        Assert.Equal(["before![i](i)after", "[i](i)"], section.Elements.Select(Text));
+        Assert.IsType<ExtractionDocumentTextElement>(section.Elements[0]);
+        AssertLiteralTable(Assert.IsType<ExtractionDocumentTableElement>(section.Elements[1]));
+        await session.AssertCleanAndBorrowedAsync(1, 1);
+    }
+
+    [Theory]
+    [InlineData("duplicate-tables")]
+    [InlineData("duplicate-literal-tables")]
+    [InlineData("cross-kind-id")]
+    [InlineData("overlap")]
+    [InlineData("overlap-reversed")]
+    [InlineData("repeated-overlap")]
+    public async Task ExtractAsync_TableImageOwnershipCollisions_PreserveTextAndAppendAllNativeElements(string scenario)
+    {
+        string markdown = scenario switch
+        {
+            "duplicate-tables" => "[t](t) literal",
+            "duplicate-literal-tables" => "one literal",
+            "cross-kind-id" => "![i](i)[i](i)",
+            "repeated-overlap" => "![i](i)![i](i)",
+            _ => "before![i](i)after",
+        };
+        object[] tables = scenario switch
+        {
+            "duplicate-tables" => [new { id = "t", content = "one" }, new { id = "t", content = "literal" }],
+            "duplicate-literal-tables" => [new { id = "t", content = "one" }, new { id = "t", content = "literal" }],
+            "cross-kind-id" => [new { id = "i", content = "table" }],
+            "overlap-reversed" => [new { content = "](i)after" }, new { content = "before![i]" }],
+            "repeated-overlap" => [new { content = "i](i)![i" }],
+            _ => [new { content = "before![i]" }, new { content = "](i)after" }],
+        };
+        object[] images = scenario is "duplicate-tables" or "duplicate-literal-tables" ? [] : [new { id = "i", image_base64 = "AQ==" }];
+        using var session = new OfflineSession(PageResponse(markdown, tables, images));
+        ExtractionDocument document = await Extract(session);
+        ExtractionDocumentSection section = Assert.Single(document.Sections);
+        Assert.Equal(markdown, Text(section.Elements[0]));
+        Assert.Equal(1 + tables.Length + images.Length, section.Elements.Count);
+        Assert.Equal(tables.Length, section.Elements.OfType<ExtractionDocumentTableElement>().Count());
+        using JsonDocument native = JsonDocument.Parse(PageResponse(markdown, tables, images));
+        Assert.Equal(native.RootElement.GetProperty("pages")[0].GetProperty("tables").EnumerateArray().Select(t => t.GetRawText()),
+            section.Elements.OfType<ExtractionDocumentTableElement>()
+                .Select(t => Assert.IsType<JsonElement>(Assert.Single(t.Sources).GetRawRepresentation()).GetRawText()));
+        if (images.Length != 0)
+        {
+            var image = Assert.IsType<ExtractionDocumentImageElement>(section.Elements[section.Elements.Count - 1]);
+            Assert.Equal([1], Assert.IsType<DataContent>(image.Content).Data.ToArray());
+        }
+        await session.AssertCleanAndBorrowedAsync(1, 1);
+    }
+
+    [Theory]
+    [InlineData("![i](i)[t](t)", true)]
+    [InlineData("[t](t)![i](i)", false)]
+    public async Task ExtractAsync_AdjacentImageAndTableMarkers_AreNotOverlapsOrEmptyText(string markdown, bool imageFirst)
+    {
+        using var session = new OfflineSession(PageResponse(markdown,
+            [new { id = "t", content = "table" }], [new { id = "i", image_base64 = "AQ==" }]));
+        ExtractionDocument document = await Extract(session);
+        ExtractionDocumentSection section = Assert.Single(document.Sections);
+        Assert.Equal(2, section.Elements.Count);
+        var image = Assert.IsType<ExtractionDocumentImageElement>(section.Elements[imageFirst ? 0 : 1]);
+        var table = Assert.IsType<ExtractionDocumentTableElement>(section.Elements[imageFirst ? 1 : 0]);
+        Assert.Equal([1], Assert.IsType<DataContent>(image.Content).Data.ToArray());
+        Assert.Equal("table", Text(table));
+        AssertLiteralTable(table);
+        Assert.Same(document.SourcePages[0], Assert.Single(image.Sources).Page);
+        await session.AssertCleanAndBorrowedAsync(1, 1);
+    }
+
+    [Fact]
+    public async Task ExtractAsync_MixedPlacedAndAmbiguousRecords_AppendsUnplacedTablesThenImagesWithoutDisturbingPlacement()
+    {
+        using var session = new OfflineSession(PageResponse("A[t](t)![ok](ok)![i](i)Z",
+            [new { id = "t", content = "one" }, new { id = "t", content = "two" }],
+            [new { id = "i", image_base64 = "AQ==" }, new { id = "ok", image_base64 = "Aw==" }, new { id = "i", image_base64 = "Ag==" }]));
+        ExtractionDocument document = await Extract(session);
+        ExtractionDocumentSection section = Assert.Single(document.Sections);
+        Assert.Equal(7, section.Elements.Count);
+        Assert.Equal("A[t](t)", Text(section.Elements[0]));
+        Assert.Equal([3], Assert.IsType<DataContent>(Assert.IsType<ExtractionDocumentImageElement>(section.Elements[1]).Content).Data.ToArray());
+        Assert.Equal("![i](i)Z", Text(section.Elements[2]));
+        Assert.Equal("one", Text(Assert.IsType<ExtractionDocumentTableElement>(section.Elements[3])));
+        Assert.Equal("two", Text(Assert.IsType<ExtractionDocumentTableElement>(section.Elements[4])));
+        Assert.Equal([1], Assert.IsType<DataContent>(Assert.IsType<ExtractionDocumentImageElement>(section.Elements[5]).Content).Data.ToArray());
+        Assert.Equal([2], Assert.IsType<DataContent>(Assert.IsType<ExtractionDocumentImageElement>(section.Elements[6]).Content).Data.ToArray());
+        Assert.Equal(["ok", "t", "t", "i", "i"], section.Elements.Where(e => e is not ExtractionDocumentTextElement)
+            .Select(e => Assert.IsType<JsonElement>(Assert.Single(e.Sources).GetRawRepresentation()).GetProperty("id").GetString()));
+        await session.AssertCleanAndBorrowedAsync(1, 1);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExtractAsync_UniqueLiteralTableFallback_PreservesWhitespaceAndNativeContent(bool missingId)
+    {
+        object table = missingId ? new { content = "| native |" } : new { id = "unmarked", content = "| native |" };
+        using var session = new OfflineSession(PageResponse("\t| native |\r\n", [table]));
+        ExtractionDocument document = await Extract(session);
+        ExtractionDocumentSection section = Assert.Single(document.Sections);
+        Assert.Equal(["\t", "| native |", "\r\n"], section.Elements.Select(Text));
+        var mapped = Assert.IsType<ExtractionDocumentTableElement>(section.Elements[1]);
+        AssertLiteralTable(mapped);
+        Assert.Equal("| native |", Assert.IsType<JsonElement>(Assert.Single(mapped.Sources).GetRawRepresentation()).GetProperty("content").GetString());
+        await session.AssertCleanAndBorrowedAsync(1, 1);
+    }
+
+    [Theory]
+    [InlineData("aaa", "aa")]
+    [InlineData("[t](t) literal [t](t)", "literal")]
+    public async Task ExtractAsync_RepeatedOrSelfOverlappingTableCandidates_DoNotConsumeUniqueFallback(string markdown, string content)
+    {
+        using var session = new OfflineSession(PageResponse(markdown, [new { id = "t", content }]));
+        ExtractionDocument document = await Extract(session);
+        ExtractionDocumentSection section = Assert.Single(document.Sections);
+        Assert.Equal([markdown, content], section.Elements.Select(Text));
+        Assert.IsType<ExtractionDocumentTextElement>(section.Elements[0]);
+        AssertLiteralTable(Assert.IsType<ExtractionDocumentTableElement>(section.Elements[1]));
+        await session.AssertCleanAndBorrowedAsync(1, 1);
+    }
+
+    [Fact]
+    public async Task ExtractAsync_WhitespaceOnlyPage_PreservesExactText()
+    {
+        using var session = new OfflineSession(PageResponse(" \t\r\n", []));
+        ExtractionDocument document = await Extract(session);
+        var text = Assert.IsType<ExtractionDocumentTextElement>(Assert.Single(Assert.Single(document.Sections).Elements));
+        Assert.Equal(" \t\r\n", Text(text));
+        Assert.Same(document.SourcePages[0], Assert.Single(text.Sources).Page);
         await session.AssertCleanAndBorrowedAsync(1, 1);
     }
 

@@ -6,11 +6,11 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DocumentExtraction;
 using Microsoft.Extensions.Documents;
 
-namespace CommunityToolkit.DocumentExtraction.Vision;
+namespace CommunityToolkit.DocumentExtraction.VisionLanguageModel;
 
-/// <summary>Extracts documents with a borrowed <see cref="IChatClient"/> that supports the supplied input format.</summary>
+/// <summary>Extracts documents with a vision language model through a borrowed <see cref="IChatClient"/> that supports the supplied input format.</summary>
 /// <remarks>Structured mode fails explicitly when the model cannot satisfy its schema; it never falls back to free-form.</remarks>
-public sealed class VisionDocumentExtractionClient : DocumentExtractionClient
+public sealed class VisionLanguageModelDocumentExtractionClient : DocumentExtractionClient
 {
     private const string ProviderName = "vision-llm";
     private const int MaximumTableGridPositions = 65_536;
@@ -61,7 +61,7 @@ public sealed class VisionDocumentExtractionClient : DocumentExtractionClient
     private readonly bool _useStructuredOutput;
 
     /// <summary>Creates an adapter without taking ownership of the chat client.</summary>
-    public VisionDocumentExtractionClient(IChatClient chatClient, VisionDocumentExtractionClientOptions? options = null)
+    public VisionLanguageModelDocumentExtractionClient(IChatClient chatClient, VisionLanguageModelDocumentExtractionClientOptions? options = null)
     {
         Throw.IfNull(chatClient);
         _chatClient = chatClient;
@@ -76,7 +76,7 @@ public sealed class VisionDocumentExtractionClient : DocumentExtractionClient
     {
         ProviderAdapterHelpers.ValidateInput(document, identifier, mediaType);
         DocumentExtractionOptions request = ProviderAdapterHelpers.NormalizeOptions(options);
-        ProviderAdapterHelpers.RejectUnsupportedProperties(request, nameof(VisionDocumentExtractionClient));
+        ProviderAdapterHelpers.RejectUnsupportedProperties(request, nameof(VisionLanguageModelDocumentExtractionClient));
         bool isPdf = string.Equals(mediaType, "application/pdf", StringComparison.OrdinalIgnoreCase);
         if (!isPdf && !mediaType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
         {

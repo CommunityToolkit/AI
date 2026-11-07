@@ -13,7 +13,7 @@ using CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence;
 using CommunityToolkit.DocumentExtraction.Mistral;
 using CommunityToolkit.DocumentExtraction.PdfPig;
 using CommunityToolkit.DocumentExtraction.PdfPig.UnitTests;
-using CommunityToolkit.DocumentExtraction.Vision;
+using CommunityToolkit.DocumentExtraction.VisionLanguageModel;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DocumentExtraction;
 using Microsoft.Extensions.Documents;
@@ -24,9 +24,13 @@ if (args.Length != 2)
 }
 
 Type[] types = [typeof(PdfPigDocumentExtractionClient), typeof(ContentUnderstandingExtractionClient),
-    typeof(DocumentIntelligenceExtractionClient), typeof(MistralDocumentExtractionClient), typeof(VisionDocumentExtractionClient)];
-string expectedFramework = args[0] == "netstandard2.0" ? ".NETStandard,Version=v2.0"
-    : args[0] == "net8.0" ? ".NETCoreApp,Version=v8.0" : ".NETCoreApp,Version=v10.0";
+    typeof(DocumentIntelligenceExtractionClient), typeof(MistralDocumentExtractionClient), typeof(VisionLanguageModelDocumentExtractionClient)];
+string expectedFramework = args[0] switch
+{
+    "netstandard2.0" => ".NETStandard,Version=v2.0",
+    "net10.0" => ".NETCoreApp,Version=v10.0",
+    _ => throw new ArgumentException("Expected a net10.0 or netstandard2.0 provider asset."),
+};
 var assemblies = new List<object>();
 foreach (Type type in types)
 {
@@ -46,9 +50,19 @@ foreach (Type type in types)
         throw new InvalidDataException($"Wrong experimental metadata: {type}.");
     }
 
+    bool portable = args[0] == "netstandard2.0";
+    if ((marker.AttributeType.Assembly == assembly) != portable ||
+        portable && marker.AttributeType.IsVisible ||
+        !assembly.GetCustomAttributes<System.Runtime.CompilerServices.InternalsVisibleToAttribute>()
+            .Any(attribute => attribute.AssemblyName == assembly.GetName().Name + ".UnitTests"))
+    {
+        throw new InvalidDataException($"Wrong legacy shim visibility or friend assembly: {type}.");
+    }
+
     assemblies.Add(new { type = type.FullName, path = assembly.Location,
         sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))),
-        target = expectedFramework, diagnostic = "CTDE0001" });
+        target = expectedFramework, diagnostic = "CTDE0001",
+        internalExperimentalShim = portable, friendAssemblyVerified = true });
 }
 
 foreach (string name in new[] { "OcrEndpoint", "DefaultModel" })
@@ -92,9 +106,9 @@ if (!mistralResult.EnumerateContent().Any(element => element.Content is TextCont
 }
 
 using var chatClient = new OfflineChatClient();
-using DocumentExtractionClient vision = new VisionDocumentExtractionClient(chatClient);
-using DocumentExtractionClient structuredVision = new VisionDocumentExtractionClient(
-    chatClient, new VisionDocumentExtractionClientOptions { UseStructuredOutput = true });
+using DocumentExtractionClient vision = new VisionLanguageModelDocumentExtractionClient(chatClient);
+using DocumentExtractionClient structuredVision = new VisionLanguageModelDocumentExtractionClient(
+    chatClient, new VisionLanguageModelDocumentExtractionClientOptions { UseStructuredOutput = true });
 input.Position = 0;
 ExtractionDocument visionResult = await vision.ExtractAsync(input, "invoice", "application/pdf");
 if (!visionResult.EnumerateContent().Any(element => element.Content is TextContent text && text.Text == "offline invoice"))

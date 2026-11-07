@@ -220,58 +220,30 @@ public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
                 section.Sources.Add(pageReference);
                 output.SourcePages.Add(sourcePage);
                 output.Sections.Add(section);
-                var replacements = new List<(int Start, int Length, ExtractionDocumentTableElement Table)>();
-                var unplacedTables = new List<ExtractionDocumentTableElement>();
+                var elements = new List<(string? Id, ExtractionDocumentElement Element)>();
+                var candidates = new List<(int Start, int Length, ExtractionDocumentElement Element)>();
 
                 if (page.TryGetProperty("tables", out JsonElement tables)
                     && tables.ValueKind == JsonValueKind.Array)
                 {
                     foreach (JsonElement table in tables.EnumerateArray())
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
                         string? tableMarkdown = GetString(table, "content") ?? GetString(table, "markdown");
                         string? tableId = GetString(table, "id");
-                        (int Start, int Length)? match = string.IsNullOrEmpty(tableId)
-                            ? null
-                            : FindUnique(markdown, $"[{tableId}]({tableId})");
-                        if (match is null && !string.IsNullOrEmpty(tableMarkdown))
-                        {
-                            match = FindUnique(markdown, tableMarkdown!);
-                        }
-
-                        if (match is { } candidate && replacements.Any(replacement =>
-                            replacement.Start < candidate.Start + candidate.Length
-                            && candidate.Start < replacement.Start + replacement.Length))
-                        {
-                            match = null;
-                        }
-
                         var extractionTable = new ExtractionDocumentTableElement(tableMarkdown is null ? null : new TextContent(tableMarkdown), 0, 0);
                         extractionTable.Sources.Add(new ExtractionDocumentSourceReference(sourcePage, rawRepresentation: table.Clone()));
-                        if (match is { } position)
+                        elements.Add((tableId, extractionTable));
+                        int markerCount = string.IsNullOrEmpty(tableId)
+                            ? 0
+                            : AddCandidates($"[{tableId}]({tableId})", extractionTable, excludeImageSyntax: true);
+                        // Preserve the literal-table fallback only when no native table marker exists.
+                        // Repeated markers are ambiguous, not permission to consume other page text.
+                        if (markerCount == 0 && !string.IsNullOrEmpty(tableMarkdown))
                         {
-                            replacements.Add((position.Start, position.Length, extractionTable));
+                            AddCandidates(tableMarkdown!, extractionTable, excludeImageSyntax: true);
                         }
-                        else
-                        {
-                            unplacedTables.Add(extractionTable);
-                        }
-
                     }
-                }
-
-                int cursor = 0;
-                foreach ((int start, int length, ExtractionDocumentTableElement table) in
-                    replacements.OrderBy(item => item.Start))
-                {
-                    AddText(markdown.Substring(cursor, start - cursor));
-                    AddTable(table);
-                    cursor = start + length;
-                }
-
-                AddText(markdown.Substring(cursor));
-                foreach (ExtractionDocumentTableElement table in unplacedTables)
-                {
-                    AddTable(table);
                 }
 
                 if (page.TryGetProperty("images", out JsonElement images)
@@ -279,25 +251,87 @@ public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
                 {
                     foreach (JsonElement image in images.EnumerateArray())
                     {
-                        ReadOnlyMemory<byte>? content = DecodeImage(image);
-                        ExtractionDocumentSourceReference source = CreateImageSource(sourcePage, image);
-                        ProviderAdapterHelpers.AddElement(section, new ExtractionDocumentImageElement()
+                        cancellationToken.ThrowIfCancellationRequested();
+                        var extractionImage = new ExtractionDocumentImageElement()
                         {
-                            Content = content is null ? null : new DataContent(content.Value, "image/png"),
-                        }, [source]);
+                            Content = DecodeImage(image),
+                        };
+                        extractionImage.Sources.Add(CreateImageSource(sourcePage, image));
+                        string? imageId = GetString(image, "id");
+                        elements.Add((imageId, extractionImage));
+                        if (!string.IsNullOrEmpty(imageId))
+                        {
+                            AddCandidates($"![{imageId}]({imageId})", extractionImage);
+                        }
                     }
                 }
 
-                void AddTable(ExtractionDocumentTableElement table)
+                // Resolve ownership globally, not first-record wins. Even rejected/repeated
+                // candidates participate in overlap detection so they cannot lose text to a peer.
+                var duplicateIds = new HashSet<string>(
+                    elements.Where(item => !string.IsNullOrEmpty(item.Id))
+                        .GroupBy(item => item.Id!, StringComparer.Ordinal)
+                        .Where(group => group.Count() > 1)
+                        .Select(group => group.Key), StringComparer.Ordinal);
+                var replacements = candidates.Where(candidate =>
+                    candidates.Count(other => ReferenceEquals(other.Element, candidate.Element)) == 1
+                    && !elements.Any(item => ReferenceEquals(item.Element, candidate.Element)
+                        && item.Id is not null && duplicateIds.Contains(item.Id))
+                    && !candidates.Any(other => !ReferenceEquals(other.Element, candidate.Element)
+                        && other.Start < candidate.Start + candidate.Length
+                        && candidate.Start < other.Start + other.Length))
+                    .OrderBy(item => item.Start).ToArray();
+
+                int cursor = 0;
+                foreach ((int start, int length, ExtractionDocumentElement element) in replacements)
                 {
-                    ExtractionDocumentSourceReference[] sources = table.Sources.ToArray();
-                    table.Sources.Clear();
-                    ProviderAdapterHelpers.AddElement(section, table, sources);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    AddText(markdown.Substring(cursor, start - cursor));
+                    AddElement(element);
+                    cursor = start + length;
+                }
+
+                AddText(markdown.Substring(cursor));
+                foreach ((_, ExtractionDocumentElement element) in elements)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (!replacements.Any(item => ReferenceEquals(item.Element, element)))
+                    {
+                        AddElement(element);
+                    }
+                }
+
+                int AddCandidates(string value, ExtractionDocumentElement element, bool excludeImageSyntax = false)
+                {
+                    int count = 0;
+                    for (int start = markdown.IndexOf(value, StringComparison.Ordinal);
+                        start >= 0;
+                        start = markdown.IndexOf(value, start + 1, StringComparison.Ordinal))
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        // A table link is not the link-shaped suffix of an image marker.
+                        if (excludeImageSyntax && value[0] == '[' && start > 0 && markdown[start - 1] == '!')
+                        {
+                            continue;
+                        }
+
+                        candidates.Add((start, value.Length, element));
+                        count++;
+                    }
+
+                    return count;
+                }
+
+                void AddElement(ExtractionDocumentElement element)
+                {
+                    ExtractionDocumentSourceReference[] sources = element.Sources.ToArray();
+                    element.Sources.Clear();
+                    ProviderAdapterHelpers.AddElement(section, element, sources);
                 }
 
                 void AddText(string value)
                 {
-                    if (!string.IsNullOrWhiteSpace(value))
+                    if (value.Length != 0)
                     {
                         ProviderAdapterHelpers.AddElement(section, new ExtractionDocumentTextElement(new TextContent(value)), [pageReference]);
                     }
@@ -426,7 +460,7 @@ public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
                 ? value.GetString()
                 : null;
 
-    private static ReadOnlyMemory<byte>? DecodeImage(JsonElement image)
+    private static DataContent? DecodeImage(JsonElement image)
     {
         if (!image.TryGetProperty("image_base64", out JsonElement base64)
             || base64.ValueKind != JsonValueKind.String)
@@ -435,8 +469,15 @@ public sealed class MistralDocumentExtractionClient : DocumentExtractionClient
         }
 
         string raw = base64.GetString()!;
-        int comma = raw.IndexOf(',');
-        return Convert.FromBase64String(comma >= 0 ? raw.Substring(comma + 1) : raw);
+        // DataContent validates the URI (including base64) eagerly and preserves its declared MIME.
+        // Valid non-base64 data URIs are supported too; malformed URIs never fall back to raw bytes.
+        if (raw.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+        {
+            return new DataContent(raw);
+        }
+
+        // Historical compatibility assumption for untyped raw base64, not format detection.
+        return new DataContent(Convert.FromBase64String(raw), "image/png");
     }
 
     private static ExtractionDocumentSourceReference CreateImageSource(

@@ -18,6 +18,24 @@ $ConsumerProject = [IO.Path]::GetFullPath($ConsumerProject)
 if (Test-Path $OutputDirectory) {
     throw "Use a new output directory; existing evidence will not be overwritten: $OutputDirectory"
 }
+$archives = @(Get-ChildItem -LiteralPath $PackageDirectory -Filter 'CommunityToolkit.DocumentExtraction.*.nupkg')
+if ($archives.Count -eq 0) {
+    throw "No extraction packages found in $PackageDirectory"
+}
+foreach ($archive in $archives) {
+    $zip = [IO.Compression.ZipFile]::OpenRead($archive.FullName)
+    try {
+        $frameworks = @($zip.Entries.FullName |
+            Where-Object { $_ -match '^lib/[^/]+/.+' } |
+            ForEach-Object { $_.Split('/')[1] } | Sort-Object -Unique)
+        if (($frameworks -join ';') -ne 'net10.0;netstandard2.0') {
+            throw "Expected only net10.0 and netstandard2.0 lib assets in $($archive.Name); found $($frameworks -join ', ')."
+        }
+    }
+    finally {
+        $zip.Dispose()
+    }
+}
 New-Item -ItemType Directory -Path $OutputDirectory | Out-Null
 [xml] $config = Get-Content $NuGetConfig -Raw
 $source = $config.CreateElement('add')
@@ -55,9 +73,7 @@ function Invoke-Logged {
 
 Invoke-Logged 'restore' @('restore', $ConsumerProject, '--configfile', $consumerConfig, '--verbosity', 'quiet')
 foreach ($pair in @(
-    @{ Runtime = 'net8.0'; Asset = 'net8.0' },
     @{ Runtime = 'net10.0'; Asset = 'net10.0' },
-    @{ Runtime = 'net8.0'; Asset = 'netstandard2.0' },
     @{ Runtime = 'net10.0'; Asset = 'netstandard2.0' }
 )) {
     $name = "$($pair.Runtime)-$($pair.Asset)"

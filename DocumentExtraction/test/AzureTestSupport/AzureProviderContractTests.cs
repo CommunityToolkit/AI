@@ -26,9 +26,9 @@ using NativeResult = Azure.AI.DocumentIntelligence.AnalyzeResult;
 namespace CommunityToolkit.DocumentExtraction.Tests;
 
 #if CONTENT_UNDERSTANDING
-public sealed class ContentUnderstandingExtractionClientTests
+public sealed partial class ContentUnderstandingExtractionClientTests
 #else
-public sealed class DocumentIntelligenceExtractionClientTests
+public sealed partial class DocumentIntelligenceExtractionClientTests
 #endif
 {
     private static Adapter Create(OfflineTransport transport, bool borrowed = false, bool images = false,

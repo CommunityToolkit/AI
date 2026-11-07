@@ -22,7 +22,8 @@ provider itself. For `MEDE0001` or `EXTEXP0019` compiler diagnostics, see
 Experimental APIs emit `CTDE0001`; opt in explicitly as described in the
 [component guide](../../README.md#experimental-api-diagnostics).
 
-Targets **.NET Standard 2.0, .NET 8 and .NET 10**. Runtime dependencies are installed transitively:
+Targets **.NET Standard 2.0 and .NET 10**. See the [runtime support policy](../../README.md#framework-support).
+Runtime dependencies are installed transitively:
 
 - `Azure.AI.ContentUnderstanding` **1.1.0**.
 - `Microsoft.Extensions.DocumentExtraction.Abstractions`,
@@ -152,6 +153,14 @@ sections when the service supplies explicit child references.
 inspect `table.Cells` and recursively read each anchor's `Content` for those
 elements. Fields not projected into this graph remain available on `AnalysisResult`.
 
+Cross-page native sections become page-local continuations retaining their
+original native sources. Native child order within a page and atomic tables/cells
+take precedence over a global span sort. Page-root blocks use the first known
+content offset; unknown offsets are stable after known blocks. Unowned paragraphs
+are not adopted into native sections based on offset envelopes. Continuations
+are adapter structure, not additional service-reported sections. Independent
+content results retain result order rather than comparing their offset domains.
+
 When an analyzer returns whole-document Markdown without paragraphs, tables,
 figures or page lines (for example `prebuilt-document` without detailed output),
 the adapter preserves it literally as one text element in a document-wide section.
@@ -162,7 +171,14 @@ Markdown is not appended again. Choose an analyzer such as `prebuilt-layout`
 when you need the service's structured layout details; this adapter does not
 change the analyzer configuration or request detailed output automatically.
 
-Figure descriptions are `ExtractionDocumentImageElement.AlternativeText`.
+Figure descriptions (or captions when no description is available) are
+`ExtractionDocumentImageElement.AlternativeText`. Figure `Text` maps only
+uniquely referenced plain paragraphs with measured containment in a reported
+convex figure region, excluding captions, footnotes, descriptive text and
+paragraphs shared with sections, cells or other figures. Ambiguous/shared or
+unlocated paragraphs remain in their original structure; null image `Text` is not
+proof that no text was recognized. Moved paragraph source references remain
+on the image with the original native figure references.
 This provider does not download figure image bytes. Only document results are
 supported; use the native SDK for audio/video analysis.
 

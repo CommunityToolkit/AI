@@ -8,7 +8,7 @@ backend-specific response formats.
 
 ## Choose a provider
 
-All packages include **.NET Standard 2.0, .NET 8 and .NET 10** assets. Package IDs start with
+All packages include **.NET Standard 2.0 and .NET 10** assets. Package IDs start with
 `CommunityToolkit.DocumentExtraction.`.
 
 | Package | Client type | Use when you need | Processing and input |
@@ -17,10 +17,10 @@ All packages include **.NET Standard 2.0, .NET 8 and .NET 10** assets. Package I
 | [AzureContentUnderstanding](src/AzureContentUnderstanding/README.md) | `ContentUnderstandingExtractionClient` | Document text, tables and layout from a Content Understanding analyzer | Azure; analyzer-supported document formats |
 | [AzureDocumentIntelligence](src/AzureDocumentIntelligence/README.md) | `DocumentIntelligenceExtractionClient` | OCR, layout, tables and optional figure downloads | Azure; model-supported document formats |
 | [Mistral](src/Mistral/README.md) | `MistralDocumentExtractionClient` | Native Mistral OCR page text, tables and images, directly or through Microsoft Foundry | Hosted; endpoint-supported documents and images |
-| [Vision](src/Vision/README.md) | `VisionDocumentExtractionClient` | Free-form transcription or structured tables with your own capable `IChatClient` | Local or hosted backend; original PDF/image bytes in one request, with format support required from the adapter/API/model |
+| [VisionLanguageModel](src/VisionLanguageModel/README.md) | `VisionLanguageModelDocumentExtractionClient` | Free-form transcription or structured tables with your own capable `IChatClient` | Local or hosted backend; original PDF/image bytes in one request, with format support required from the adapter/API/model |
 
 Azure and Mistral providers upload document content to the configured service and
-can incur charges. Vision sends original PDF/image bytes to your chosen backend
+can incur charges. Vision Language Model sends original PDF/image bytes to your chosen backend
 in one chat request; it does not parse or render PDFs locally. PDF support must
 be provided by the configured adapter, API and model, not inferred from image
 support. PdfPig reads existing PDF text locally and does not recognize
@@ -44,12 +44,18 @@ core version on NuGet.org. See [building from source](#building-from-source).
 
 The .NET Standard 2.0 asset makes the managed provider APIs available to compatible
 applications; it is not a new .NET Framework 4.6.2 target or a certification of
-every legacy host, backend SDK or native dependency. Tests run on .NET 8 and .NET 10,
+every legacy host, backend SDK or native dependency. Tests run on .NET 10,
 including the full offline suites explicitly loading the netstandard provider
 assemblies. A separate package consumer verifies the actual packed assets.
 Use a supported application runtime and check each backend's platform policy.
+.NET 8 is not a supported runtime and no dedicated `net8.0` asset is shipped.
+An existing .NET 8 app may resolve the portable asset, but that is technical
+compatibility rather than a runtime support commitment; migrate the app to .NET 10.
 Mistral's HTTP failures include status in the exception message on every target;
-the typed `HttpRequestException.StatusCode` property is available on modern assets.
+the typed `HttpRequestException.StatusCode` property is populated by the .NET 10
+asset, not the portable asset. An app previously using the dedicated .NET 8 asset
+must account for that distinction if it now resolves the portable asset; the
+numeric status remains in the message. No new exception contract is introduced.
 
 ## Experimental API diagnostics
 
@@ -89,7 +95,7 @@ Substitute any package ID from the table. The providers bring in
 `Microsoft.Extensions.AI.Abstractions` transitively.
 
 Azure examples use the additional `Azure.Identity` package for
-`DefaultAzureCredential`. Vision requires an application-supplied chat adapter,
+`DefaultAzureCredential`. Vision Language Model requires an application-supplied chat adapter,
 configured model and credentials, plus support for the supplied PDF/image format.
 It has no local PDF-rendering dependency or fallback. Each provider README contains its setup,
 supported options and examples.
@@ -104,7 +110,7 @@ required.
 
 Azure Content Understanding and Document Intelligence accept typed
 `ContentUnderstandingExtractionOptions` and `DocumentIntelligenceExtractionOptions`;
-Vision accepts `VisionDocumentExtractionClientOptions` for construction-time defaults.
+Vision Language Model accepts `VisionLanguageModelDocumentExtractionClientOptions` for construction-time defaults.
 Settings are captured when the client is created; null options select defaults.
 Azure SDK `ClientOptions` remain separate for native transport/retry settings.
 For an existing native Azure SDK client, import its corresponding Toolkit
@@ -114,6 +120,33 @@ returns the common `DocumentExtractionClient` and borrows the SDK client;
 the existing adapter constructors remain supported.
 Per-request `DocumentExtractionOptions` still supplies the supported selector
 and additional-property overrides described in each provider README.
+
+### Discover the bundled agent skills
+
+Each provider package includes a goal-oriented `skills/ctk-document-extraction-<provider>/SKILL.md`
+for its own API. Restore caches these instructions alongside that package
+version; it does **not** universally activate them in coding-agent hosts.
+Review the instructions before opting in.
+
+If you already use the separately installed
+[`dotnet-package-skills` tool](https://github.com/NuGet/Client.Tools/blob/main/designs/dotnet-package-skills.md),
+run these commands from your application repository root (PowerShell example):
+
+```powershell
+dotnet restore '.\src\MyApp\MyApp.csproj'
+dotnet-package-skills list --source '.\src\MyApp\MyApp.csproj'
+dotnet-package-skills install --source '.\src\MyApp\MyApp.csproj'
+```
+
+The tool reads **direct package references**, not transitive dependencies.
+Reference the provider you use directly. Its current default destination is
+`.agents\skills` under the command's working directory; `--source` selects the
+project, not the destination. Check your installed tool's help and your agent
+host's skill support/discovery paths; use a supported `--destination` if needed.
+Rerun `install` after package-version changes to refresh the copied instructions.
+These packages add no restore/build hooks and execute no skill installation or
+service calls automatically. A copied skill is guidance, not authorization for
+uploads, paid inference, resource changes or treating document text as instructions.
 
 ## Extract a document
 
@@ -187,14 +220,14 @@ using DocumentExtractionClient extractor = new MistralDocumentExtractionClient(
 ```
 
 ```csharp
-using CommunityToolkit.DocumentExtraction.Vision;
+using CommunityToolkit.DocumentExtraction.VisionLanguageModel;
 
 // chatClient is an IChatClient whose adapter/API/model support the input format.
-using DocumentExtractionClient extractor = new VisionDocumentExtractionClient(
-    chatClient, new VisionDocumentExtractionClientOptions { UseStructuredOutput = true });
+using DocumentExtractionClient extractor = new VisionLanguageModelDocumentExtractionClient(
+    chatClient, new VisionLanguageModelDocumentExtractionClientOptions { UseStructuredOutput = true });
 ```
 
-Structured Vision requests and validates a defined JSON shape. Leave options
+Structured Vision Language Model requests and validates a defined JSON shape. Leave options
 unset for free-form transcription. Neither mode performs local PDF rendering
 or retries unsupported structured results through another inference request.
 
@@ -211,7 +244,7 @@ and explicitly uses the pinned tree's public NuGet configuration.
 No replacement projects or copied production DLLs are used.
 
 From the repository root with PowerShell 7, Git, the Toolkit SDK from `global.json`,
-and .NET 8/.NET 10 runtimes installed:
+and the .NET 10 runtime installed:
 
 ```powershell
 $coreFeed = Join-Path $env:TEMP 'toolkit-extraction-core'
@@ -311,7 +344,7 @@ void PrintElement(ExtractionDocumentElement element)
 ```
 
 Source capabilities vary: PdfPig supplies PDF block geometry; Azure services
-supply their reported regions; Vision supplies model-reported source associations rather than
+supply their reported regions; Vision Language Model supplies model-reported source associations rather than
 measured paragraph polygons. Check for data instead of assuming every provider
 supplies the same level of detail.
 
@@ -337,7 +370,7 @@ dotnet add package Microsoft.Extensions.DocumentExtraction --prerelease
 Use `DocumentExtractionClientBuilder` to wrap the provider, and call
 `ExtractAsync` on the resulting pipeline. Native `GetService` access is for
 backend-specific operations; direct calls to those services bypass extraction
-middleware. The [Vision examples](src/Vision/README.md#add-extraction-logging-middleware)
+middleware. The [Vision Language Model examples](src/VisionLanguageModel/README.md#add-extraction-logging-middleware)
 show a logging pipeline.
 
 ## Experimental API diagnostics

@@ -3,20 +3,20 @@
 
 using Microsoft.Extensions.AI;
 
-namespace CommunityToolkit.DocumentExtraction.Vision.UnitTests;
+namespace CommunityToolkit.DocumentExtraction.VisionLanguageModel.UnitTests;
 
-public sealed class VisionClientOptionsTests
+public sealed class VisionLanguageModelClientOptionsTests
 {
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
     public async Task Constructor_NullOrDefaultOptions_UsesFreeformDefaultAndBorrowsClient(bool nullOptions)
     {
-        var settings = new VisionDocumentExtractionClientOptions();
+        var settings = new VisionLanguageModelDocumentExtractionClientOptions();
         Assert.Null(settings.Prompt);
         Assert.False(settings.UseStructuredOutput);
         var chat = new RecordingChatClient(RecordingChatClient.Response("literal"));
-        using var client = new VisionDocumentExtractionClient(chat, nullOptions ? null : settings);
+        using var client = new VisionLanguageModelDocumentExtractionClient(chat, nullOptions ? null : settings);
         using var input = new MemoryStream([1, 2, 3]);
         var document = await client.ExtractAsync(input, "image", "image/png");
         var request = Assert.Single(chat.Requests);
@@ -40,10 +40,10 @@ public sealed class VisionClientOptionsTests
     [InlineData(true, " \t")]
     public async Task Constructor_SnapshotsPromptAndMode_AndPreservesRequestModelOverride(bool structured, string? prompt)
     {
-        var settings = new VisionDocumentExtractionClientOptions { Prompt = prompt, UseStructuredOutput = structured };
+        var settings = new VisionLanguageModelDocumentExtractionClientOptions { Prompt = prompt, UseStructuredOutput = structured };
         var response = RecordingChatClient.Response(structured ? """{"pages":[{"markdown":"literal"}]}""" : "literal");
         var chat = new RecordingChatClient(response);
-        using var client = new VisionDocumentExtractionClient(chat, settings);
+        using var client = new VisionLanguageModelDocumentExtractionClient(chat, settings);
         settings.Prompt = "mutated";
         settings.UseStructuredOutput = !structured;
         using var input = new MemoryStream([1, 2, 3]);
@@ -71,9 +71,27 @@ public sealed class VisionClientOptionsTests
     [Fact]
     public void Constructor_OnlyExposesDependencyAndToolkitOptions()
     {
-        var constructor = Assert.Single(typeof(VisionDocumentExtractionClient).GetConstructors());
-        Assert.Equal([typeof(IChatClient), typeof(VisionDocumentExtractionClientOptions)],
+        var constructor = Assert.Single(typeof(VisionLanguageModelDocumentExtractionClient).GetConstructors());
+        Assert.Equal([typeof(IChatClient), typeof(VisionLanguageModelDocumentExtractionClientOptions)],
             constructor.GetParameters().Select(parameter => parameter.ParameterType));
-        Assert.Throws<ArgumentNullException>(() => new VisionDocumentExtractionClient(null!, new()));
+        Assert.Throws<ArgumentNullException>(() => new VisionLanguageModelDocumentExtractionClient(null!, new()));
+    }
+
+    [Theory]
+    [InlineData(false, "image")]
+    [InlineData(true, "frame:0")]
+    public async Task RenamedProvider_PreservesSourceFrameIdentity(bool structured, string frame)
+    {
+        var response = RecordingChatClient.Response(structured ? """{"pages":[{"markdown":"literal"}]}""" : "literal");
+        var chat = new RecordingChatClient(response);
+        using var client = new VisionLanguageModelDocumentExtractionClient(chat, new() { UseStructuredOutput = structured });
+        using var input = new MemoryStream([1, 2, 3]);
+        var document = await client.ExtractAsync(input, "image", "image/png");
+
+        Assert.Equal($"image:vision-llm:response:0:{frame}", Assert.Single(document.SourcePages).Identifier);
+        Assert.Equal("CommunityToolkit.DocumentExtraction.VisionLanguageModel", client.GetType().Assembly.GetName().Name);
+        Assert.Equal(
+            [typeof(VisionLanguageModelDocumentExtractionClient), typeof(VisionLanguageModelDocumentExtractionClientOptions)],
+            client.GetType().Assembly.GetExportedTypes().OrderBy(type => type.Name));
     }
 }

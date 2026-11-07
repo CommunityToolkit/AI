@@ -23,7 +23,8 @@ For `MEDE0001` or `EXTEXP0019` compiler diagnostics, see
 Experimental APIs emit `CTDE0001`; opt in explicitly as described in the
 [component guide](../../README.md#experimental-api-diagnostics).
 
-Targets **.NET Standard 2.0, .NET 8 and .NET 10**. The package brings these runtime dependencies
+Targets **.NET Standard 2.0 and .NET 10**. See the [runtime support policy](../../README.md#framework-support).
+The package brings these runtime dependencies
 transitively; consumers do not need to install them separately:
 
 - `PdfPig` **0.1.15** for PDF parsing, word extraction and segmentation.

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Version>1.0.0-preview.1</Version>
+    <AssemblyName>CommunityToolkit.DocumentExtraction.VisionLanguageModel</AssemblyName>
+    <RootNamespace>$(AssemblyName)</RootNamespace>
+    <Title>Vision language model document extraction provider</Title>
+    <Description>Vision language model extraction through an application-supplied Microsoft.Extensions.AI IChatClient. The adapter, API and model must support original PDF/image inputs; structured extraction also requires schema-based responses.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="skills\ctk-document-extraction-vision-language-model\SKILL.md" />
+    <None Include="skills\ctk-document-extraction-vision-language-model\SKILL.md" Pack="true" PackagePath="skills\ctk-document-extraction-vision-language-model\" />
+    <InternalsVisibleTo Include="$(AssemblyName).UnitTests" />
+  </ItemGroup>
+</Project>

@@ -41,7 +41,7 @@ their native SDK clients expose `AsDocumentExtractionClient()` through the
 corresponding Toolkit namespaces.
 One Mistral package and `MistralDocumentExtractionClient` support native OCR
 through direct Mistral or Microsoft Foundry endpoints, with configurable operation
-URI, model and API-key or Entra authentication. Vision forwards original PDF or
+URI, model and API-key or Entra authentication. Vision Language Model forwards original PDF or
 image bytes in one request through an application-supplied `IChatClient`, without
 local PDF rendering. Its adapter/API/model must support the requested file format;
 image support alone does not establish PDF support. See the provider guide for installation, hosting

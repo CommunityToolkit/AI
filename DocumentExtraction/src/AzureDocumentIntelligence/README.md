@@ -21,7 +21,8 @@ diagnostics, see [experimental API opt-in](https://github.com/CommunityToolkit/A
 Experimental APIs emit `CTDE0001`; opt in explicitly as described in the
 [component guide](../../README.md#experimental-api-diagnostics).
 
-Targets **.NET Standard 2.0, .NET 8 and .NET 10**. These runtime packages are brought in transitively:
+Targets **.NET Standard 2.0 and .NET 10**. See the [runtime support policy](../../README.md#framework-support).
+These runtime packages are brought in transitively:
 
 - `Azure.AI.DocumentIntelligence` **1.0.0** (its default service API is
   `2024-11-30`).
@@ -158,6 +159,22 @@ roles, spans and any explicitly referenced nested content. `EnumerateContent()`
 walks section elements but does not enter table cells; inspect `table.Cells`
 and each anchor's `Content` separately. Figure captions are `AlternativeText`,
 distinct from recognized image `Text`.
+
+Native sections spanning pages are projected as page-local continuations with
+their original native source references. Within a page, native child pointer
+order and atomic tables/cells take precedence over a global span sort; page-root
+blocks use their first known content offset, and unknown offsets remain stable
+after known blocks. Unowned headers, footers and paragraphs are never adopted
+into native sections just because their offsets lie between section children.
+Continuations are adapter structure, not newly reported service sections.
+
+Figure `Text` contains only uniquely referenced plain paragraphs with measured
+containment in a reported convex figure region and no section/cell/other-figure,
+caption or footnote ownership. Descriptive/caption text is not treated as OCR.
+Ambiguous, unlocated or shared paragraphs stay in their original structure;
+`Text=null` does not mean the service recognized no text. Moved paragraph source
+references remain on the image alongside its native figure references. Inspect
+the native result for complete relationships and paragraph identities.
 
 The constructor also accepts an existing
 `Azure.AI.DocumentIntelligence.DocumentIntelligenceClient`, with optional
