@@ -29,6 +29,26 @@ The following NuGet packages have been published:
 | [CommunityToolkit.VectorData.SqliteVec] | ![SqliteVec Version][v-sqlitevec] | ![SqliteVec Downloads][d-sqlitevec] |
 | [CommunityToolkit.VectorData.Weaviate] | ![Weaviate Version][v-weaviate] | ![Weaviate Downloads][d-weaviate] |
 
+## Document extraction providers
+
+The [document extraction providers](DocumentExtraction/README.md) extract text,
+tables, images and source locations into a common `ExtractionDocument` graph.
+Choose lightweight PdfPig for existing PDF text. Local model-driven layout,
+rendering and OCR/table inference are deferred to a separate advanced companion;
+they are not dependencies of these five providers. Azure
+Content Understanding and Document Intelligence provide hosted document analysis;
+their native SDK clients expose `AsDocumentExtractionClient()` through the
+corresponding Toolkit namespaces.
+One Mistral package and `MistralDocumentExtractionClient` support native OCR
+through direct Mistral or Microsoft Foundry endpoints, with configurable operation
+URI, model and API-key or Entra authentication. Vision Language Model forwards original PDF or
+image bytes in one request through an application-supplied `IChatClient`, without
+local PDF rendering. Its adapter/API/model must support the requested file format;
+image support alone does not establish PDF support. See the provider guide for installation, hosting
+requirements and complete examples. These unreleased, explicitly experimental
+packages include .NET Standard 2.0, .NET 8 and .NET 10 assets; the component
+guide explains `CTDE0001` opt-in and the pinned source-build prerequisite.
+
 ## Running Live Tests
 
 The majority of tests in the test suite use [Testcontainers](https://testcontainers.com/) so that conformance tests are run against real servers running inside Docker containers. Docker must be running on your machine for this to work.

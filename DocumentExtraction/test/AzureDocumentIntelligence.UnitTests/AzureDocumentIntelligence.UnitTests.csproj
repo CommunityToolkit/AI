@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+    <AssemblyName>CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence.UnitTests</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/AzureDocumentIntelligence/AzureDocumentIntelligence.csproj" />
+    <Compile Include="../AzureTestSupport/*.cs" LinkBase="TestSupport" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Version>1.0.0-preview.1</Version>
+    <AssemblyName>CommunityToolkit.DocumentExtraction.AzureContentUnderstanding</AssemblyName>
+    <RootNamespace>$(AssemblyName)</RootNamespace>
+    <Title>Azure Content Understanding document extraction provider</Title>
+    <Description>Azure Content Understanding extraction for Microsoft.Extensions.DocumentExtraction.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="skills\ctk-document-extraction-azure-content-understanding\SKILL.md" />
+    <None Include="skills\ctk-document-extraction-azure-content-understanding\SKILL.md" Pack="true" PackagePath="skills\ctk-document-extraction-azure-content-understanding\" />
+    <PackageReference Include="Azure.AI.ContentUnderstanding" />
+    <Compile Include="..\Shared\FigureTextMapping.cs" LinkBase="Shared" />
+    <InternalsVisibleTo Include="$(AssemblyName).UnitTests" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Version>1.0.0-preview.1</Version>
+    <AssemblyName>CommunityToolkit.DocumentExtraction.PdfPig</AssemblyName>
+    <RootNamespace>$(AssemblyName)</RootNamespace>
+    <Title>PdfPig document extraction provider</Title>
+    <Description>Native PDF text extraction for Microsoft.Extensions.DocumentExtraction.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="skills\ctk-document-extraction-pdfpig\SKILL.md" />
+    <None Include="skills\ctk-document-extraction-pdfpig\SKILL.md" Pack="true" PackagePath="skills\ctk-document-extraction-pdfpig\" />
+    <PackageReference Include="PdfPig" />
+    <InternalsVisibleTo Include="$(AssemblyName).UnitTests" />
+  </ItemGroup>
+</Project>
