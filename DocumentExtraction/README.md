@@ -8,7 +8,7 @@ backend-specific response formats.
 
 ## Choose a provider
 
-All packages include **.NET Standard 2.0, .NET 8 and .NET 10** assets. Package IDs start with
+All packages include **.NET Standard 2.0 and .NET 10** assets. Package IDs start with
 `CommunityToolkit.DocumentExtraction.`.
 
 | Package | Client type | Use when you need | Processing and input |
@@ -40,12 +40,18 @@ core version on NuGet.org. See [building from source](#building-from-source).
 
 The .NET Standard 2.0 asset makes the managed provider APIs available to compatible
 applications; it is not a new .NET Framework 4.6.2 target or a certification of
-every legacy host, backend SDK or native dependency. Tests run on .NET 8 and .NET 10,
+every legacy host, backend SDK or native dependency. Tests run on .NET 10,
 including the full offline suites explicitly loading the netstandard provider
 assemblies. A separate package consumer verifies the actual packed assets.
 Use a supported application runtime and check each backend's platform policy.
+.NET 8 is not a supported runtime and no dedicated `net8.0` asset is shipped.
+An existing .NET 8 app may resolve the portable asset, but that is technical
+compatibility rather than a runtime support commitment; migrate the app to .NET 10.
 Mistral's HTTP failures include status in the exception message on every target;
-the typed `HttpRequestException.StatusCode` property is available on modern assets.
+the typed `HttpRequestException.StatusCode` property is populated by the .NET 10
+asset, not the portable asset. An app previously using the dedicated .NET 8 asset
+must account for that distinction if it now resolves the portable asset; the
+numeric status remains in the message. No new exception contract is introduced.
 
 ## Experimental API diagnostics
 
@@ -234,7 +240,7 @@ and explicitly uses the pinned tree's public NuGet configuration.
 No replacement projects or copied production DLLs are used.
 
 From the repository root with PowerShell 7, Git, the Toolkit SDK from `global.json`,
-and .NET 8/.NET 10 runtimes installed:
+and the .NET 10 runtime installed:
 
 ```powershell
 $coreFeed = Join-Path $env:TEMP 'toolkit-extraction-core'

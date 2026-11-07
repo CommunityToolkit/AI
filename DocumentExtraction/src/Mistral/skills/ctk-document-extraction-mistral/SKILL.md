@@ -9,7 +9,11 @@ description: Integrate native Mistral OCR through CommunityToolkit.DocumentExtra
 
 Inspect the app's resolved provider version, framework and existing HTTP/auth
 configuration. Use the same installed package's skill/README. This provider
-ships netstandard2.0, net8.0 and net10.0 assets; check the supported app runtime.
+ships netstandard2.0 and net10.0 assets; use .NET 10 for supported execution.
+A .NET 8 app may resolve the portable asset but is not a supported runtime.
+If migrating from the former dedicated .NET 8 asset to portable, HTTP exceptions
+retain numeric status in the message but do not populate the typed
+`HttpRequestException.StatusCode` property; the .NET 10 asset does.
 It brings Azure.Core and Documents/Extraction/AI abstractions transitively.
 It does not require a Chat/Responses adapter or a second package for Foundry.
 

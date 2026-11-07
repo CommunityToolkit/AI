@@ -10,8 +10,9 @@ description: Extract document text, tables and layout through CommunityToolkit.D
 Inspect the app's resolved provider and `Azure.AI.ContentUnderstanding` versions,
 target framework, native client configuration and existing extraction pipeline.
 Use guidance from the same restored provider package, not an assumed latest API.
-This package has netstandard2.0, net8.0 and net10.0 assets; select a supported app
-runtime and check the SDK's platform policy.
+This package has netstandard2.0 and net10.0 assets; use .NET 10 for supported
+execution and check the SDK's platform policy. A .NET 8 app may resolve the
+portable asset but is not a supported runtime.
 
 Identify the existing resource endpoint, supported region/API, document analyzer,
 input format and authorized credential. Ask only for a missing decision. A

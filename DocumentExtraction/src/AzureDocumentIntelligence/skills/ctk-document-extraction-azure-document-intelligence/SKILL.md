@@ -9,8 +9,9 @@ description: Add OCR, layout and table extraction with CommunityToolkit.Document
 
 Read the app's project, resolved provider/SDK versions, framework, existing native
 client and extraction code. Follow the skill/README bundled with that package
-version. Assets are netstandard2.0, net8.0 and net10.0, not a blanket legacy-host
-support guarantee. The native SDK version and service API must match the app.
+version. Assets are netstandard2.0 and net10.0, not a blanket legacy-host support
+guarantee. Use .NET 10 for supported execution; a .NET 8 app may resolve the portable
+asset but is not a supported runtime. The native SDK version and service API must match the app.
 
 Confirm the intended resource, model, input format and authentication using
 existing configuration. Ask only for a missing decision. The default model is

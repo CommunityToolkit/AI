@@ -25,8 +25,12 @@ if (args.Length != 2)
 
 Type[] types = [typeof(PdfPigDocumentExtractionClient), typeof(ContentUnderstandingExtractionClient),
     typeof(DocumentIntelligenceExtractionClient), typeof(MistralDocumentExtractionClient), typeof(VisionLanguageModelDocumentExtractionClient)];
-string expectedFramework = args[0] == "netstandard2.0" ? ".NETStandard,Version=v2.0"
-    : args[0] == "net8.0" ? ".NETCoreApp,Version=v8.0" : ".NETCoreApp,Version=v10.0";
+string expectedFramework = args[0] switch
+{
+    "netstandard2.0" => ".NETStandard,Version=v2.0",
+    "net10.0" => ".NETCoreApp,Version=v10.0",
+    _ => throw new ArgumentException("Expected a net10.0 or netstandard2.0 provider asset."),
+};
 var assemblies = new List<object>();
 foreach (Type type in types)
 {
@@ -46,9 +50,19 @@ foreach (Type type in types)
         throw new InvalidDataException($"Wrong experimental metadata: {type}.");
     }
 
+    bool portable = args[0] == "netstandard2.0";
+    if ((marker.AttributeType.Assembly == assembly) != portable ||
+        portable && marker.AttributeType.IsVisible ||
+        !assembly.GetCustomAttributes<System.Runtime.CompilerServices.InternalsVisibleToAttribute>()
+            .Any(attribute => attribute.AssemblyName == assembly.GetName().Name + ".UnitTests"))
+    {
+        throw new InvalidDataException($"Wrong legacy shim visibility or friend assembly: {type}.");
+    }
+
     assemblies.Add(new { type = type.FullName, path = assembly.Location,
         sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))),
-        target = expectedFramework, diagnostic = "CTDE0001" });
+        target = expectedFramework, diagnostic = "CTDE0001",
+        internalExperimentalShim = portable, friendAssemblyVerified = true });
 }
 
 foreach (string name in new[] { "OcrEndpoint", "DefaultModel" })

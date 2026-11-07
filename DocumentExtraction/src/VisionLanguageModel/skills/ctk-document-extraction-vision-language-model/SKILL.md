@@ -10,8 +10,9 @@ description: Extract original PDFs or images with a vision language model throug
 Inspect the app's resolved Vision Language Model, MEAI and adapter versions, target framework,
 model/API configuration and existing chat pipeline. Use the same installed
 provider skill/README; do not mix an unrelated adapter with experimental core
-contracts. This provider has netstandard2.0, net8.0 and net10.0 assets, but adapter
-platform support is separate. It brings only the shared abstractions, not a
+contracts. This provider has netstandard2.0 and net10.0 assets; use .NET 10 for
+supported execution. A .NET 8 app may resolve the portable asset but is not a
+supported runtime. Adapter platform support is separate. It brings only the shared abstractions, not a
 backend adapter, model, renderer or credentials.
 
 Confirm input format and whether the customer needs literal transcription or

@@ -2,6 +2,7 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
   <PropertyGroup>
     <DocumentExtractionBuild>true</DocumentExtractionBuild>
+    <TargetFrameworks>net10.0</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <NoWarn>$(NoWarn);CS1591;xUnit1051;EXTEXP0019;MEDE0001;CTDE0001</NoWarn>
     <DefineConstants Condition="'$(DocumentExtractionTestAsset)' == 'netstandard2.0'">$(DefineConstants);STANDARD_PROVIDER_ASSET</DefineConstants>

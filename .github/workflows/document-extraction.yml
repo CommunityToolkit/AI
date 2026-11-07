@@ -81,7 +81,6 @@ jobs:
       - uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
-          dotnet-version: 8.0.x
       - uses: actions/download-artifact@v7
         with:
           name: document-extraction-core-source-packages

@@ -11,8 +11,9 @@ Inspect the app's project, resolved `CommunityToolkit.DocumentExtraction.PdfPig`
 version in `obj\project.assets.json`, target framework and existing extraction
 code. Use this skill and the README from that same restored package; do not
 silently upgrade to match examples from another version. This package supplies
-netstandard2.0, net8.0 and net10.0 assets. Compatibility with netstandard is not a
-promise that every legacy runtime is supported.
+netstandard2.0 and net10.0 assets. Use .NET 10 for supported execution; a .NET 8
+app may resolve the portable asset but is not a supported runtime.
+Compatibility with netstandard is not a promise that every legacy runtime is supported.
 
 Confirm whether the PDF has native selectable text. Ask only if that or the
 desired output remains unknown. For image-only scans, explain that this provider

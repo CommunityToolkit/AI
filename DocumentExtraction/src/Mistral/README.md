@@ -20,7 +20,8 @@ dotnet add package Azure.Identity
 Experimental APIs emit `CTDE0001`; opt in explicitly as described in the
 [component guide](../../README.md#experimental-api-diagnostics).
 
-Targets **.NET Standard 2.0, .NET 8 and .NET 10**. Runtime dependencies include `Azure.Core`
+Targets **.NET Standard 2.0 and .NET 10**. See the [runtime support and HTTP status migration policy](../../README.md#framework-support).
+Runtime dependencies include `Azure.Core`
 **1.53.0**, `Microsoft.Extensions.DocumentExtraction.Abstractions`,
 `Microsoft.Extensions.Documents.Abstractions` and
 `Microsoft.Extensions.AI.Abstractions`. `Azure.Identity` is an additional
