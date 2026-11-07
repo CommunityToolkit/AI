@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <IsTestProject>true</IsTestProject>
+    <AssemblyName>CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis.UnitTests</AssemblyName>
+    <OutputPath Condition="'$(DocumentExtractionTestAsset)' == 'netstandard2.0'">bin\$(Configuration)\netstandard-asset\</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" />
+    <ProjectReference Include="../../src/PdfPig.OnnxLayoutAnalysis/PdfPig.OnnxLayoutAnalysis.csproj" />
+  </ItemGroup>
+</Project>

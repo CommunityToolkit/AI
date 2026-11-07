@@ -1,0 +1,158 @@
+name: PdfPig ONNX companion
+
+on:
+  pull_request:
+    branches: [main, luisquintanilla-toolkit-extraction-providers]
+    paths:
+      - 'DocumentExtraction/**'
+      - 'Directory.Build.*'
+      - 'Directory.Packages.props'
+      - 'CommunityToolkit.AI.slnx'
+      - 'global.json'
+      - 'Shared/LegacySupport/**'
+      - 'Shared/Throw/**'
+      - 'eng/LegacySupport.props'
+      - 'eng/Bootstrap-DocumentExtractionCore.ps1'
+      - 'eng/New-DocumentExtractionNuGetConfig.ps1'
+      - 'eng/Test-DocumentExtractionPackages.ps1'
+      - 'nuget.config'
+      - '.github/workflows/pdfpig-onnx.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'DocumentExtraction/**'
+      - 'Directory.Build.*'
+      - 'Directory.Packages.props'
+      - 'CommunityToolkit.AI.slnx'
+      - 'global.json'
+      - 'Shared/LegacySupport/**'
+      - 'Shared/Throw/**'
+      - 'eng/LegacySupport.props'
+      - 'eng/Bootstrap-DocumentExtractionCore.ps1'
+      - 'eng/New-DocumentExtractionNuGetConfig.ps1'
+      - 'eng/Test-DocumentExtractionPackages.ps1'
+      - 'nuget.config'
+      - '.github/workflows/pdfpig-onnx.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  bootstrap-core:
+    name: Pack pinned public upstream core
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/pdfpig-onnx-sdk
+        with:
+          dotnet-version: 11.0.100-rc.3.26522.148
+      - name: Pack original owning upstream projects
+        shell: pwsh
+        env:
+          CI: 'false'
+        run: ./eng/Bootstrap-DocumentExtractionCore.ps1 -OutputDirectory "${{ runner.temp }}/pdfpig-onnx-core" -DotnetPath "${{ runner.temp }}/pdfpig-onnx-sdk/dotnet.exe"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: pdfpig-onnx-core-source-packages
+          path: |
+            ${{ runner.temp }}/pdfpig-onnx-core/*.11.0.0-review.20261106.1.nupkg
+            ${{ runner.temp }}/pdfpig-onnx-core/core-bootstrap.json
+          if-no-files-found: error
+
+  companion:
+    name: Companion contracts and package (${{ matrix.os }})
+    needs: bootstrap-core
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - uses: actions/download-artifact@v7
+        with:
+          name: pdfpig-onnx-core-source-packages
+          path: ${{ runner.temp }}/pdfpig-onnx-core
+      - name: Configure isolated public-source core feed
+        shell: pwsh
+        run: |
+          $configPath = "${{ runner.temp }}/pdfpig-onnx-nuget.config"
+          ./eng/New-DocumentExtractionNuGetConfig.ps1 -CorePackageDirectory "${{ runner.temp }}/pdfpig-onnx-core" -OutputPath "$configPath"
+          [xml] $config = Get-Content "$configPath" -Raw
+          $mapping = $config.configuration.packageSourceMapping.packageSource |
+            Where-Object key -EQ 'document-intelligence-dependency'
+          foreach ($id in @('PdfPig.Rendering.Skia', 'PdfPig.Filters.*', 'Clipper2')) {
+            $pattern = $config.CreateElement('package')
+            $pattern.SetAttribute('pattern', $id)
+            [void] $mapping.AppendChild($pattern)
+          }
+          $config.Save("$configPath")
+      - name: Restore companion, contracts and example
+        run: dotnet restore DocumentExtraction/PdfPig.OnnxLayoutAnalysis.slnf --configfile "${{ runner.temp }}/pdfpig-onnx-nuget.config"
+      - name: Build all library assets and modern applications
+        run: dotnet build DocumentExtraction/PdfPig.OnnxLayoutAnalysis.slnf --no-restore -c Release
+      - name: Deterministic tests without curated weights
+        run: dotnet test DocumentExtraction/test/PdfPig.OnnxLayoutAnalysis.UnitTests --no-build --no-restore -c Release
+      - name: Run the same contracts against actual netstandard assets on .NET 10
+        run: |
+          dotnet restore DocumentExtraction/test/PdfPig.OnnxLayoutAnalysis.UnitTests --configfile "${{ runner.temp }}/pdfpig-onnx-nuget.config" -p:DocumentExtractionTestAsset=netstandard2.0
+          dotnet test DocumentExtraction/test/PdfPig.OnnxLayoutAnalysis.UnitTests --no-restore -c Release -p:DocumentExtractionTestAsset=netstandard2.0
+      - name: Offline provisioning checks
+        shell: pwsh
+        run: ./DocumentExtraction/src/PdfPig.OnnxLayoutAnalysis/Test-ModelProvisioning.ps1
+      - name: Pack, inspect archive and run actual package assets with a synthetic graph
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          dotnet pack DocumentExtraction/src/PdfPig.OnnxLayoutAnalysis --no-build --no-restore -c Release --output "${{ runner.temp }}/pdfpig-onnx-packages"
+          if ($LASTEXITCODE -ne 0) { throw 'Companion pack failed.' }
+          $packagePath = Join-Path "${{ runner.temp }}/pdfpig-onnx-packages" 'CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis.1.0.0-preview.2.nupkg'
+          $archive = [IO.Compression.ZipFile]::OpenRead($packagePath)
+          try {
+            foreach ($name in @(
+              'tools/Get-Models.ps1', 'tools/models.json',
+              'README.md', 'CuratedPipeline.NOTICES.txt', 'PdfRendering.NOTICES.txt',
+              'lib/netstandard2.0/CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis.dll',
+              'lib/net10.0/CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis.dll',
+              'skills/ctk-document-extraction-pdfpig-onnx-layout-analysis/SKILL.md',
+              'skills/ctk-document-extraction-pdfpig-onnx-layout-analysis/references/setup.md',
+              'skills/ctk-document-extraction-pdfpig-onnx-layout-analysis/references/extraction.md',
+              'skills/ctk-document-extraction-pdfpig-onnx-layout-analysis/references/results.md'
+            )) {
+              $entry = $archive.GetEntry($name)
+              if ($null -eq $entry -or $entry.Length -eq 0) { throw "Missing exact packed asset: $name" }
+            }
+            foreach ($entry in $archive.Entries) {
+              if ($entry.FullName.Contains('//') -or $entry.FullName.Contains('\')) { throw "Noncanonical packed path: $($entry.FullName)" }
+              if ($entry.FullName -match '\.(onnx|safetensors)$') { throw "Unexpected model weights: $($entry.FullName)" }
+              if ($entry.FullName -match '^lib/([^/]+)/' -and $Matches[1] -notin @('net10.0', 'netstandard2.0')) { throw "Unexpected library framework: $($entry.FullName)" }
+            }
+            Write-Host 'Exact packed setup, notices, skill and both TFM assets verified; no weights.'
+          }
+          finally {
+            $archive.Dispose()
+          }
+          $configPath = "${{ runner.temp }}/pdfpig-onnx-nuget.config"
+          ./eng/Test-DocumentExtractionPackages.ps1 -PackageDirectory "${{ runner.temp }}/pdfpig-onnx-packages" -CorePackageDirectory "${{ runner.temp }}/pdfpig-onnx-core" -NuGetConfig "$configPath" -OutputDirectory "${{ runner.temp }}/pdfpig-onnx-consumers" -ConsumerProject ./DocumentExtraction/samples/PdfPigOnnx.PackageSmoke/PdfPigOnnx.PackageSmoke.csproj
+      - uses: actions/upload-artifact@v6
+        with:
+          name: pdfpig-onnx-consumers-${{ matrix.os }}
+          path: |
+            ${{ runner.temp }}/pdfpig-onnx-consumers/*.json
+            ${{ runner.temp }}/pdfpig-onnx-consumers/*.log
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v6
+        with:
+          name: pdfpig-onnx-preview-${{ matrix.os }}
+          path: ${{ runner.temp }}/pdfpig-onnx-packages/CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis.*.nupkg
+          if-no-files-found: error

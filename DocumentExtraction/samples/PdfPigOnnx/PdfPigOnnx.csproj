@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <DocumentExtractionBuild>true</DocumentExtractionBuild>
+    <NoWarn>$(NoWarn);CTDE0001;EXTEXP0019;MEDE0001</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" />
+    <ProjectReference Include="..\..\src\PdfPig.OnnxLayoutAnalysis\PdfPig.OnnxLayoutAnalysis.csproj" Condition="'$(CompanionPackageVersion)' == ''" />
+    <PackageReference Include="CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis" VersionOverride="$(CompanionPackageVersion)" Condition="'$(CompanionPackageVersion)' != ''" />
+  </ItemGroup>
+</Project>

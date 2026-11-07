@@ -1,0 +1,50 @@
+{
+  "SchemaVersion": 1,
+  "Description": "Explicit setup inputs for the full PdfPig/ONNX sample. Weights are not included. Artifact identity and declared license provenance are not accuracy or training-data-rights certifications.",
+  "Models": [
+    {
+      "Role": "Layout",
+      "File": "heron.onnx",
+      "Uri": "https://huggingface.co/docling-project/docling-layout-heron-onnx/resolve/40bde044036bb181c130ddf6c51792187268748f/model.onnx",
+      "Bytes": 171220471,
+      "Hash": "59C81A3A2923042D85034FFC487F8F47E4854117E879AEF89B2B9F728FB4922A",
+      "Revision": "40bde044036bb181c130ddf6c51792187268748f",
+      "Provenance": "https://huggingface.co/docling-project/docling-layout-heron-onnx/blob/40bde044036bb181c130ddf6c51792187268748f/README.md",
+      "DeclaredLicense": "Apache-2.0"
+    },
+    {
+      "Role": "OcrDetector",
+      "File": "ch_PP-OCRv5_det_mobile.onnx",
+      "Uri": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.10.0/onnx/PP-OCRv5/det/ch_PP-OCRv5_det_mobile.onnx",
+      "Bytes": 4819576,
+      "Hash": "4D97C44A20D30A81AAD087D6A396B08F786C4635742AFC391F6621F5C6AE78AE",
+      "Revision": "v3.10.0",
+      "Provenance": "https://www.modelscope.cn/models/RapidAI/RapidOCR",
+      "DeclaredLicense": "Apache-2.0",
+      "Notes": "Artifact tag is not an immutable commit identifier; SHA256 and length bind the accepted bytes. See the companion's CuratedPipeline.NOTICES.txt for PaddleOCR and RapidOCR source references."
+    },
+    {
+      "Role": "OcrRecognizer",
+      "File": "ch_PP-OCRv5_rec_mobile.onnx",
+      "Uri": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.10.0/onnx/PP-OCRv5/rec/ch_PP-OCRv5_rec_mobile.onnx",
+      "Bytes": 16631306,
+      "Hash": "5825FC7EBF84AE7A412BE049820B4D86D77620F204A041697B0494669B1742C5",
+      "Revision": "v3.10.0",
+      "Provenance": "https://www.modelscope.cn/models/RapidAI/RapidOCR",
+      "DeclaredLicense": "Apache-2.0",
+      "Notes": "Artifact tag is not an immutable commit identifier; SHA256 and length bind the accepted bytes. The matching general dictionary is embedded in this external recognizer ONNX artifact's character custom metadata, not the Toolkit assembly; the companion reads and verifies it. No separate dictionary download is needed."
+    },
+    {
+      "Role": "TableStructure",
+      "File": "tatr-v1.0-structure-fp32.onnx",
+      "Uri": "https://huggingface.co/Xenova/table-transformer-structure-recognition/resolve/5387550de655512721e1b88e4e42117001ba4813/onnx/model.onnx",
+      "Bytes": 115811109,
+      "Hash": "2C90A63298DF61006A45267932F47B345A8B104CE53FD504EACF11AEE3C05A41",
+      "Revision": "5387550de655512721e1b88e4e42117001ba4813",
+      "Provenance": "https://huggingface.co/Xenova/table-transformer-structure-recognition/blob/5387550de655512721e1b88e4e42117001ba4813/README.md",
+      "DeclaredLicense": null,
+      "UpstreamDeclaredLicense": "MIT",
+      "Notes": "The selected derivative card has no separate license field. Its declared official-model lineage does not establish an exact export recipe or bitwise weight equivalence. This is not a v1.1-All model or a general table-quality certification."
+    }
+  ]
+}
