@@ -233,39 +233,66 @@ or retries unsupported structured results through another inference request.
 
 ## Building from source
 
-The temporary core version `10.10.0-review.20261104.4` is not a released public
+The temporary core version `11.0.0-review.20261106.1` is not a released public
 dependency. The bootstrap packs the original owning AI Abstractions, Documents
-Abstractions, Extraction Abstractions and Extraction projects from public
-`https://github.com/luisquintanilla/extensions.git`, commit
-`c03481c76b63c6820e1de6ed9da09d5ff1e9f495`, tree
-`f2e9d521223db1cf33fa8bcec5667da26b92cc49`, using SDK **10.0.401**.
-It preserves upstream imports and the scoped `Features=` compiler workaround,
-and explicitly uses the pinned tree's public NuGet configuration.
+Abstractions, Extraction Abstractions and Extraction projects from canonical
+`https://github.com/dotnet/extensions.git`, commit
+`5635a6ed7499739e2411f8288e1bd2b340c2c0e2`, tree
+`4ea4fe11e7fcc828012824eece4233a5b5f5e591`, using upstream SDK
+**11.0.100-rc.3.26522.148**. It preserves upstream imports, dependency bands,
+the default six framework assets (11/10/9/8/462/standard) and native compiler
+features; the earlier blank-`Features` workaround is no longer necessary.
+Only the review package version, output directory and explicit original public
+NuGet configuration are overridden. `core-bootstrap.json` records verified
+source/SDK/project evaluations and archive hashes. The consuming feed generator
+refuses missing, stale or mismatched canonical provenance.
+Non-core dependency restore uses the public `dotnet-public` mirror already
+configured by upstream, including its prerelease dependency band. The unchanged
+Azure Document Intelligence SDK is not present on that mirror and is mapped
+specifically to NuGet.org. If NuGet.org is inaccessible, explicitly supply an
+existing verified local package source with
+`-DocumentIntelligencePackageSource`; that source can supply only this SDK,
+never any core package. No TLS checks are disabled or stale core identities used.
+This is not evidence that the four review core identities are released on a feed.
 No replacement projects or copied production DLLs are used.
+The SDK 11 prerequisite is limited to building these upstream projects.
+Toolkit providers and applications continue to use SDK/runtime 10 and only
+`net10.0`/`netstandard2.0` provider assets. The portable upstream dependency band
+includes System.Text.Json 11 prerelease assets compatible with runtime 10;
+it is not rewritten to an older band.
 
 From the repository root with PowerShell 7, Git, the Toolkit SDK from `global.json`,
 and the .NET 10 runtime installed:
 
 ```powershell
-$coreFeed = Join-Path $env:TEMP 'toolkit-extraction-core'
+$coreFeed = Join-Path $env:TEMP ('toolkit-extraction-core-' + [Guid]::NewGuid().ToString('N'))
 $config = Join-Path $env:TEMP 'toolkit-extraction-nuget.config'
-./eng/Bootstrap-DocumentExtractionCore.ps1 -OutputDirectory $coreFeed -DotnetPath 'C:\path\to\dotnet-10.0.401\dotnet.exe'
+./eng/Bootstrap-DocumentExtractionCore.ps1 -OutputDirectory $coreFeed -DotnetPath 'C:\path\to\dotnet-11.0.100-rc.3.26522.148\dotnet.exe'
 ./eng/New-DocumentExtractionNuGetConfig.ps1 -CorePackageDirectory $coreFeed -OutputPath $config
 dotnet restore DocumentExtraction/DocumentExtraction.slnf --configfile $config
 dotnet test DocumentExtraction/DocumentExtraction.slnf -c Release --no-restore
+dotnet restore DocumentExtraction/DocumentExtraction.slnf --configfile $config -p:DocumentExtractionTestAsset=netstandard2.0
 dotnet test DocumentExtraction/DocumentExtraction.slnf -c Release --no-restore -p:DocumentExtractionTestAsset=netstandard2.0
 dotnet pack DocumentExtraction/DocumentExtraction.slnf -c Release --no-build --no-restore --output artifacts/document-extraction
-./eng/Test-DocumentExtractionPackages.ps1 -PackageDirectory artifacts/document-extraction -NuGetConfig $config -OutputDirectory artifacts/document-extraction-package-checks
+./eng/Test-DocumentExtractionPackages.ps1 -PackageDirectory artifacts/document-extraction -CorePackageDirectory $coreFeed -NuGetConfig $config -OutputDirectory artifacts/document-extraction-package-checks
 ```
 
 The package check requires a new output directory and restores into its own
 package cache. It verifies consumer diagnostics without opt-in, then compiles
-and executes opted-in consumers against modern and actual netstandard assets.
+and executes opted-in consumers against modern and actual netstandard assets,
+binding loaded provider and all four upstream core assemblies to exact archives.
+The smoke explicitly loads the middleware assembly for acceptance-only provenance
+inspection; provider packages still depend only on the three abstractions packages.
+The manually selected portable test/consumer DLLs explicitly retain their
+System.Text.Json 11 dependency; the .NET 10 host framework's JSON 10 is not a
+replacement for that assembly. Restore the portable test profile before running it.
 All extraction checks are offline; the source/bootstrap and dependency restore
 need public network access. CI performs this on Windows and Linux with a
 same-run source-built core artifact. Artifacts expire and are not a public feed.
-Formal upstream approval and released dependency versions remain prerequisites
-for merging/releasing against stable contracts.
+Documents and Extraction are present in the pinned official upstream source;
+this does not establish availability of equivalent released package identities
+on NuGet.org. Public-feed consumption of the review identities remains unproven;
+released dependency versions are still required before a public package release.
 
 ## Work with the result
 

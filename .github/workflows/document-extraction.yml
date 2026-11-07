@@ -54,7 +54,7 @@ jobs:
         env:
           DOTNET_INSTALL_DIR: ${{ runner.temp }}/document-extraction-sdk
         with:
-          dotnet-version: 10.0.401
+          dotnet-version: 11.0.100-rc.3.26522.148
       - name: Pack original owning upstream projects
         shell: pwsh
         env:
@@ -65,7 +65,9 @@ jobs:
       - uses: actions/upload-artifact@v6
         with:
           name: document-extraction-core-source-packages
-          path: ${{ runner.temp }}/document-extraction-core/*.10.10.0-review.20261104.4.nupkg
+          path: |
+            ${{ runner.temp }}/document-extraction-core/*.11.0.0-review.20261106.1.nupkg
+            ${{ runner.temp }}/document-extraction-core/core-bootstrap.json
           if-no-files-found: error
 
   build-test-pack:
@@ -94,13 +96,15 @@ jobs:
         run: dotnet build DocumentExtraction/DocumentExtraction.slnf --no-restore -c Release
       - name: Offline tests
         run: dotnet test DocumentExtraction/DocumentExtraction.slnf --no-build --no-restore -c Release
+      - name: Restore portable test dependency closure
+        run: dotnet restore DocumentExtraction/DocumentExtraction.slnf -p:DocumentExtractionTestAsset=netstandard2.0 --configfile "${{ runner.temp }}/document-extraction-nuget.config"
       - name: Offline tests using actual netstandard assets
         run: dotnet test DocumentExtraction/DocumentExtraction.slnf --no-restore -c Release -p:DocumentExtractionTestAsset=netstandard2.0
       - name: Pack preview artifacts
         run: dotnet pack DocumentExtraction/DocumentExtraction.slnf --no-build --no-restore -c Release --output artifacts/document-extraction
       - name: Verify packaged assets and experimental opt-in
         shell: pwsh
-        run: ./eng/Test-DocumentExtractionPackages.ps1 -PackageDirectory artifacts/document-extraction -NuGetConfig "${{ runner.temp }}/document-extraction-nuget.config" -OutputDirectory "${{ runner.temp }}/document-extraction-package-checks"
+        run: ./eng/Test-DocumentExtractionPackages.ps1 -PackageDirectory artifacts/document-extraction -CorePackageDirectory "${{ runner.temp }}/document-extraction-core" -NuGetConfig "${{ runner.temp }}/document-extraction-nuget.config" -OutputDirectory "${{ runner.temp }}/document-extraction-package-checks"
       - uses: actions/upload-artifact@v6
         with:
           name: document-extraction-preview-packages-${{ matrix.os }}
