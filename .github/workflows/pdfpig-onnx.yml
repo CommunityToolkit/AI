@@ -85,7 +85,23 @@ jobs:
           path: ${{ runner.temp }}/pdfpig-onnx-core
       - name: Configure isolated public-source core feed
         shell: pwsh
-        run: ./eng/New-DocumentExtractionNuGetConfig.ps1 -CorePackageDirectory "${{ runner.temp }}/pdfpig-onnx-core" -OutputPath "${{ runner.temp }}/pdfpig-onnx-nuget.config"
+        run: |
+          $configPath = "${{ runner.temp }}/pdfpig-onnx-nuget.config"
+          ./eng/New-DocumentExtractionNuGetConfig.ps1 -CorePackageDirectory "${{ runner.temp }}/pdfpig-onnx-core" -OutputPath "$configPath"
+          [xml] $config = Get-Content "$configPath" -Raw
+          $source = $config.CreateElement('add')
+          $source.SetAttribute('key', 'companion-rendering-dependencies')
+          $source.SetAttribute('value', 'https://api.nuget.org/v3/index.json')
+          [void] $config.configuration.packageSources.AppendChild($source)
+          $mapping = $config.CreateElement('packageSource')
+          $mapping.SetAttribute('key', 'companion-rendering-dependencies')
+          foreach ($id in @('PdfPig.Rendering.Skia', 'PdfPig.Filters.*', 'Clipper2')) {
+            $pattern = $config.CreateElement('package')
+            $pattern.SetAttribute('pattern', $id)
+            [void] $mapping.AppendChild($pattern)
+          }
+          [void] $config.configuration.packageSourceMapping.AppendChild($mapping)
+          $config.Save("$configPath")
       - name: Restore companion, contracts and example
         run: dotnet restore DocumentExtraction/PdfPig.OnnxLayoutAnalysis.slnf --configfile "${{ runner.temp }}/pdfpig-onnx-nuget.config"
       - name: Build all library assets and modern applications

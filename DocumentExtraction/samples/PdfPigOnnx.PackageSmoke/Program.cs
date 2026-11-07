@@ -60,6 +60,7 @@ await File.WriteAllTextAsync(receiptPath, JsonSerializer.Serialize(new
     LoadedAssemblySha256 = loadedHash,
     PackageAsset = packageAsset,
     PackageAssetSha256 = packageHash,
+    Assemblies = new[] { new { Path = assembly.Location, Sha256 = loadedHash } },
     CoreAssemblies = new[]
     {
         typeof(DocumentExtractionClient).Assembly,
