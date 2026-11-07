@@ -20,7 +20,6 @@ internal static class SyntheticSmoke
         {
             null => null,
             "netstandard2.0" => ".NETStandard,Version=v2.0",
-            "net8.0" => ".NETCoreApp,Version=v8.0",
             "net10.0" => ".NETCoreApp,Version=v10.0",
             _ => throw new ArgumentException("Unexpected companion asset framework.", nameof(expectedFramework)),
         };

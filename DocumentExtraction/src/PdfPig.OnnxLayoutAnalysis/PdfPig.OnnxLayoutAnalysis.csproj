@@ -3,7 +3,7 @@
     <Version>1.0.0-preview.2</Version>
     <AssemblyName>CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis</AssemblyName>
     <RootNamespace>$(AssemblyName)</RootNamespace>
-    <TargetFrameworks>net10.0;net8.0;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net10.0;netstandard2.0</TargetFrameworks>
     <InjectSystemIndexOnLegacy>true</InjectSystemIndexOnLegacy>
     <Title>Local ONNX PDF layout extraction</Title>
     <Description>PdfPig text extraction with page-image Heron ONNX layout detection.</Description>

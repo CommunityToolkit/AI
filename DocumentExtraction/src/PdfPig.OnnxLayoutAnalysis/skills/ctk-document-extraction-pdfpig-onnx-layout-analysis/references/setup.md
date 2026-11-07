@@ -6,9 +6,12 @@ Inspect the application's `.csproj`, any central package versions and lock file.
 Run `dotnet list <project.csproj> package --include-transitive` and inspect the
 restored `obj/project.assets.json`. Record the resolved provider version, runtime
 TFM, selected `lib` asset, OS/RID and process architecture. These package assets
-are `net8.0`, `net10.0` and `netstandard2.0`; ordinary NuGet selection chooses the
-closest compatible asset. Standard support is managed compatibility, not a .NET
-Framework, all-RID, Native AOT, single-file or Alpine/musl commitment.
+are `net10.0` and `netstandard2.0`; ordinary NuGet selection chooses the closest
+compatible asset. The supported application/test runtime is .NET 10, including
+separate validation of the portable asset on .NET 10. Standard support is
+managed compatibility, not .NET 8 support or a .NET Framework, all-RID, Native
+AOT, single-file or Alpine/musl commitment. There is no dedicated net8.0 asset;
+possible older-runtime portable consumption is not a support promise.
 
 To find this resolved package without assuming the current working directory,
 use PowerShell 7 **after restore**, supplying the consumer project's actual path:

@@ -77,7 +77,6 @@ jobs:
       - uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
-          dotnet-version: 8.0.x
       - uses: actions/download-artifact@v7
         with:
           name: pdfpig-onnx-core-source-packages
@@ -91,7 +90,7 @@ jobs:
         run: dotnet build DocumentExtraction/PdfPig.OnnxLayoutAnalysis.slnf --no-restore -c Release
       - name: Deterministic tests without curated weights
         run: dotnet test DocumentExtraction/test/PdfPig.OnnxLayoutAnalysis.UnitTests --no-build --no-restore -c Release
-      - name: Run the same contracts against actual netstandard assets on both runtimes
+      - name: Run the same contracts against actual netstandard assets on .NET 10
         run: dotnet test DocumentExtraction/test/PdfPig.OnnxLayoutAnalysis.UnitTests --no-restore -c Release -p:DocumentExtractionTestAsset=netstandard2.0
       - name: Offline provisioning checks
         shell: pwsh
@@ -109,8 +108,11 @@ jobs:
               'tools/Get-Models.ps1', 'tools/models.json',
               'README.md', 'CuratedPipeline.NOTICES.txt', 'PdfRendering.NOTICES.txt',
               'lib/netstandard2.0/CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis.dll',
-              'lib/net8.0/CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis.dll',
-              'lib/net10.0/CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis.dll'
+              'lib/net10.0/CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis.dll',
+              'skills/ctk-document-extraction-pdfpig-onnx-layout-analysis/SKILL.md',
+              'skills/ctk-document-extraction-pdfpig-onnx-layout-analysis/references/setup.md',
+              'skills/ctk-document-extraction-pdfpig-onnx-layout-analysis/references/extraction.md',
+              'skills/ctk-document-extraction-pdfpig-onnx-layout-analysis/references/results.md'
             )) {
               $entry = $archive.GetEntry($name)
               if ($null -eq $entry -or $entry.Length -eq 0) { throw "Missing exact packed asset: $name" }
@@ -118,8 +120,9 @@ jobs:
             foreach ($entry in $archive.Entries) {
               if ($entry.FullName.Contains('//') -or $entry.FullName.Contains('\')) { throw "Noncanonical packed path: $($entry.FullName)" }
               if ($entry.FullName -match '\.(onnx|safetensors)$') { throw "Unexpected model weights: $($entry.FullName)" }
+              if ($entry.FullName -match '^lib/([^/]+)/' -and $Matches[1] -notin @('net10.0', 'netstandard2.0')) { throw "Unexpected library framework: $($entry.FullName)" }
             }
-            Write-Host 'Exact packed setup, notices and all three TFM assets verified; no weights.'
+            Write-Host 'Exact packed setup, notices, skill and both TFM assets verified; no weights.'
           }
           finally {
             $archive.Dispose()

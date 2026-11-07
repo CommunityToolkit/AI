@@ -24,7 +24,8 @@ dotnet add package CommunityToolkit.DocumentExtraction.PdfPig.OnnxLayoutAnalysis
 dotnet add package Microsoft.ML.OnnxRuntime --version 1.23.2
 ```
 
-Targets **.NET 8, .NET 10 and .NET Standard 2.0**. Runtime dependencies are brought in transitively:
+Targets **.NET 10 and .NET Standard 2.0**, with **.NET 10** as the supported
+application/test runtime. Runtime dependencies are brought in transitively:
 
 - `PdfPig` **0.1.15**: native PDF words and document layout analysis.
 - `PdfPig.Rendering.Skia` **0.1.15.4**: PdfPig-based page rasterization, with
@@ -44,7 +45,7 @@ Use a process/platform supported by **both**
 [SkiaSharp's native assets](https://github.com/mono/SkiaSharp) and
 [ONNX Runtime](https://onnxruntime.ai/docs/install/).
 Windows x64 and Linux x64 are the acceptance targets. Do not assume that a
-managed `netstandard2.0`, `net8.0` or `net10.0` asset guarantees native support for every RID,
+managed `netstandard2.0` or `net10.0` asset guarantees native support for every RID,
 Alpine/musl, ARM, single-file publishing or Native AOT. Missing native libraries
 are errors, not a request to fall back to text-only extraction.
 The renderer still uses native Skia and HarfBuzz; it is not pure managed code.
@@ -56,11 +57,14 @@ by the pinned renderer and filters, not a promise of universal PDF fidelity.
 
 The .NET Standard asset broadens **managed API compatibility**, not the native
 runtime support commitment. The companion gate runs the same deterministic
-contracts against that actual assembly on .NET 8 and .NET 10, and runs an
-actual packed-asset synthetic extraction on Windows and Linux. This does not
-certify .NET Framework, every .NET Standard implementation, other architectures,
-GPU execution or recognition quality. The modern assets remain available;
-NuGet normally selects the closest compatible one.
+contracts against that actual assembly on .NET 10, separately from the modern
+asset, and runs an actual packed-asset synthetic extraction on Windows and
+Linux. This does not
+certify .NET 8, .NET Framework, every .NET Standard implementation, other architectures,
+GPU execution or recognition quality. The modern asset remains available;
+NuGet normally selects the closest compatible one. There is no dedicated
+`net8.0` asset or .NET 8 support profile; possible consumption of the portable
+asset on an older runtime is not a support commitment.
 
 ### Select the application runtime
 
@@ -416,7 +420,7 @@ For a local native-library and extraction-contract check **without curated
 weights**, the same sample can create a tiny synthetic ONNX graph and PDF:
 
 ```shell
-dotnet run --project DocumentExtraction/samples/PdfPigOnnx -f net8.0 -- --synthetic-smoke
+dotnet run --project DocumentExtraction/samples/PdfPigOnnx -f net10.0 -- --synthetic-smoke
 ```
 
 It verifies the loaded assembly, rendered-page contract and retained native
