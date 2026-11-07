@@ -87,6 +87,25 @@ Markdown/HTML, not reconstructed addressed grids; inline tables can stay in page
 text. Check table-local `Content` as well as text elements. Ancestors do not
 duplicate their children's text.
 
+Native table placeholders are Markdown links whose label and destination both
+equal the table ID. Native image placeholders use Markdown image syntax whose
+alt text and destination both equal the image ID. These exact markers are
+placed together in text order only with unique ownership. A table marker
+does not match inside image syntax. Missing image IDs, duplicate nonempty IDs
+(including across tables/images), repeated markers and overlaps leave literal
+text intact and append unplaced tables then images in native array order.
+Tables can use a unique literal-content fallback only when no native table
+marker occurs; repeated markers, duplicate IDs and overlaps do not permit an
+arbitrary fallback winner. Matching is ordinal text matching, not Markdown
+parsing. All nonempty text spans, including whitespace-only ones, are preserved.
+
+Image data URIs preserve declared MIME and decoded bytes without transcoding;
+valid non-base64 data URIs are accepted too. Malformed URI/base64 data fails
+eagerly, never silently falls back. Raw base64 retains the historical
+`image/png` label as a compatibility assumption, **not format detection**; do
+not claim those bytes were verified PNG. Missing/non-string bytes leave image
+`Content` null. Placement does not change detached native JSON or source geometry.
+
 Compare important values, resource/header/row bindings and page coverage to the
 original. HTTP success and text presence do not certify OCR correctness.
 The actual reported model, if present, is not overwritten by the request model.

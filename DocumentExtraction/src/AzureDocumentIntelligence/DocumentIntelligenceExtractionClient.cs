@@ -133,7 +133,6 @@ public sealed class DocumentIntelligenceExtractionClient : DocumentExtractionCli
                     frames,
                     elements,
                     cancellationToken).ConfigureAwait(false);
-            OrderContent(output, result, elements);
             if (result.Paragraphs.Count == 0)
             {
                 foreach (var page in result.Pages)
@@ -147,6 +146,8 @@ public sealed class DocumentIntelligenceExtractionClient : DocumentExtractionCli
                 }
             }
             MapSections(output, result, frames, elements);
+            MapFigureText(output, result, elements);
+            OrderContent(output, result, elements);
 
             cancellationToken.ThrowIfCancellationRequested();
             return output;
@@ -271,8 +272,8 @@ public sealed class DocumentIntelligenceExtractionClient : DocumentExtractionCli
             var section = new ExtractionDocumentSection();
             foreach (var page in result.Pages)
             {
-                if (native.Spans.Any(span => page.Spans.Any(pageSpan =>
-                    pageSpan.Offset < span.Offset + span.Length && span.Offset < pageSpan.Offset + pageSpan.Length)))
+                if ((native.Spans ?? []).Any(span => (page.Spans ?? []).Any(pageSpan =>
+                    pageSpan.Offset < (long)span.Offset + span.Length && span.Offset < (long)pageSpan.Offset + pageSpan.Length)))
                 {
                     section.Sources.Add(new ExtractionDocumentSourceReference(frames[page.PageNumber].SourcePage,
                         rawRepresentation: native));
@@ -299,6 +300,33 @@ public sealed class DocumentIntelligenceExtractionClient : DocumentExtractionCli
         SectionHierarchy.Apply(output, elements, sections, cells);
     }
 
+    private static void MapFigureText(
+        ExtractionDocument output, AnalyzeResult result,
+        IReadOnlyDictionary<string, ExtractionDocumentElement> elements)
+    {
+        var figures = result.Figures.Select((figure, index) => new FigureTextMapping.FigureContent(
+            (ExtractionDocumentImageElement)elements[$"/figures/{index}"], figure.Elements.ToArray())).ToArray();
+        DocumentCaption[] captions = result.Figures
+            .SelectMany(figure => figure.Caption is { } caption ? new[] { caption } : [])
+            .Concat(result.Tables.SelectMany(table => table.Caption is { } caption ? new[] { caption } : [])).ToArray();
+        DocumentFootnote[] footnotes = result.Figures.SelectMany(figure => figure.Footnotes)
+            .Concat(result.Tables.SelectMany(table => table.Footnotes)).ToArray();
+        IEnumerable<string> owned = result.Sections.SelectMany(section => section.Elements)
+            .Concat(result.Tables.SelectMany(table => table.Cells).SelectMany(cell => cell.Elements))
+            .Concat(captions.SelectMany(caption => caption.Elements))
+            .Concat(footnotes.SelectMany(footnote => footnote.Elements));
+        DocumentSpan[] excludedSpans = captions.SelectMany(caption => caption.Spans ?? [])
+            .Concat(footnotes.SelectMany(footnote => footnote.Spans ?? []))
+            .Concat(result.Tables.SelectMany(table => table.Cells).SelectMany(cell => cell.Spans ?? [])).ToArray();
+        owned = owned.Concat(result.Paragraphs.Select((paragraph, index) => (paragraph, index))
+            .Where(item => (item.paragraph.Spans ?? []).Any(span => excludedSpans.Any(excluded =>
+                span.Offset < (long)excluded.Offset + excluded.Length && excluded.Offset < (long)span.Offset + span.Length)))
+            .Select(item => $"/paragraphs/{item.index}"));
+        IEnumerable<string?> descriptions = captions.Select(caption => caption.Content)
+            .Concat(footnotes.Select(footnote => footnote.Content));
+        FigureTextMapping.Apply(output, elements, figures, owned, descriptions);
+    }
+
     private static void OrderContent(
         ExtractionDocument output, AnalyzeResult result,
         IReadOnlyDictionary<string, ExtractionDocumentElement> elements)
@@ -306,17 +334,17 @@ public sealed class DocumentIntelligenceExtractionClient : DocumentExtractionCli
         var offsets = new Dictionary<ExtractionDocumentElement, int>();
         for (int index = 0; index < result.Paragraphs.Count; index++)
         {
-            offsets.Add(elements[$"/paragraphs/{index}"], result.Paragraphs[index].Spans.Select(span => span.Offset).DefaultIfEmpty(int.MaxValue).Min());
+            offsets.Add(elements[$"/paragraphs/{index}"], (result.Paragraphs[index].Spans ?? []).Select(span => span.Offset).DefaultIfEmpty(int.MaxValue).Min());
         }
 
         for (int index = 0; index < result.Tables.Count; index++)
         {
-            offsets.Add(elements[$"/tables/{index}"], result.Tables[index].Spans.Select(span => span.Offset).DefaultIfEmpty(int.MaxValue).Min());
+            offsets.Add(elements[$"/tables/{index}"], (result.Tables[index].Spans ?? []).Select(span => span.Offset).DefaultIfEmpty(int.MaxValue).Min());
         }
 
         for (int index = 0; index < result.Figures.Count; index++)
         {
-            offsets.Add(elements[$"/figures/{index}"], result.Figures[index].Spans.Select(span => span.Offset).DefaultIfEmpty(int.MaxValue).Min());
+            offsets.Add(elements[$"/figures/{index}"], (result.Figures[index].Spans ?? []).Select(span => span.Offset).DefaultIfEmpty(int.MaxValue).Min());
         }
 
         SectionHierarchy.Order(output, offsets);

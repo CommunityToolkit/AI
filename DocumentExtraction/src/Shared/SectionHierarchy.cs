@@ -14,13 +14,83 @@ internal static class SectionHierarchy
 
     public static void Order(ExtractionDocument document, IReadOnlyDictionary<ExtractionDocumentElement, int> offsets)
     {
-        foreach (ExtractionDocumentSection section in document.Sections)
+        var projected = new List<(ExtractionDocumentSection Page, ExtractionDocumentElement Element)>();
+        foreach (ExtractionDocumentSection page in document.Sections.ToArray())
         {
-            ExtractionDocumentElement[] ordered = section.Elements
-                .OrderBy(element => offsets.TryGetValue(element, out int offset) ? offset : int.MaxValue)
-                .ToArray();
-            section.Elements.Clear();
-            section.Elements.AddRange(ordered);
+            foreach (ExtractionDocumentElement element in page.Elements.Where(IsCurrent).ToArray())
+            {
+                page.Elements.Remove(element);
+                projected.AddRange(Project(element));
+            }
+        }
+
+        foreach (ExtractionDocumentSection page in document.Sections)
+        {
+            // Offsets belong to one SDK content result, not to earlier CU contents.
+            page.Elements.AddRange(projected.Where(item => ReferenceEquals(item.Page, page))
+                .OrderBy(item => Position(item.Element)).Select(item => item.Element));
+        }
+
+        bool IsCurrent(ExtractionDocumentElement element)
+            => offsets.ContainsKey(element) ||
+                element is ExtractionDocumentSection section && section.Elements.Any(IsCurrent);
+
+        int Position(ExtractionDocumentElement element)
+        {
+            if (offsets.TryGetValue(element, out int offset))
+            {
+                return offset;
+            }
+
+            if (element is ExtractionDocumentSection section)
+            {
+                foreach (ExtractionDocumentElement child in section.Elements)
+                {
+                    int position = Position(child);
+                    if (position != int.MaxValue)
+                    {
+                        return position;
+                    }
+                }
+            }
+
+            return int.MaxValue;
+        }
+
+        IReadOnlyList<(ExtractionDocumentSection Page, ExtractionDocumentElement Element)> Project(ExtractionDocumentElement element)
+        {
+            if (element is not ExtractionDocumentSection section || section.Elements.Count == 0)
+            {
+                return [(ProviderAdapterHelpers.GetSection(document, element.Sources), element)];
+            }
+
+            var groups = new List<(ExtractionDocumentSection Page, ExtractionDocumentSection Fragment)>();
+            foreach (ExtractionDocumentElement child in section.Elements)
+            {
+                foreach (var item in Project(child))
+                {
+                    var group = groups.FirstOrDefault(candidate => ReferenceEquals(candidate.Page, item.Page));
+                    if (group.Fragment is null)
+                    {
+                        var fragment = new ExtractionDocumentSection(section.Content);
+                        fragment.Sources.AddRange(section.Sources);
+                        group = (item.Page, fragment);
+                        groups.Add(group);
+                    }
+
+                    group.Fragment.Elements.Add(item.Element);
+                }
+            }
+
+            if (groups.Count == 1)
+            {
+                section.Elements.Clear();
+                section.Elements.AddRange(groups[0].Fragment.Elements);
+                return [(groups[0].Page, section)];
+            }
+
+            // Continuations retain native attribution; unowned text is never adopted.
+            return groups.Select(group => (group.Page, (ExtractionDocumentElement)group.Fragment)).ToArray();
         }
     }
 

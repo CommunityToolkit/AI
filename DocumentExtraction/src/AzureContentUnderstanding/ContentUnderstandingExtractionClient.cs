@@ -154,7 +154,6 @@ public sealed class ContentUnderstandingExtractionClient : DocumentExtractionCli
                 MapParagraphs(output, content, frames, elements);
                 MapTables(output, content, frames, elements);
                 MapFigures(output, content, frames, elements);
-                OrderContent(output, content, elements);
                 if (content.Paragraphs.Count == 0)
                 {
                     foreach (var page in content.Pages)
@@ -174,6 +173,8 @@ public sealed class ContentUnderstandingExtractionClient : DocumentExtractionCli
                     }
                 }
                 MapSections(output, content, frames, elements);
+                MapFigureText(output, content, elements);
+                OrderContent(output, content, elements);
                 if (elements.Count == 0 && !content.Pages.Any(page => page.Lines.Count > 0) &&
                     !string.IsNullOrEmpty(content.Markdown))
                 {
@@ -260,7 +261,7 @@ public sealed class ContentUnderstandingExtractionClient : DocumentExtractionCli
             IReadOnlyList<ExtractionDocumentSourceReference> sources = ParseSources(figure.Source, frames, figure);
             var element = new ExtractionDocumentImageElement()
             {
-                AlternativeText = figure.Description,
+                AlternativeText = figure.Description ?? figure.Caption?.Content,
             };
             elements.Add($"/figures/{index}", element);
             ProviderAdapterHelpers.AddElement(ProviderAdapterHelpers.GetSection(output, sources), element, sources);
@@ -278,7 +279,7 @@ public sealed class ContentUnderstandingExtractionClient : DocumentExtractionCli
             foreach (var page in content.Pages)
             {
                 if (native.Span is { } span && page.Spans.Any(pageSpan =>
-                    pageSpan.Offset < span.Offset + span.Length && span.Offset < pageSpan.Offset + pageSpan.Length))
+                    pageSpan.Offset < (long)span.Offset + span.Length && span.Offset < (long)pageSpan.Offset + pageSpan.Length))
                 {
                     section.Sources.Add(new ExtractionDocumentSourceReference(frames[page.PageNumber].SourcePage,
                         rawRepresentation: native));
@@ -303,6 +304,35 @@ public sealed class ContentUnderstandingExtractionClient : DocumentExtractionCli
         }
 
         SectionHierarchy.Apply(output, elements, sections, cells);
+    }
+
+    private static void MapFigureText(
+        ExtractionDocument output, DocumentContent content,
+        IReadOnlyDictionary<string, ExtractionDocumentElement> elements)
+    {
+        var figures = content.Figures.Select((figure, index) => new FigureTextMapping.FigureContent(
+            (ExtractionDocumentImageElement)elements[$"/figures/{index}"], figure.Elements.ToArray())).ToArray();
+        DocumentCaption[] captions = content.Figures
+            .SelectMany(figure => figure.Caption is { } caption ? new[] { caption } : [])
+            .Concat(content.Tables.SelectMany(table => table.Caption is { } caption ? new[] { caption } : [])).ToArray();
+        DocumentFootnote[] footnotes = content.Figures.SelectMany(figure => figure.Footnotes)
+            .Concat(content.Tables.SelectMany(table => table.Footnotes)).ToArray();
+        IEnumerable<string> owned = content.Sections.SelectMany(section => section.Elements)
+            .Concat(content.Tables.SelectMany(table => table.Cells).SelectMany(cell => cell.Elements))
+            .Concat(captions.SelectMany(caption => caption.Elements))
+            .Concat(footnotes.SelectMany(footnote => footnote.Elements));
+        ContentSpan[] excludedSpans = captions.Select(caption => caption.Span)
+            .Concat(footnotes.Select(footnote => footnote.Span))
+            .Concat(content.Tables.SelectMany(table => table.Cells).Select(cell => cell.Span))
+            .OfType<ContentSpan>().ToArray();
+        owned = owned.Concat(content.Paragraphs.Select((paragraph, index) => (paragraph, index))
+            .Where(item => item.paragraph.Span is { } span && excludedSpans.Any(excluded =>
+                span.Offset < (long)excluded.Offset + excluded.Length && excluded.Offset < (long)span.Offset + span.Length))
+            .Select(item => $"/paragraphs/{item.index}"));
+        IEnumerable<string?> descriptions = captions.Select(caption => caption.Content)
+            .Concat(footnotes.Select(footnote => footnote.Content))
+            .Concat(content.Figures.Select(figure => figure.Description));
+        FigureTextMapping.Apply(output, elements, figures, owned, descriptions);
     }
 
     private static void OrderContent(

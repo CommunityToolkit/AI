@@ -90,6 +90,14 @@ Choose an available analyzer such as `prebuilt-layout` if detailed layout is
 required, rather than inventing extraction switches. Figure descriptions map to
 `AlternativeText`; this provider does not download figure image bytes.
 
+Cross-page native sections are page-local continuations with original sources;
+native within-page child order/atomic cells take precedence over a universal
+span sort. Offset envelopes never assign unowned text to a native section.
+Image `Text` requires exclusive plain paragraph refs corroborated by figure
+geometry, excluding captions/footnotes/descriptions and section/cell/other-figure
+claims. Ambiguous/shared text remains in its original structure, so null image
+`Text` is not proof of missing OCR. Inspect native relationships/source refs.
+
 ## Triage explicitly
 
 - 401/403: verify the app's intended identity, audience and resource access

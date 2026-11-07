@@ -86,6 +86,14 @@ Null grid positions can be span-covered or unobserved, not known empty cells.
 Check numeric facts against their row/header context and original document.
 HTTP success and plausible geometry are not OCR accuracy acceptance.
 
+Cross-page native sections use page-local continuations retaining native sources.
+Within a page, native child order/atomic cells take precedence over a universal
+span sort; unowned text is not assigned to a native section by an offset envelope.
+Image `Text` includes only exclusive, geometrically corroborated plain paragraph
+references, not captions/footnotes/descriptions or text shared with sections,
+cells or other figures. Ambiguous text remains structurally mapped; null image
+`Text` does not establish missing OCR. Inspect native relationships/source refs.
+
 `IncludeImages=true` is a construction-time opt-in to additional figure
 downloads; obtain consent for extra work. It requires downloadable figures from
 the chosen model. Captions/geometry can exist without image bytes.
