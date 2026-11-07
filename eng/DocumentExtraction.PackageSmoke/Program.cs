@@ -116,10 +116,20 @@ if (!visionResult.EnumerateContent().Any(element => element.Content is TextConte
     throw new InvalidDataException("Offline Vision mapping failed.");
 }
 
+var coreAssemblies = new[] { typeof(TextContent).Assembly, typeof(ExtractionDocument).Assembly,
+    typeof(DocumentExtractionClient).Assembly, Assembly.Load("Microsoft.Extensions.DocumentExtraction") }
+    .Select(assembly => new
+    {
+        name = assembly.GetName().Name, path = assembly.Location,
+        informationalVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
+        target = assembly.GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName,
+        sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))),
+    }).ToArray();
+
 File.WriteAllText(args[1], System.Text.Json.JsonSerializer.Serialize(new
 {
     runtime = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription,
-    providerAsset = args[0], assemblies, pdfPages = document.SourcePages.Count,
+    providerAsset = args[0], assemblies, coreAssemblies, pdfPages = document.SourcePages.Count,
     fiveConstructorsCompiledAndExecuted = true, mistralRequiredInitContract = true,
     liveServiceCalls = 0, modelInferenceCalls = 0,
 }, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
