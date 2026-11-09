@@ -4,8 +4,8 @@
     <Version>1.0.4-preview</Version>
     <AssemblyName>CommunityToolkit.VectorData.SqliteVec</AssemblyName>
     <RootNamespace>$(AssemblyName)</RootNamespace>
-    <TargetFrameworks>net10.0;net8.0</TargetFrameworks>
-    <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</IsAotCompatible>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <IsAotCompatible>true</IsAotCompatible>
 
     <Title>SQLite provider for Microsoft.Extensions.VectorData</Title>
     <Description>SQLite (sqlitevec) provider for Microsoft.Extensions.VectorData by the .NET Community Toolkit</Description>
@@ -15,7 +15,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Linq.AsyncEnumerable" />
     <PackageReference Include="System.Numerics.Tensors" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.AI.Abstractions" />

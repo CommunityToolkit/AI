@@ -3,7 +3,7 @@
     <Version>1.0.2</Version>
     <AssemblyName>CommunityToolkit.VectorData.AzureCosmosDB</AssemblyName>
     <RootNamespace>$(AssemblyName)</RootNamespace>
-    <TargetFrameworks>net10.0;net8.0;netstandard2.0;net462</TargetFrameworks>
+    <TargetFrameworks>net10.0;netstandard2.0;net462</TargetFrameworks>
 
     <Title>Azure Cosmos DB for NoSQL provider for Microsoft.Extensions.VectorData</Title>
     <Description>Azure Cosmos DB for NoSQL provider for Microsoft.Extensions.VectorData by the .NET Community Toolkit</Description>

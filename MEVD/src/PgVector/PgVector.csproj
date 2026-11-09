@@ -4,8 +4,8 @@
     <Version>1.0.2</Version>
     <AssemblyName>CommunityToolkit.VectorData.PgVector</AssemblyName>
     <RootNamespace>$(AssemblyName)</RootNamespace>
-    <TargetFrameworks>net10.0;net8.0;netstandard2.0;net462</TargetFrameworks>
-    <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</IsAotCompatible>
+    <TargetFrameworks>net10.0;netstandard2.0;net462</TargetFrameworks>
+    <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net10.0'))">true</IsAotCompatible>
     <NoWarn>$(NoWarn);CS0436</NoWarn>
 
     <Title>Postgres provider for Microsoft.Extensions.VectorData</Title>
@@ -18,7 +18,7 @@
 
     <!-- The last version of Npgsql to support .NET Framework is 8.0; on modern .NET, use the latest. -->
     <PackageReference Include="Npgsql">
-      <VersionOverride Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">8.0.7</VersionOverride>
+      <VersionOverride Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net10.0'))">8.0.7</VersionOverride>
     </PackageReference>
 
     <PackageReference Include="Pgvector" />
