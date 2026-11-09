@@ -494,8 +494,9 @@ public class ChromaCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
     // sparse vector indexes have. The client tells it from the server, the same whatever was called before, and keeps the answer:
     // it is not kept here, because while the server does not answer, the client answers from its options and asks the server again
     // later. An existing collection can have the indexes under keys that the client did not generate, so a missing index is
-    // reported by the hybrid search itself, not here.
-    private bool OffersHybridSearch
+    // reported by the hybrid search itself, not here. A method, for the callers that are not async: until the client has the answer
+    // of the server, it sends a request and waits for it, 5 seconds at most.
+    private bool OffersHybridSearch()
         => _bm25Properties.Count > 0 && _chromaClient.Client.SupportsSparseVectorIndexes();
 
     // Why the collection has no BM25 index on the property: the server has no sparse vector indexes, on Chroma Cloud the key of
@@ -529,7 +530,7 @@ public class ChromaCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
             serviceKey is not null ? null :
             serviceType == typeof(VectorStoreCollectionMetadata) ? _collectionMetadata :
             serviceType == typeof(ChromaClient) ? _chromaClient.Client :
-            serviceType == typeof(IKeywordHybridSearchable<TRecord>) ? (OffersHybridSearch ? this : null) :
+            serviceType == typeof(IKeywordHybridSearchable<TRecord>) ? (OffersHybridSearch() ? this : null) :
             serviceType.IsInstanceOfType(this) ? this :
             null;
     }
