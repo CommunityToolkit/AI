@@ -46,8 +46,16 @@ image bytes in one request through an application-supplied `IChatClient`, withou
 local PDF rendering. Its adapter/API/model must support the requested file format;
 image support alone does not establish PDF support. See the provider guide for installation, hosting
 requirements and complete examples. These unreleased, explicitly experimental
-packages include .NET Standard 2.0, .NET 8 and .NET 10 assets; the component
+packages include .NET Standard 2.0 and .NET 10 assets; the component
 guide explains `CTDE0001` opt-in and the pinned source-build prerequisite.
+
+## Framework support
+
+Packages no longer ship dedicated .NET 8 assets. Most remain compatible
+through their .NET Standard assets, subject to dependency requirements. We
+recommend .NET 10 or later because .NET 8 and .NET 9 reach end of support on
+November 10, 2026. Existing .NET Framework assets are retained where available.
+The SQLite vector provider targets only .NET 10.
 
 ## Running Live Tests
 
