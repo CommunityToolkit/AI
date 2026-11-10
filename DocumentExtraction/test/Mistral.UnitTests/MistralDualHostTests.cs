@@ -144,11 +144,7 @@ public sealed partial class MistralDocumentExtractionClientTests
         using var session = new OfflineSession(status: HttpStatusCode.Unauthorized,
             ocrEndpoint: endpoint, useApiKey: useApiKey);
         HttpRequestException error = await Assert.ThrowsAsync<HttpRequestException>(() => Extract(session));
-#if STANDARD_PROVIDER_ASSET
-        Assert.Null(error.StatusCode);
-#else
         Assert.Equal(HttpStatusCode.Unauthorized, error.StatusCode);
-#endif
         Assert.Contains("401", error.Message);
         Assert.Equal(endpoint, Assert.Single(session.Handler.Requests).Message.RequestUri);
         Assert.Empty(session.Delays);
