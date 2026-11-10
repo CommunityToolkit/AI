@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Version>1.0.0-preview.1</Version>
+    <InjectRequiredMemberAttributesOnLegacy>true</InjectRequiredMemberAttributesOnLegacy>
     <AssemblyName>CommunityToolkit.DocumentExtraction.Mistral</AssemblyName>
     <RootNamespace>$(AssemblyName)</RootNamespace>
     <Title>Mistral document extraction provider</Title>
