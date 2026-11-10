@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Version>1.0.0-preview.1</Version>
+    <Version>1.0.0-preview</Version>
     <AssemblyName>CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence</AssemblyName>
     <RootNamespace>$(AssemblyName)</RootNamespace>
     <Title>Azure Document Intelligence document extraction provider</Title>

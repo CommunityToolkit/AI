@@ -7,7 +7,7 @@ Packages are published via GitHub Actions triggered by git tags. Each component 
 - `<component>/v<version>` — release all packages in a component (e.g. `mevd/v1.0.0-preview.1`)
 - `<component>/<subcomponent>/v<version>` — release a single package (e.g. `mevd/PgVector/v1.0.0-preview.1`)
 
-DocumentExtraction uses the `document-extraction` tag prefix (e.g. `document-extraction/PdfPig/v1.0.0-preview.1`).
+DocumentExtraction uses the `document-extraction` tag prefix (e.g. `document-extraction/PdfPig/v1.0.0-preview`).
 
 The subcomponent name must match the directory name under the component's `src/` folder exactly (e.g. `PgVector`, `Qdrant`, `InMemory`).
 
