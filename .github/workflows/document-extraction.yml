@@ -3,6 +3,9 @@ name: Document extraction
 on:
   push:
     branches: [main]
+    tags:
+      - "document-extraction/v*"
+      - "document-extraction/*/v*"
     paths:
       - 'DocumentExtraction/**'
       - 'Directory.Build.props'
@@ -10,11 +13,8 @@ on:
       - 'Directory.Packages.props'
       - 'CommunityToolkit.AI.slnx'
       - 'global.json'
-      - 'eng/Test-DocumentExtractionPackages.ps1'
-      - 'eng/DocumentExtraction.PackageSmoke/**'
       - 'eng/LegacySupport.props'
       - 'Shared/**'
-      - 'nuget.config'
       - '.github/workflows/document-extraction.yml'
   pull_request:
     branches: [main, 'copilot/*']
@@ -25,13 +25,9 @@ on:
       - 'Directory.Packages.props'
       - 'CommunityToolkit.AI.slnx'
       - 'global.json'
-      - 'eng/Test-DocumentExtractionPackages.ps1'
-      - 'eng/DocumentExtraction.PackageSmoke/**'
       - 'eng/LegacySupport.props'
       - 'Shared/**'
-      - 'nuget.config'
       - '.github/workflows/document-extraction.yml'
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -41,8 +37,8 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
-  build-test-pack:
-    name: Build, test and pack (${{ matrix.os }})
+  build-and-test:
+    name: Build and test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -59,17 +55,67 @@ jobs:
         run: dotnet build DocumentExtraction/DocumentExtraction.slnf --no-restore -c Release
       - name: Test
         run: dotnet test DocumentExtraction/DocumentExtraction.slnf --no-build --no-restore -c Release
-      - name: Restore portable test dependency closure
-        run: dotnet restore DocumentExtraction/DocumentExtraction.slnf --configfile DocumentExtraction/nuget.config -p:DocumentExtractionTestAsset=netstandard2.0
-      - name: Test using actual netstandard assets
-        run: dotnet test DocumentExtraction/DocumentExtraction.slnf --no-restore -c Release -p:DocumentExtractionTestAsset=netstandard2.0
-      - name: Pack preview artifacts
-        run: dotnet pack DocumentExtraction/DocumentExtraction.slnf --no-build --no-restore -c Release --output artifacts/document-extraction
-      - name: Verify packaged assets and experimental opt-in
-        shell: pwsh
-        run: ./eng/Test-DocumentExtractionPackages.ps1 -PackageDirectory artifacts/document-extraction -OutputDirectory "${{ runner.temp }}/document-extraction-package-checks"
-      - uses: actions/upload-artifact@v6
+
+  package:
+    name: Package
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
         with:
-          name: document-extraction-preview-packages-${{ matrix.os }}
-          path: artifacts/document-extraction/*.nupkg
+          global-json-file: global.json
+
+      - name: Parse release tag
+        id: tag
+        run: |
+          rest="${GITHUB_REF_NAME#document-extraction/}"
+          if [[ "$rest" == v* ]]; then
+            version="${rest#v}"
+            echo "pack_target=DocumentExtraction/DocumentExtraction.slnf" >> "$GITHUB_OUTPUT"
+          else
+            provider="${rest%%/v*}"
+            version="${rest#*/v}"
+            echo "pack_target=DocumentExtraction/src/$provider/$provider.csproj" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Restore
+        run: dotnet restore DocumentExtraction/DocumentExtraction.slnf --configfile DocumentExtraction/nuget.config
+
+      - name: Pack NuGet packages
+        env:
+          PACK_TARGET: ${{ steps.tag.outputs.pack_target }}
+          PACKAGE_VERSION: ${{ steps.tag.outputs.version }}
+        run: >
+          dotnet pack "$PACK_TARGET"
+          --no-restore
+          -c Release
+          -o ./nuget
+          -p:PackageVersion="$PACKAGE_VERSION"
+          -p:CI=true
+
+      - name: Upload NuGet packages
+        uses: actions/upload-artifact@v6
+        with:
+          name: nuget-packages
+          path: ./nuget
           if-no-files-found: error
+
+      - name: Upload signing file list
+        uses: actions/upload-artifact@v6
+        with:
+          name: nuget-list
+          path: ${{ github.workspace }}/.github/workflows/SignClientFileList.txt
+          if-no-files-found: error
+
+  release:
+    name: Release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: package
+    permissions:
+      contents: write
+      id-token: write
+    uses: ./.github/workflows/release.yml
+    secrets: inherit

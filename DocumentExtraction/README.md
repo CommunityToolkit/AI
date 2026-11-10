@@ -39,9 +39,7 @@ dependencies come from the public `dotnet-libraries` feed, not NuGet.org.
 
 The .NET Standard 2.0 asset makes the managed provider APIs available to compatible
 applications; it is not a new .NET Framework 4.6.2 target or a certification of
-every legacy host, backend SDK or native dependency. Tests run on .NET 10,
-including the full offline suites explicitly loading the netstandard provider
-assemblies. A separate package consumer verifies the actual packed assets.
+every legacy host, backend SDK or native dependency. Tests run on .NET 10.
 Use a supported application runtime and check each backend's platform policy.
 .NET 8 is not a supported runtime and no dedicated `net8.0` asset is shipped.
 An existing .NET 8 app may resolve the portable asset, but that is technical
@@ -233,23 +231,21 @@ or retries unsupported structured results through another inference request.
 
 ## Building from source
 
-From the repository root with PowerShell 7 and the SDK from `global.json`:
+From the repository root with the SDK from `global.json`:
 
 ```powershell
 dotnet restore DocumentExtraction/DocumentExtraction.slnf --configfile DocumentExtraction/nuget.config
 dotnet build DocumentExtraction/DocumentExtraction.slnf -c Release --no-restore
 dotnet test DocumentExtraction/DocumentExtraction.slnf -c Release --no-build --no-restore
-dotnet restore DocumentExtraction/DocumentExtraction.slnf --configfile DocumentExtraction/nuget.config -p:DocumentExtractionTestAsset=netstandard2.0
-dotnet test DocumentExtraction/DocumentExtraction.slnf -c Release --no-restore -p:DocumentExtractionTestAsset=netstandard2.0
-dotnet pack DocumentExtraction/DocumentExtraction.slnf -c Release --no-build --no-restore --output artifacts/document-extraction
-./eng/Test-DocumentExtractionPackages.ps1 -PackageDirectory artifacts/document-extraction -OutputDirectory artifacts/document-extraction-package-checks
 ```
 
-The second test run loads the actual `netstandard2.0` provider assemblies; restore
-its profile before running it. The package check requires a new output directory
-and restores into its own package cache. It verifies consumer diagnostics without
-opt-in, then compiles and executes opted-in consumers against the packed modern
-and `netstandard2.0` assets.
+## Publishing
+
+Like MEVD, releases are triggered by tags: `document-extraction/<Provider>/v<version>`
+for one provider or `document-extraction/v<version>` for all providers. Tag versions
+must match the corresponding project versions. The workflow builds and tests,
+packs the selected providers, then uses the shared signing and publishing workflow.
+Publishing to NuGet.org requires approval of `nuget-release-gate`.
 
 ## Work with the result
 
