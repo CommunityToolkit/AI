@@ -54,13 +54,13 @@ jobs:
         with:
           global-json-file: global.json
       - name: Restore
-        run: dotnet restore DocumentExtraction/DocumentExtraction.slnf
+        run: dotnet restore DocumentExtraction/DocumentExtraction.slnf --configfile DocumentExtraction/nuget.config
       - name: Build
         run: dotnet build DocumentExtraction/DocumentExtraction.slnf --no-restore -c Release
       - name: Test
         run: dotnet test DocumentExtraction/DocumentExtraction.slnf --no-build --no-restore -c Release
       - name: Restore portable test dependency closure
-        run: dotnet restore DocumentExtraction/DocumentExtraction.slnf -p:DocumentExtractionTestAsset=netstandard2.0
+        run: dotnet restore DocumentExtraction/DocumentExtraction.slnf --configfile DocumentExtraction/nuget.config -p:DocumentExtractionTestAsset=netstandard2.0
       - name: Test using actual netstandard assets
         run: dotnet test DocumentExtraction/DocumentExtraction.slnf --no-restore -c Release -p:DocumentExtractionTestAsset=netstandard2.0
       - name: Pack preview artifacts

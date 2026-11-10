@@ -33,8 +33,7 @@ advanced companion; none of those dependencies or model downloads are included
 here. The lightweight PdfPig provider remains a native-text parser, not OCR.
 
 These are preview packages using experimental contracts. Their core
-dependencies come from the public `dotnet-libraries` feed, not NuGet.org. See
-[preview dependency feed](#preview-dependency-feed).
+dependencies come from the public `dotnet-libraries` feed, not NuGet.org.
 
 ### Framework support
 
@@ -78,6 +77,11 @@ on all package TFMs; an internal legacy attribute preserves the same compiler
 contract on netstandard without adding a public shim API.
 
 ## Install
+
+The preview abstractions are not on NuGet.org. Before adding a package, add the
+`dotnet-libraries` source and package-source mappings from the component
+[NuGet configuration](nuget.config) to your application's or repository's
+`NuGet.config`.
 
 Install the provider your application needs:
 
@@ -232,10 +236,10 @@ or retries unsupported structured results through another inference request.
 From the repository root with PowerShell 7 and the SDK from `global.json`:
 
 ```powershell
-dotnet restore DocumentExtraction/DocumentExtraction.slnf
+dotnet restore DocumentExtraction/DocumentExtraction.slnf --configfile DocumentExtraction/nuget.config
 dotnet build DocumentExtraction/DocumentExtraction.slnf -c Release --no-restore
 dotnet test DocumentExtraction/DocumentExtraction.slnf -c Release --no-build --no-restore
-dotnet restore DocumentExtraction/DocumentExtraction.slnf -p:DocumentExtractionTestAsset=netstandard2.0
+dotnet restore DocumentExtraction/DocumentExtraction.slnf --configfile DocumentExtraction/nuget.config -p:DocumentExtractionTestAsset=netstandard2.0
 dotnet test DocumentExtraction/DocumentExtraction.slnf -c Release --no-restore -p:DocumentExtractionTestAsset=netstandard2.0
 dotnet pack DocumentExtraction/DocumentExtraction.slnf -c Release --no-build --no-restore --output artifacts/document-extraction
 ./eng/Test-DocumentExtractionPackages.ps1 -PackageDirectory artifacts/document-extraction -OutputDirectory artifacts/document-extraction-package-checks
