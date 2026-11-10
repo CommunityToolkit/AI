@@ -11,6 +11,7 @@
     <None Include="skills\ctk-document-extraction-azure-content-understanding\SKILL.md" Pack="true" PackagePath="skills\ctk-document-extraction-azure-content-understanding\" />
     <PackageReference Include="Azure.AI.ContentUnderstanding" />
     <Compile Include="..\Shared\FigureTextMapping.cs" LinkBase="Shared" />
+    <Compile Include="..\Shared\SectionHierarchy.cs" LinkBase="Shared" />
     <InternalsVisibleTo Include="$(AssemblyName).UnitTests" />
   </ItemGroup>
 </Project>

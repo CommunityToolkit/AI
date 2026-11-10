@@ -16,7 +16,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DocumentExtraction.Abstractions" />
     <Compile Include="$(MSBuildThisFileDirectory)Shared/ProviderAdapterHelpers.cs" LinkBase="Shared" />
-    <Compile Include="$(MSBuildThisFileDirectory)Shared/SectionHierarchy.cs" LinkBase="Shared" />
     <Compile Include="$(MSBuildThisFileDirectory)../../Shared/Throw/Throw.cs" LinkBase="Shared" />
     <Using Include="Microsoft.Shared.Diagnostics" />
     <AssemblyAttribute Include="System.Diagnostics.CodeAnalysis.ExperimentalAttribute">
