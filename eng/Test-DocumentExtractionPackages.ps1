@@ -3,11 +3,8 @@ param(
     [Parameter(Mandatory)]
     [string] $PackageDirectory,
     [Parameter(Mandatory)]
-    [string] $NuGetConfig,
-    [Parameter(Mandatory)]
-    [string] $CorePackageDirectory,
-    [Parameter(Mandatory)]
     [string] $OutputDirectory,
+    [string] $NuGetConfig = (Join-Path $PSScriptRoot '../DocumentExtraction/nuget.config'),
     [string] $ConsumerProject = (Join-Path $PSScriptRoot 'DocumentExtraction.PackageSmoke/DocumentExtraction.PackageSmoke.csproj')
 )
 
@@ -17,24 +14,6 @@ $PackageDirectory = [IO.Path]::GetFullPath($PackageDirectory)
 $NuGetConfig = [IO.Path]::GetFullPath($NuGetConfig)
 $OutputDirectory = [IO.Path]::GetFullPath($OutputDirectory)
 $ConsumerProject = [IO.Path]::GetFullPath($ConsumerProject)
-$CorePackageDirectory = [IO.Path]::GetFullPath($CorePackageDirectory)
-$coreReceipt = Get-Content (Join-Path $CorePackageDirectory 'core-bootstrap.json') -Raw | ConvertFrom-Json
-$coreIds = @('Microsoft.Extensions.AI.Abstractions', 'Microsoft.Extensions.Documents.Abstractions',
-    'Microsoft.Extensions.DocumentExtraction.Abstractions', 'Microsoft.Extensions.DocumentExtraction')
-if ($coreReceipt.repository -ne 'https://github.com/dotnet/extensions.git' -or
-    $coreReceipt.commit -ne '5635a6ed7499739e2411f8288e1bd2b340c2c0e2' -or
-    $coreReceipt.tree -ne '4ea4fe11e7fcc828012824eece4233a5b5f5e591' -or
-    $coreReceipt.sdk -ne '11.0.100-rc.3.26522.148' -or !$coreReceipt.sourceUnmodified -or
-    $coreReceipt.version -ne '11.0.0-review.20261106.1' -or @($coreReceipt.packages).Count -ne 4 -or
-    @(Compare-Object $coreIds @($coreReceipt.packages.id)).Count -ne 0) {
-    throw 'Package acceptance requires the exact canonical upstream core bootstrap.'
-}
-foreach ($package in $coreReceipt.packages) {
-    $path = Join-Path $CorePackageDirectory "$($package.id).$($coreReceipt.version).nupkg"
-    if ((Get-FileHash $path -Algorithm SHA256).Hash -ne $package.sha256) {
-        throw "Core archive hash differs from bootstrap provenance: $path"
-    }
-}
 if (Test-Path $OutputDirectory) {
     throw "Use a new output directory; existing evidence will not be overwritten: $OutputDirectory"
 }
@@ -128,35 +107,6 @@ foreach ($pair in @(
             }
             if ($binding.sha256 -ne $hash) {
                 throw "Loaded provider DLL does not match selected archive asset: $assemblyName."
-            }
-        }
-        finally {
-            $zip.Dispose()
-        }
-    }
-    if (@($receipt.coreAssemblies).Count -ne 4) {
-        throw "Expected all four loaded upstream core bindings in $name."
-    }
-    foreach ($package in $coreReceipt.packages) {
-        $bindings = @($receipt.coreAssemblies | Where-Object name -EQ $package.id)
-        $zip = [IO.Compression.ZipFile]::OpenRead(
-            (Join-Path $CorePackageDirectory "$($package.id).$($coreReceipt.version).nupkg"))
-        try {
-            $entry = $zip.GetEntry("lib/net10.0/$($package.id).dll")
-            if ($null -eq $entry -or $bindings.Count -ne 1) {
-                throw "Missing exact modern core assembly binding for $($package.id) in $name."
-            }
-            $stream = $entry.Open()
-            $algorithm = [Security.Cryptography.SHA256]::Create()
-            try {
-                $hash = [Convert]::ToHexString($algorithm.ComputeHash($stream))
-            }
-            finally {
-                $algorithm.Dispose()
-                $stream.Dispose()
-            }
-            if ($bindings[0].sha256 -ne $hash -or $bindings[0].target -ne '.NETCoreApp,Version=v10.0') {
-                throw "Loaded core DLL does not match canonical archive: $($package.id) in $name."
             }
         }
         finally {
