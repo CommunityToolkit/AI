@@ -14,10 +14,6 @@
     <Using Include="Xunit" />
     <Compile Include="$(MSBuildThisFileDirectory)ProviderAssetTests.cs" Link="ProviderAssetTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(DocumentExtractionTestAsset)' == 'netstandard2.0'">
-    <!-- Manual portable DLL selection also needs its upstream JSON dependency, not the host framework's JSON 10. -->
-    <PackageReference Include="System.Text.Json" />
-  </ItemGroup>
   <ItemDefinitionGroup Condition="'$(DocumentExtractionTestAsset)' == 'netstandard2.0'">
     <ProjectReference>
       <SetTargetFramework>TargetFramework=netstandard2.0</SetTargetFramework>
