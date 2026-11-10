@@ -13,7 +13,6 @@
     <PackageReference Include="CommunityToolkit.DocumentExtraction.AzureDocumentIntelligence" Version="1.0.0-preview.1" GeneratePathProperty="true" />
     <PackageReference Include="CommunityToolkit.DocumentExtraction.Mistral" Version="1.0.0-preview.1" GeneratePathProperty="true" />
     <PackageReference Include="CommunityToolkit.DocumentExtraction.VisionLanguageModel" Version="1.0.0-preview.1" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.Extensions.DocumentExtraction" Version="11.0.0-review.20261106.1" />
     <PackageReference Include="System.Text.Json" Version="11.0.0-rc.3.26522.148" />
     <Reference Include="CommunityToolkit.DocumentExtraction.PdfPig" HintPath="$(PkgCommunityToolkit_DocumentExtraction_PdfPig)/lib/$(ProviderAssetFramework)/CommunityToolkit.DocumentExtraction.PdfPig.dll" />
     <Reference Include="CommunityToolkit.DocumentExtraction.AzureContentUnderstanding" HintPath="$(PkgCommunityToolkit_DocumentExtraction_AzureContentUnderstanding)/lib/$(ProviderAssetFramework)/CommunityToolkit.DocumentExtraction.AzureContentUnderstanding.dll" />
