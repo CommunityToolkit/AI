@@ -13,6 +13,7 @@ on:
       - 'Directory.Packages.props'
       - 'CommunityToolkit.AI.slnx'
       - 'global.json'
+      - 'nuget.config'
       - 'eng/LegacySupport.props'
       - 'Shared/**'
       - '.github/workflows/document-extraction.yml'
@@ -25,6 +26,7 @@ on:
       - 'Directory.Packages.props'
       - 'CommunityToolkit.AI.slnx'
       - 'global.json'
+      - 'nuget.config'
       - 'eng/LegacySupport.props'
       - 'Shared/**'
       - '.github/workflows/document-extraction.yml'
@@ -50,7 +52,7 @@ jobs:
         with:
           global-json-file: global.json
       - name: Restore
-        run: dotnet restore DocumentExtraction/DocumentExtraction.slnf --configfile DocumentExtraction/nuget.config
+        run: dotnet restore DocumentExtraction/DocumentExtraction.slnf --configfile nuget.config
       - name: Build
         run: dotnet build DocumentExtraction/DocumentExtraction.slnf --no-restore -c Release
       - name: Test
@@ -82,7 +84,7 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Restore
-        run: dotnet restore DocumentExtraction/DocumentExtraction.slnf --configfile DocumentExtraction/nuget.config
+        run: dotnet restore DocumentExtraction/DocumentExtraction.slnf --configfile nuget.config
 
       - name: Pack NuGet packages
         env:

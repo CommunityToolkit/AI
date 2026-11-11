@@ -113,7 +113,7 @@ claims. Ambiguous/shared text remains in its original structure, so null image
 Native inspection objects can contain sensitive data. Log sanitized diagnostics
 and package/analyzer identities, not raw documents by default. See the installed
 README and [component guide](https://github.com/CommunityToolkit/AI/blob/main/DocumentExtraction/README.md)
-for the shared graph and the `dotnet-libraries` preview dependency feed.
+for the shared graph and experimental-contract context.
 
 ## Official references - when to consult them
 

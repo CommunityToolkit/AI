@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup Label="DocumentExtraction" Condition="'$(DocumentExtractionBuild)' == 'true'">
-    <PackageVersion Include="Microsoft.Extensions.DocumentExtraction.Abstractions" Version="11.0.0-preview.1.26555.1" />
+    <PackageVersion Include="Microsoft.Extensions.DocumentExtraction.Abstractions" Version="11.0.0-preview.1.26560.3" />
     <PackageVersion Include="Azure.AI.ContentUnderstanding" Version="1.1.0" />
     <PackageVersion Include="Azure.AI.DocumentIntelligence" Version="1.0.0" />
     <PackageVersion Include="Azure.Core" Version="1.53.0" />

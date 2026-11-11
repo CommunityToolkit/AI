@@ -47,8 +47,7 @@ local PDF rendering. Its adapter/API/model must support the requested file forma
 image support alone does not establish PDF support. See the provider guide for installation, hosting
 requirements and complete examples. These explicitly experimental preview
 packages include .NET Standard 2.0 and .NET 10 assets; the component guide
-explains `CTDE0001` opt-in and the `dotnet-libraries` feed for their preview
-dependencies.
+explains `CTDE0001` opt-in and other experimental diagnostics.
 
 ## Running Live Tests
 
