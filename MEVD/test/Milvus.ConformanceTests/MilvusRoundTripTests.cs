@@ -3,7 +3,8 @@
 
 using CommunityToolkit.VectorData.Milvus;
 using Microsoft.Extensions.VectorData;
-using Milvus.Client;
+using Milvus.Client.V2;
+using Milvus.Client.V2.Types;
 using Xunit;
 using Milvus.ConformanceTests.Support;
 
@@ -11,7 +12,7 @@ namespace Milvus.ConformanceTests;
 
 public sealed class MilvusRoundTripTests : IClassFixture<MilvusFixture>
 {
-    private readonly MilvusClient _client;
+    private readonly MilvusClientV2 _client;
 
     public MilvusRoundTripTests(MilvusFixture fixture) => _client = ((MilvusTestStore)fixture.TestStore).Client;
 

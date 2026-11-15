@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using CommunityToolkit.VectorData.Milvus;
+using Milvus.Client.V2.Requests.Collection;
+using Milvus.Client.V2.Requests.Database;
 using Milvus.ConformanceTests.Support;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.VectorData;
@@ -18,7 +20,7 @@ public sealed class MilvusDatabaseTests : IClassFixture<MilvusFixture>
         var server = MilvusTestStore.Instance;
         var database = "ct_db_" + Guid.NewGuid().ToString("N");
         var name = "records_" + Guid.NewGuid().ToString("N");
-        await server.Client.CreateDatabaseAsync(database);
+        await server.Client.CreateDatabaseAsync(new CreateDatabaseReq { DatabaseName = database });
         try
         {
             var services = new ServiceCollection();
@@ -37,7 +39,7 @@ public sealed class MilvusDatabaseTests : IClassFixture<MilvusFixture>
             {
                 await collection.EnsureCollectionExistsAsync();
                 Assert.True(await collection.CollectionExistsAsync());
-                Assert.False(await server.Client.HasCollectionAsync(name));
+                Assert.False((await server.Client.HasCollectionAsync(new HasCollectionReq { CollectionName = name })).Has);
                 Assert.Equal(database, Assert.IsType<VectorStoreMetadata>(store.GetService(typeof(VectorStoreMetadata))).VectorStoreName);
                 Assert.Equal(database, Assert.IsType<VectorStoreCollectionMetadata>(collection.GetService(typeof(VectorStoreCollectionMetadata))).VectorStoreName);
             }
@@ -48,7 +50,7 @@ public sealed class MilvusDatabaseTests : IClassFixture<MilvusFixture>
         }
         finally
         {
-            await server.Client.DropDatabaseAsync(database);
+            await server.Client.DropDatabaseAsync(new DropDatabaseReq { DatabaseName = database });
         }
     }
 }

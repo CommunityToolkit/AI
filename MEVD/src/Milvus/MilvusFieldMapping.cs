@@ -3,20 +3,20 @@
 
 using System.Globalization;
 using System.Text;
-using Milvus.Client;
+using Milvus.Client.V2.Types;
 using Microsoft.Extensions.VectorData.ProviderServices;
 
 namespace CommunityToolkit.VectorData.Milvus;
 
 internal static class MilvusFieldMapping
 {
-    public static MilvusDataType GetDataType(Type type)
-        => type == typeof(string) ? MilvusDataType.VarChar
-            : type == typeof(bool) ? MilvusDataType.Bool
-            : type == typeof(int) ? MilvusDataType.Int32
-            : type == typeof(long) ? MilvusDataType.Int64
-            : type == typeof(float) ? MilvusDataType.Float
-            : type == typeof(double) ? MilvusDataType.Double
+    public static DataType GetDataType(Type type)
+        => type == typeof(string) ? DataType.VarChar
+            : type == typeof(bool) ? DataType.Bool
+            : type == typeof(int) ? DataType.Int32
+            : type == typeof(long) ? DataType.Int64
+            : type == typeof(float) ? DataType.Float
+            : type == typeof(double) ? DataType.Double
             : throw new NotSupportedException($"Unsupported Milvus field type '{type}'.");
 
     internal static Type? GetElementType(Type type)
@@ -41,45 +41,56 @@ internal static class MilvusFieldMapping
             => array ? ((IEnumerable<T>)value).ToArray() : ((IEnumerable<T>)value).ToList();
     }
 
-    internal static IReadOnlyList<FieldData> CreateColumns(CollectionModel model, IReadOnlyList<IDictionary<string, object?>> rows)
+    /// <summary>
+    /// Turns the columns of a query or search response into rows keyed by field name.
+    /// </summary>
+    internal static List<Dictionary<string, object?>> ReadRows(IReadOnlyList<FieldData> columns)
     {
-        List<FieldData> fields = [];
-        var key = model.KeyProperty;
-        fields.Add(key.Type == typeof(long) ? Scalar<long>(key.StorageName) : Scalar<string>(key.StorageName));
-        foreach (var property in model.DataProperties)
+        var count = columns.Count == 0 ? 0 : columns.Max(c => c.RowCount);
+        var rows = new List<Dictionary<string, object?>>(count);
+        for (var i = 0; i < count; i++)
         {
-            var name = property.StorageName;
-            if (GetElementType(property.Type) is { } element)
+            var row = new Dictionary<string, object?>(StringComparer.Ordinal);
+            foreach (var column in columns)
             {
-                fields.Add(element == typeof(string) ? ArrayColumn<string>(name)
-                    : element == typeof(bool) ? ArrayColumn<bool>(name)
-                    : element == typeof(int) ? ArrayColumn<int>(name)
-                    : element == typeof(long) ? ArrayColumn<long>(name)
-                    : element == typeof(float) ? ArrayColumn<float>(name)
-                    : element == typeof(double) ? ArrayColumn<double>(name)
-                    : throw new NotSupportedException($"Unsupported array element type '{element}'."));
+                if (column.FieldName.Length > 0 && i < column.RowCount)
+                {
+                    row[column.FieldName] = ReadCell(column, i);
+                }
             }
-            else
-            {
-                var type = property.Type;
-                fields.Add(type == typeof(string) ? Scalar<string?>(name)
-                    : type == typeof(bool) ? Scalar<bool>(name) : type == typeof(bool?) ? Scalar<bool?>(name)
-                    : type == typeof(int) ? Scalar<int>(name) : type == typeof(int?) ? Scalar<int?>(name)
-                    : type == typeof(long) ? Scalar<long>(name) : type == typeof(long?) ? Scalar<long?>(name)
-                    : type == typeof(float) ? Scalar<float>(name) : type == typeof(float?) ? Scalar<float?>(name)
-                    : type == typeof(double) ? Scalar<double>(name) : type == typeof(double?) ? Scalar<double?>(name)
-                    : throw new NotSupportedException($"Unsupported Milvus data type '{type}'."));
-            }
+            rows.Add(row);
         }
-        foreach (var property in model.VectorProperties)
-        {
-            fields.Add(FieldData.CreateFloatVector(property.StorageName, rows.Select(r => (ReadOnlyMemory<float>)r[property.StorageName]!).ToArray()));
-        }
-        return fields;
+        return rows;
+    }
 
-        FieldData Scalar<T>(string name) => FieldData.Create(name, rows.Select(r => (T)r[name]!).ToArray());
-        FieldData ArrayColumn<T>(string name) => FieldData.CreateArray<T>(name,
-            rows.Select(r => r[name] is { } value ? (IReadOnlyList<T>)((IEnumerable<T>)value).ToArray() : null).ToArray());
+    private static object? ReadCell(FieldData column, int index)
+    {
+        if (column.ValidData is { } valid && !valid[index])
+        {
+            return null;
+        }
+        return column switch
+        {
+            FieldData<string> f => f.Data[index],
+            FieldData<bool> f => f.Data[index],
+            FieldData<bool?> f => f.Data[index],
+            FieldData<int> f => f.Data[index],
+            FieldData<int?> f => f.Data[index],
+            FieldData<long> f => f.Data[index],
+            FieldData<long?> f => f.Data[index],
+            FieldData<float> f => f.Data[index],
+            FieldData<float?> f => f.Data[index],
+            FieldData<double> f => f.Data[index],
+            FieldData<double?> f => f.Data[index],
+            FieldData<ReadOnlyMemory<float>> f => f.Data[index],
+            FieldData<IReadOnlyList<string>?> f => f.Data[index],
+            FieldData<IReadOnlyList<bool>?> f => f.Data[index],
+            FieldData<IReadOnlyList<int>?> f => f.Data[index],
+            FieldData<IReadOnlyList<long>?> f => f.Data[index],
+            FieldData<IReadOnlyList<float>?> f => f.Data[index],
+            FieldData<IReadOnlyList<double>?> f => f.Data[index],
+            _ => throw new NotSupportedException($"Unsupported Milvus field data '{column.GetType()}' for field '{column.FieldName}'."),
+        };
     }
 
     public static object ToKey(object key) => key is Guid guid ? guid.ToString("D") : key;

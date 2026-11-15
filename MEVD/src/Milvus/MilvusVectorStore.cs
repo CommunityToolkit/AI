@@ -3,7 +3,9 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using Milvus.Client;
+using Milvus.Client.V2;
+using Milvus.Client.V2.Requests.Collection;
+using Milvus.Client.V2.Responses.Collection;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.VectorData;
 using Microsoft.Extensions.VectorData.ProviderServices;
@@ -46,7 +48,7 @@ public sealed class MilvusVectorStore : VectorStore
     /// <param name="milvusClient">Milvus client that can be used to manage the collections and records in a Milvus store.</param>
     /// <param name="ownsClient">A value indicating whether <paramref name="milvusClient"/> is disposed after the vector store and the collections it returns are all disposed.</param>
     /// <param name="options">Optional configuration options for this class.</param>
-    public MilvusVectorStore(MilvusClient milvusClient, bool ownsClient, MilvusVectorStoreOptions? options = default)
+    public MilvusVectorStore(MilvusClientV2 milvusClient, bool ownsClient, MilvusVectorStoreOptions? options = default)
         : this(new ClientWrapper(milvusClient, ownsClient), options)
     {
     }
@@ -118,14 +120,14 @@ public sealed class MilvusVectorStore : VectorStore
     {
         const string OperationName = "ListCollectionNames";
 
-        var collections = await MilvusErrorHandler.RunAsync<IReadOnlyList<MilvusCollectionInfo>>(
+        var collections = await MilvusErrorHandler.RunAsync<ListCollectionsResp>(
             new VectorStoreCollectionMetadata { VectorStoreSystemName = MilvusConstants.VectorStoreSystemName, VectorStoreName = _clientWrapper.DatabaseName },
             OperationName,
-            () => _clientWrapper.Client.ListCollectionsAsync(cancellationToken: cancellationToken)).ConfigureAwait(false);
+            () => _clientWrapper.Client.ListCollectionsAsync(new ListCollectionsReq(), cancellationToken)).ConfigureAwait(false);
 
-        foreach (var collection in collections)
+        foreach (var collection in collections.CollectionNames)
         {
-            yield return collection.Name;
+            yield return collection;
         }
     }
 
@@ -151,7 +153,7 @@ public sealed class MilvusVectorStore : VectorStore
         return
             serviceKey is not null ? null :
             serviceType == typeof(VectorStoreMetadata) ? _metadata :
-            serviceType == typeof(MilvusClient) ? _clientWrapper.Client :
+            serviceType == typeof(MilvusClientV2) ? _clientWrapper.Client :
             serviceType.IsInstanceOfType(this) ? this :
             null;
     }

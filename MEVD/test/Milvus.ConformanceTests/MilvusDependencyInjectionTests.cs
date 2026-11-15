@@ -4,7 +4,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using CommunityToolkit.VectorData.Milvus;
-using Milvus.Client;
+using Milvus.Client.V2;
+using Milvus.ConformanceTests.Support;
+using Milvus.Client.V2.Types;
 using VectorData.ConformanceTests;
 using Xunit;
 
@@ -42,10 +44,10 @@ public class MilvusDependencyInjectionTests
         {
             yield return (services, serviceKey, name, lifetime) => serviceKey is null
                 ? services
-                    .AddSingleton<MilvusClient>(sp => new MilvusClient(Host, ApiKey, Port))
+                    .AddSingleton<MilvusClientV2>(sp => MilvusTestStore.CreateClient(Host, Port, ApiKey))
                     .AddMilvusCollection<long, Record>(name, lifetime: lifetime)
                 : services
-                    .AddSingleton<MilvusClient>(sp => new MilvusClient(Host, ApiKey, Port))
+                    .AddSingleton<MilvusClientV2>(sp => MilvusTestStore.CreateClient(Host, Port, ApiKey))
                     .AddKeyedMilvusCollection<long, Record>(serviceKey, name, lifetime: lifetime);
 
             yield return (services, serviceKey, name, lifetime) => serviceKey is null
@@ -56,9 +58,9 @@ public class MilvusDependencyInjectionTests
 
             yield return (services, serviceKey, name, lifetime) => serviceKey is null
                 ? services.AddMilvusCollection<long, Record>(
-                    name, sp => new MilvusClient(HostProvider(sp), ApiKeyProvider(sp), PortProvider(sp)), lifetime: lifetime)
+                    name, sp => MilvusTestStore.CreateClient(HostProvider(sp), PortProvider(sp), ApiKeyProvider(sp)), lifetime: lifetime)
                 : services.AddKeyedMilvusCollection<long, Record>(
-                    serviceKey, name, sp => new MilvusClient(HostProvider(sp, serviceKey), ApiKeyProvider(sp, serviceKey), PortProvider(sp, serviceKey)), lifetime: lifetime);
+                    serviceKey, name, sp => MilvusTestStore.CreateClient(HostProvider(sp, serviceKey), PortProvider(sp, serviceKey), ApiKeyProvider(sp, serviceKey)), lifetime: lifetime);
         }
     }
 
@@ -74,10 +76,10 @@ public class MilvusDependencyInjectionTests
 
             yield return (services, serviceKey, lifetime) => serviceKey is null
                 ? services
-                    .AddSingleton<MilvusClient>(sp => new MilvusClient(Host, ApiKey, Port))
+                    .AddSingleton<MilvusClientV2>(sp => MilvusTestStore.CreateClient(Host, Port, ApiKey))
                     .AddMilvusVectorStore(lifetime: lifetime)
                 : services
-                    .AddSingleton<MilvusClient>(sp => new MilvusClient(Host, ApiKey, Port))
+                    .AddSingleton<MilvusClientV2>(sp => MilvusTestStore.CreateClient(Host, Port, ApiKey))
                     .AddKeyedMilvusVectorStore(serviceKey, lifetime: lifetime);
         }
     }

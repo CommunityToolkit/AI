@@ -8,7 +8,8 @@ using System.Threading.Tasks;
 using CommunityToolkit.VectorData.UnitTests;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.VectorData;
-using Milvus.Client;
+using Milvus.Client.V2;
+using Milvus.Client.V2.Types;
 using Xunit;
 
 namespace CommunityToolkit.VectorData.Milvus.UnitTests;
@@ -28,7 +29,7 @@ public sealed class MilvusHybridSearchTests
     [Fact]
     public void GetServiceReturnsTheCollectionWhenAPropertyIsFullTextIndexed()
     {
-        using var client = new MilvusClient("localhost", port: 1);
+        using var client = TestClients.Create(port: 1);
         using var typed = new MilvusCollection<string, TextRecord>(client, "typed", ownsClient: false);
         using var dynamic = new MilvusDynamicCollection(client, "dynamic", ownsClient: false, new() { Definition = s_definition, EmbeddingGenerator = new FakeEmbeddingGenerator() });
         using var withoutText = new MilvusCollection<Guid, MilvusTestRecord>(client, "without_text", ownsClient: false);
@@ -42,7 +43,7 @@ public sealed class MilvusHybridSearchTests
     [Fact]
     public void DependencyInjectionResolvesHybridSearch()
     {
-        using var client = new MilvusClient("localhost");
+        using var client = TestClients.Create();
         using var provider = new ServiceCollection().AddSingleton(client)
             .AddMilvusCollection<string, TextRecord>("records")
             .AddKeyedMilvusCollection<string, TextRecord>("key", "other_records")
@@ -55,7 +56,7 @@ public sealed class MilvusHybridSearchTests
     [Fact]
     public async Task RejectsInvalidHybridSearchesBeforeContactingTheServer()
     {
-        using var client = new MilvusClient("localhost", port: 1);
+        using var client = TestClients.Create(port: 1);
         using var collection = new MilvusCollection<string, TextRecord>(client, "records", ownsClient: false);
 
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await collection.HybridSearchAsync(new float[] { 1, 2, 3 }, ["apples"], 0).ToListAsync());
@@ -71,7 +72,7 @@ public sealed class MilvusHybridSearchTests
     [InlineData(int.MaxValue, 1)]
     public async Task RejectsTopAndSkipBeyondTheMilvusLimitBeforeContactingTheServer(int top, int skip)
     {
-        using var client = new MilvusClient("localhost", port: 1);
+        using var client = TestClients.Create(port: 1);
         using var collection = new MilvusCollection<string, TextRecord>(client, "records", ownsClient: false);
 
         var exception = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await collection.HybridSearchAsync(new float[] { 1, 2, 3 }, ["apples"], top,
@@ -83,7 +84,7 @@ public sealed class MilvusHybridSearchTests
     [Fact]
     public async Task RejectsIncludeVectorsWithEmbeddingGeneration()
     {
-        using var client = new MilvusClient("localhost", port: 1);
+        using var client = TestClients.Create(port: 1);
         using var collection = new MilvusDynamicCollection(client, "records", ownsClient: false, new() { Definition = s_definition, EmbeddingGenerator = new FakeEmbeddingGenerator() });
 
         await Assert.ThrowsAsync<NotSupportedException>(async () => await collection.HybridSearchAsync("apples", ["apples"], 1, new() { IncludeVectors = true }).ToListAsync());
@@ -92,7 +93,7 @@ public sealed class MilvusHybridSearchTests
     [Fact]
     public async Task RejectsHybridSearchWithoutAFullTextProperty()
     {
-        using var client = new MilvusClient("localhost", port: 1);
+        using var client = TestClients.Create(port: 1);
         using var collection = new MilvusCollection<Guid, MilvusTestRecord>(client, "records", ownsClient: false);
 
         await Assert.ThrowsAsync<InvalidOperationException>(async () => await collection.HybridSearchAsync(new float[] { 1, 2, 3 }, ["apples"], 1).ToListAsync());

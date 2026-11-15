@@ -7,7 +7,8 @@ using System.Linq;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.VectorData;
 using Microsoft.Extensions.VectorData.ProviderServices;
-using Milvus.Client;
+using Milvus.Client.V2;
+using Milvus.Client.V2.Types;
 using Xunit;
 
 namespace CommunityToolkit.VectorData.Milvus.UnitTests;
@@ -22,12 +23,12 @@ public sealed class MilvusMappingTests
         var fields = MilvusCollectionCreateMapping.MapCollectionDefinition(Model());
         var key = Assert.Single(fields, f => f.IsPrimaryKey);
         Assert.Equal("record_id", key.Name);
-        Assert.Equal(MilvusDataType.VarChar, key.DataType);
+        Assert.Equal(DataType.VarChar, key.DataType);
         Assert.False(key.AutoId);
         Assert.True(Assert.Single(fields, f => f.Name == "label").Nullable);
         var count = Assert.Single(fields, f => f.Name == "Count");
         Assert.True(count.Nullable);
-        Assert.Equal(MilvusDataType.Int32, count.DataType);
+        Assert.Equal(DataType.Int32, count.DataType);
         Assert.Equal(3, Assert.Single(fields, f => f.Name == "Vector").Dimension);
     }
 
@@ -38,7 +39,7 @@ public sealed class MilvusMappingTests
         {
             Properties = [new VectorStoreKeyProperty("Id", typeof(long)), new VectorStoreVectorProperty("Vector", typeof(float[]), 3)],
         }, null);
-        Assert.Equal(MilvusDataType.Int64, MilvusCollectionCreateMapping.MapCollectionDefinition(model)[0].DataType);
+        Assert.Equal(DataType.Int64, MilvusCollectionCreateMapping.MapCollectionDefinition(model)[0].DataType);
     }
 
     [Fact]
@@ -75,12 +76,12 @@ public sealed class MilvusMappingTests
     }
 
     [Theory]
-    [InlineData(null, SimilarityMetricType.Cosine)]
-    [InlineData(DistanceFunction.CosineSimilarity, SimilarityMetricType.Cosine)]
-    [InlineData(DistanceFunction.DotProductSimilarity, SimilarityMetricType.Ip)]
-    [InlineData(DistanceFunction.EuclideanSquaredDistance, SimilarityMetricType.L2)]
-    [InlineData(DistanceFunction.EuclideanDistance, SimilarityMetricType.L2)]
-    public void MapsSupportedDistances(string? distance, SimilarityMetricType expected)
+    [InlineData(null, MetricType.Cosine)]
+    [InlineData(DistanceFunction.CosineSimilarity, MetricType.Cosine)]
+    [InlineData(DistanceFunction.DotProductSimilarity, MetricType.Ip)]
+    [InlineData(DistanceFunction.EuclideanSquaredDistance, MetricType.L2)]
+    [InlineData(DistanceFunction.EuclideanDistance, MetricType.L2)]
+    public void MapsSupportedDistances(string? distance, MetricType expected)
         => Assert.Equal(expected, MilvusCollectionCreateMapping.GetMetric(new VectorPropertyModel("Vector", typeof(float[])) { Dimensions = 3, DistanceFunction = distance }));
 
     [Theory]

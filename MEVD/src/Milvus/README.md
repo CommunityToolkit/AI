@@ -4,7 +4,7 @@ Milvus provider for [Microsoft.Extensions.VectorData](https://learn.microsoft.co
 
 [Milvus](https://milvus.io/) is an open-source vector database for AI applications.
 
-The provider is built on [Milvus.Client](https://www.nuget.org/packages/Milvus.Client), the Milvus C# SDK.
+The provider is built on [Milvus.Client.V2](https://www.nuget.org/packages/Milvus.Client.V2) (`MilvusClientV2`), the second-generation Milvus C# SDK.
 
 Requires Milvus 2.6 or later.
 
@@ -40,13 +40,13 @@ For more information, see the [Microsoft.Extensions.VectorData documentation](ht
 - `IsIndexed` does not create scalar indexes; Milvus can filter scalar fields without them. Supported vector indexes are automatic (default), Flat, and HNSW.
 - Field storage names must use ASCII letters, digits and underscores, starting with a letter or underscore. Reserved Milvus keywords are rejected during model construction. Varchar fields allow up to 65535 bytes. Schema changes on an existing collection require explicit management through the SDK.
 - Collection names must use ASCII letters, digits and underscores, start with a letter or underscore, and have at most 255 characters: Milvus rejects other names, such as `chathistory-local`.
-- For NativeAOT, use dynamic dictionary collections with explicit definitions: the typed collection APIs use reflection. Publishing with trimming or NativeAOT shows the warnings `IL2104` and `IL3053` of the dependency `Milvus.Client`.
-- On .NET Framework, `Milvus.Client` calls Milvus over WinHTTP (`WinHttpHandler`, which `Grpc.Net.Client` brings in). This needs:
-  - A TLS endpoint: `https: true` (the default) on the host-based registrations, or `ssl: true` on `MilvusClient`. A plaintext endpoint fails with `Response protocol downgraded to HTTP/1.1`.
-  - A server certificate that Windows trusts. To validate it another way, create the `MilvusClient` on a `GrpcChannel` with a `WinHttpHandler` and pass that client to the provider.
+- For NativeAOT, use dynamic dictionary collections with explicit definitions: the typed collection APIs use reflection. Publishing with trimming or NativeAOT shows the warnings `IL2104` and `IL3053` of the dependency `Milvus.Client.V2`.
+- On .NET Framework, `Milvus.Client.V2` calls Milvus over WinHTTP (`WinHttpHandler`, which `Grpc.Net.Client` brings in). This needs:
+  - A TLS endpoint: `https: true` (the default) on the host-based registrations, or an `https://` URI in the `ConnectConfig` of a `MilvusClientV2`. A plaintext endpoint fails with `Response protocol downgraded to HTTP/1.1`.
+  - A server certificate that Windows trusts. To validate it another way, set `ConnectConfig.ChannelOptions` to `GrpcChannelOptions` with a `WinHttpHandler` and pass that client to the provider.
   - Windows 11 or later. Windows Server 2019 and 2022 support gRPC over WinHTTP only partially. See [Microsoft's gRPC requirements for .NET Framework](https://learn.microsoft.com/aspnet/core/grpc/netstandard#net-framework).
 
-  Verified on Windows 11 with .NET Framework 4.7.2 against Milvus 2.6.25 over TLS.
+  Verified on Windows 11 with .NET Framework 4.7.2 against Milvus 2.6.25 over TLS with the V1 `Milvus.Client`; not yet re-verified with `Milvus.Client.V2`.
 
 Host-based registrations accept `database`, `username`/`password`, or `apiKey`. The two authentication modes are mutually exclusive. Keyed variants are also available:
 
@@ -55,11 +55,14 @@ builder.Services.AddMilvusVectorStore("milvus.example.com", https: true,
     database: "catalog", username: "some", password: password);
 ```
 
-Host-based registrations report the selected database as `VectorStoreName` in the metadata of the store and of its collections, or `default` when none is selected. An existing `MilvusClient` does not expose the database it uses, so with a supplied client `VectorStoreName` is null. Host-based registrations own their SDK client; supplied clients remain caller-owned:
+Host-based registrations report the selected database as `VectorStoreName` in the metadata of the store and of its collections, or `default` when none is selected. An existing `MilvusClientV2` does not expose the database it uses, so with a supplied client `VectorStoreName` is null. Host-based registrations own their SDK client; supplied clients remain caller-owned:
 
 ```csharp
-var client = new MilvusClient("milvus.example.com", port: 19530, ssl: true,
-    database: "catalog");
+var client = new MilvusClientV2(new ConnectConfig
+{
+    Uri = "https://milvus.example.com:19530",
+    Database = "catalog",
+});
 
 builder.Services.AddMilvusVectorStore(_ => client);
 ```

@@ -1,25 +1,25 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Milvus.Client;
+using Milvus.Client.V2;
 using Microsoft.Shared.Diagnostics;
 
 namespace CommunityToolkit.VectorData.Milvus;
 
 /// <summary>
-/// The <see cref="MilvusClient"/> of a vector store or of a collection. A vector store shares it with the collections it returns,
-/// and the <see cref="MilvusClient"/> it owns is disposed when the last of them is disposed.
+/// The <see cref="MilvusClientV2"/> of a vector store or of a collection. A vector store shares it with the collections it returns,
+/// and the <see cref="MilvusClientV2"/> it owns is disposed when the last of them is disposed.
 /// </summary>
 internal sealed class ClientWrapper : IDisposable
 {
-    private readonly MilvusClient? _ownedClient;
+    private readonly MilvusClientV2? _ownedClient;
 
     private int _referenceCount = 1;
 
     /// <summary>
     /// Gets the client.
     /// </summary>
-    public MilvusClient Client { get; }
+    public MilvusClientV2 Client { get; }
 
     /// <summary>
     /// Gets the database name for telemetry, or <see langword="null"/> for a client created by the caller: the SDK does not
@@ -35,7 +35,7 @@ internal sealed class ClientWrapper : IDisposable
     /// <param name="databaseName">
     /// The database the SDK client connects to, for telemetry: known to the host-based registrations, which create the client.
     /// </param>
-    public ClientWrapper(MilvusClient milvusClient, bool ownsClient, string? databaseName = null)
+    public ClientWrapper(MilvusClientV2 milvusClient, bool ownsClient, string? databaseName = null)
     {
         Throw.IfNull(milvusClient);
 

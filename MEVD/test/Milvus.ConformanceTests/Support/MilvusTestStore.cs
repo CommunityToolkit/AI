@@ -3,7 +3,8 @@
 
 using CommunityToolkit.VectorData.Milvus;
 using Microsoft.Extensions.VectorData;
-using Milvus.Client;
+using Milvus.Client.V2;
+using Milvus.Client.V2.Types;
 using Testcontainers.Milvus;
 using VectorData.ConformanceTests.Support;
 
@@ -23,15 +24,18 @@ internal sealed class MilvusTestStore : TestStore
 
     public int Port { get; private set; }
 
-    private MilvusClient? _client;
+    private MilvusClientV2? _client;
 
-    public MilvusClient Client => _client ?? throw new InvalidOperationException("Not initialized");
+    public MilvusClientV2 Client => _client ?? throw new InvalidOperationException("Not initialized");
 
     public MilvusVectorStore GetVectorStore(MilvusVectorStoreOptions options) => new(Client, ownsClient: false, options);
 
     private MilvusTestStore()
     {
     }
+
+    public static MilvusClientV2 CreateClient(string host, int port, string? apiKey = null)
+        => new(new ConnectConfig { Uri = $"http://{host}:{port}", ApiKey = apiKey });
 
     protected override async Task StartAsync()
     {
@@ -43,7 +47,7 @@ internal sealed class MilvusTestStore : TestStore
         var port = int.Parse(Environment.GetEnvironmentVariable("MILVUS_PORT") ?? "19530", System.Globalization.CultureInfo.InvariantCulture);
         Host = host;
         Port = _container?.GetMappedPublicPort(19530) ?? port;
-        _client = new MilvusClient(Host, Port);
+        _client = CreateClient(Host, Port);
         DefaultVectorStore = new MilvusVectorStore(_client, ownsClient: false);
     }
 

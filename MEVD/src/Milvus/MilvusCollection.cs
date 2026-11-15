@@ -5,7 +5,12 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
-using Milvus.Client;
+using Milvus.Client.V2;
+using Milvus.Client.V2.Requests.Collection;
+using Milvus.Client.V2.Requests.Dml;
+using Milvus.Client.V2.Requests.Dql;
+using Milvus.Client.V2.Responses.Dql;
+using Milvus.Client.V2.Types;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.VectorData;
 using Microsoft.Extensions.VectorData.ProviderServices;
@@ -18,11 +23,9 @@ namespace CommunityToolkit.VectorData.Milvus;
 /// </summary>
 /// <typeparam name="TKey">The data type of the record key. Can be <see cref="long"/>, <see cref="string"/> or <see cref="Guid"/>.</typeparam>
 /// <typeparam name="TRecord">The data model to use for adding, updating and retrieving data from storage.</typeparam>
-#pragma warning disable CA1711 // Identifiers should not have incorrect suffix
 public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TRecord>, IKeywordHybridSearchable<TRecord>
     where TKey : notnull
     where TRecord : class
-#pragma warning restore CA1711 // Identifiers should not have incorrect suffix
 {
     /// <summary>The default options for vector search.</summary>
     private static readonly VectorSearchOptions<TRecord> s_defaultVectorSearchOptions = new();
@@ -34,9 +37,6 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
 
     /// <summary>Milvus client that can be used to manage the collections and records in a Milvus store.</summary>
     private readonly ClientWrapper _clientWrapper;
-
-    /// <summary>Milvus client of the records of the collection.</summary>
-    private readonly global::Milvus.Client.MilvusCollection _records;
 
     /// <summary>The model for this collection.</summary>
     private readonly CollectionModel _model;
@@ -67,7 +67,7 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
     /// <exception cref="ArgumentException">Thrown for any misconfigured options.</exception>
     [RequiresDynamicCode("This constructor is incompatible with NativeAOT. For dynamic mapping via Dictionary<string, object?>, instantiate MilvusDynamicCollection instead.")]
     [RequiresUnreferencedCode("This constructor is incompatible with trimming. For dynamic mapping via Dictionary<string, object?>, instantiate MilvusDynamicCollection instead")]
-    public MilvusCollection(MilvusClient milvusClient, string name, bool ownsClient, MilvusCollectionOptions? options = null)
+    public MilvusCollection(MilvusClientV2 milvusClient, string name, bool ownsClient, MilvusCollectionOptions? options = null)
         : this(() => new ClientWrapper(milvusClient, ownsClient), name, options)
     {
     }
@@ -139,8 +139,6 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
             throw;
         }
 
-        _records = _clientWrapper.Client.GetCollection(name);
-
         _collectionMetadata = new()
         {
             VectorStoreSystemName = MilvusConstants.VectorStoreSystemName,
@@ -162,7 +160,10 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
 
     /// <inheritdoc />
     public override Task<bool> CollectionExistsAsync(CancellationToken cancellationToken = default)
-        => RunOperationAsync("CollectionExists", () => _clientWrapper.Client.HasCollectionAsync(Name, cancellationToken: cancellationToken));
+        => RunOperationAsync("CollectionExists", () => HasCollectionAsync(cancellationToken));
+
+    private async Task<bool> HasCollectionAsync(CancellationToken cancellationToken)
+        => (await _clientWrapper.Client.HasCollectionAsync(new HasCollectionReq { CollectionName = Name }, cancellationToken).ConfigureAwait(false)).Has;
 
     /// <inheritdoc />
     public override Task EnsureCollectionExistsAsync(CancellationToken cancellationToken = default)
@@ -170,40 +171,26 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         {
             // The indexes are created with the collection. Those of an existing collection stay as they are: Milvus rejects
             // an index with other settings on an indexed field, or on a field the collection does not have.
-            if (!await _clientWrapper.Client.HasCollectionAsync(Name, cancellationToken: cancellationToken).ConfigureAwait(false))
+            if (!await HasCollectionAsync(cancellationToken).ConfigureAwait(false))
             {
-                await _clientWrapper.Client.CreateCollectionAsync(Name, MilvusCollectionCreateMapping.MapCollectionSchema(_model),
-                    cancellationToken: cancellationToken).ConfigureAwait(false);
-                foreach (var vector in _model.VectorProperties)
+                await _clientWrapper.Client.CreateCollectionAsync(new CreateCollectionReq
                 {
-                    var indexType = MilvusCollectionCreateMapping.GetIndexType(vector);
-                    var parameters = indexType == IndexType.Hnsw
-                        ? new Dictionary<string, string>
-                        {
-                            ["M"] = _hnswM.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                            ["efConstruction"] = _hnswEfConstruction.ToString(System.Globalization.CultureInfo.InvariantCulture)
-                        } : null;
-                    await _records.CreateIndexAsync(vector.StorageName, indexType,
-                        MilvusCollectionCreateMapping.GetMetric(vector), extraParams: parameters,
-                        cancellationToken: cancellationToken).ConfigureAwait(false);
-                }
-                foreach (var property in MilvusCollectionCreateMapping.GetFullTextProperties(_model))
-                {
-                    await _records.CreateIndexAsync(MilvusCollectionCreateMapping.GetBm25FieldName(property), IndexType.SparseInvertedIndex,
-                        SimilarityMetricType.Bm25, cancellationToken: cancellationToken).ConfigureAwait(false);
-                }
+                    CollectionName = Name,
+                    Schema = MilvusCollectionCreateMapping.MapCollectionSchema(_model),
+                    Indexes = MilvusCollectionCreateMapping.MapIndexes(_model, _hnswM, _hnswEfConstruction),
+                    ConsistencyLevel = ConsistencyLevel.Strong,
+                }, cancellationToken).ConfigureAwait(false);
             }
-            await _records.LoadAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
-            await _records.WaitForCollectionLoadAsync(timeout: _loadTimeout, cancellationToken: cancellationToken).ConfigureAwait(false);
+            await LoadAsync(cancellationToken).ConfigureAwait(false);
         });
 
     /// <inheritdoc />
     public override Task EnsureCollectionDeletedAsync(CancellationToken cancellationToken = default)
         => RunOperationAsync("DeleteCollection", async () =>
         {
-            if (await _clientWrapper.Client.HasCollectionAsync(Name, cancellationToken: cancellationToken).ConfigureAwait(false))
+            if (await HasCollectionAsync(cancellationToken).ConfigureAwait(false))
             {
-                await _records.DropAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+                await _clientWrapper.Client.DropCollectionAsync(new DropCollectionReq { CollectionName = Name }, cancellationToken).ConfigureAwait(false);
             }
         });
 
@@ -238,7 +225,7 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         }
         var parameters = CreateQueryParameters(includeVectors);
         var entries = await RunOperationAsync(OperationName,
-            () => _records.QueryRowsAsync(KeyFilter(keyList), parameters, cancellationToken)).ConfigureAwait(false);
+            () => QueryRowsAsync(KeyFilter(keyList), parameters, cancellationToken)).ConfigureAwait(false);
         foreach (var entry in entries)
         {
             yield return _mapper.MapFromStorageToDataModel(entry, includeVectors);
@@ -260,7 +247,8 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
 
         var keyList = keys.ToList();
         return keyList.Count == 0 ? Task.CompletedTask
-            : RunOperationAsync(MilvusConstants.DeleteName, () => _records.DeleteAsync(KeyFilter(keyList), cancellationToken: cancellationToken));
+            : RunOperationAsync(MilvusConstants.DeleteName, () => _clientWrapper.Client.DeleteAsync(
+                new DeleteReq { CollectionName = Name, Expression = KeyFilter(keyList), ConsistencyLevel = ConsistencyLevel.Strong }, cancellationToken));
     }
 
     /// <inheritdoc />
@@ -322,7 +310,7 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         }
         if (rows.Count > 0)
         {
-            await RunOperationAsync(MilvusConstants.UpsertName, () => _records.UpsertAsync(MilvusFieldMapping.CreateColumns(_model, rows), cancellationToken: cancellationToken)).ConfigureAwait(false);
+            await RunOperationAsync(MilvusConstants.UpsertName, () => _clientWrapper.Client.UpsertAsync(new UpsertReq { CollectionName = Name, RowsData = rows }, cancellationToken)).ConfigureAwait(false);
         }
     }
 
@@ -363,22 +351,28 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         }
         if (MilvusCollectionCreateMapping.GetIndexType(vectorProperty) == IndexType.Hnsw)
         {
-            parameters.ExtraParameters["ef"] = Math.Max(MilvusConstants.DefaultHnswSearchEf, top + options.Skip).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            parameters.Ef = Math.Max(MilvusConstants.DefaultHnswSearchEf, top + options.Skip);
         }
-        var results = await RunOperationAsync("Search", () => SearchAllowingEmptyResultsAsync(
-            () => _records.SearchAsync<float>(vectorProperty.StorageName, [vector],
-                MilvusCollectionCreateMapping.GetMetric(vectorProperty), top, parameters, cancellationToken),
-            parameters.OutputFields)).ConfigureAwait(false);
+        var request = new SearchReq
+        {
+            CollectionName = Name,
+            VectorFieldName = vectorProperty.StorageName,
+            Vectors = [vector],
+            MetricType = MilvusCollectionCreateMapping.GetMetric(vectorProperty),
+            Limit = top,
+            Parameters = parameters,
+        };
+        var results = await RunOperationAsync("Search", () => _clientWrapper.Client.SearchAsync(request, cancellationToken)).ConfigureAwait(false);
         if (IsEmpty(results))
         {
             yield break;
         }
-        foreach (var hit in results.GetHits())
+        foreach (var (row, rawScore) in GetHits(results))
         {
-            var score = MilvusCollectionSearchMapping.MapScore(hit.Score, vectorProperty.DistanceFunction);
+            var score = MilvusCollectionSearchMapping.MapScore(rawScore, vectorProperty.DistanceFunction);
             if (MilvusCollectionSearchMapping.PassesThreshold(score, options.ScoreThreshold, vectorProperty.DistanceFunction))
             {
-                yield return new VectorSearchResult<TRecord>(MapHit(hit, options.IncludeVectors), score);
+                yield return new VectorSearchResult<TRecord>(_mapper.MapFromStorageToDataModel(row, options.IncludeVectors), score);
             }
         }
     }
@@ -420,72 +414,67 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         // Milvus has no offset for hybrid search: the skipped records are asked for too, and dropped.
         var limit = top + options.Skip;
         var candidates = Math.Max(limit, MilvusConstants.HybridSearchCandidates);
-        var vectorSearch = new VectorAnnSearchRequest<float>(vectorProperty.StorageName, [vector],
-            MilvusCollectionCreateMapping.GetMetric(vectorProperty), candidates)
+        var vectorSearch = new AnnSearchReq
         {
+            VectorFieldName = vectorProperty.StorageName,
+            Vectors = [vector],
+            MetricType = MilvusCollectionCreateMapping.GetMetric(vectorProperty),
+            Limit = candidates,
             Expression = filter,
         };
         if (MilvusCollectionCreateMapping.GetIndexType(vectorProperty) == IndexType.Hnsw)
         {
             vectorSearch.ExtraParameters["ef"] = Math.Max(MilvusConstants.DefaultHnswSearchEf, candidates).ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
-        var keywordSearch = new TextAnnSearchRequest(MilvusCollectionCreateMapping.GetBm25FieldName(textProperty),
-            [string.Join(" ", keywords)], candidates)
+        var keywordSearch = new AnnSearchReq
         {
+            VectorFieldName = MilvusCollectionCreateMapping.GetBm25FieldName(textProperty),
+            Texts = [string.Join(" ", keywords)],
+            MetricType = MetricType.Bm25,
+            Limit = candidates,
             Expression = filter,
         };
-        var parameters = new HybridSearchParameters { ConsistencyLevel = ConsistencyLevel.Strong };
+        var parameters = new SearchParameters { ConsistencyLevel = ConsistencyLevel.Strong };
         foreach (var field in GetOutputFields(options.IncludeVectors))
         {
             parameters.OutputFields.Add(field);
         }
-        var results = await RunOperationAsync("HybridSearch", () => SearchAllowingEmptyResultsAsync(
-            () => _records.HybridSearchAsync([vectorSearch, keywordSearch], new RrfReranker(60), limit, parameters, cancellationToken),
-            parameters.OutputFields)).ConfigureAwait(false);
+        var request = new HybridSearchReq
+        {
+            CollectionName = Name,
+            SearchRequests = [vectorSearch, keywordSearch],
+            Reranker = new RrfReranker(60),
+            Limit = limit,
+            Parameters = parameters,
+        };
+        var results = await RunOperationAsync("HybridSearch", () => _clientWrapper.Client.HybridSearchAsync(request, cancellationToken)).ConfigureAwait(false);
         if (IsEmpty(results))
         {
             yield break;
         }
-        foreach (var hit in results.GetHits().Skip(options.Skip))
+        foreach (var (row, score) in GetHits(results).Skip(options.Skip))
         {
             // A higher RRF score ranks higher: the threshold is a lower bound.
-            if (options.ScoreThreshold is not { } threshold || hit.Score >= threshold)
+            if (options.ScoreThreshold is not { } threshold || score >= threshold)
             {
-                yield return new VectorSearchResult<TRecord>(MapHit(hit, options.IncludeVectors), hit.Score);
+                yield return new VectorSearchResult<TRecord>(_mapper.MapFromStorageToDataModel(row, options.IncludeVectors), score);
             }
         }
     }
 
-    // TODO: Remove this workaround once the SDK fix is available and adopted:
-    // https://github.com/milvus-io/milvus-sdk-csharp/issues/191
-    // Milvus.Client 2.6.0 cannot decode untyped output fields in an empty response.
-    // Retry without output fields to verify that this really is an empty search;
-    // do not hide the SDK error if the retry finds any records.
-    private static async Task<SearchResults> SearchAllowingEmptyResultsAsync(Func<Task<SearchResults>> search, IList<string> outputFields)
-    {
-        try
-        {
-            return await search().ConfigureAwait(false);
-        }
-        catch (NotSupportedException exception) when (exception.Message == "Cannot convert None FieldData to Field")
-        {
-            outputFields.Clear();
-            var retry = await search().ConfigureAwait(false);
-            if (!IsEmpty(retry))
-            {
-                throw;
-            }
-            return retry;
-        }
-    }
+    private static bool IsEmpty(SearchResp results) => (results.Ids.LongIds?.Count ?? results.Ids.StringIds?.Count ?? 0) == 0;
 
-    private static bool IsEmpty(SearchResults results) => (results.Ids.LongIds?.Count ?? results.Ids.StringIds?.Count ?? 0) == 0;
-
-    private TRecord MapHit(SearchHit hit, bool includeVectors)
+    /// <summary>Gets the rows of the hits of a single-vector search, each with its key from the IDs, and their scores.</summary>
+    private IEnumerable<(Dictionary<string, object?> Row, float Score)> GetHits(SearchResp results)
     {
-        var row = hit.Fields.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
-        row[_model.KeyProperty.StorageName] = hit.Id;
-        return _mapper.MapFromStorageToDataModel(row, includeVectors);
+        var rows = MilvusFieldMapping.ReadRows(results.FieldsData);
+        var keyName = _model.KeyProperty.StorageName;
+        for (var i = 0; i < results.Scores.Count; i++)
+        {
+            var row = i < rows.Count ? rows[i] : new Dictionary<string, object?>(StringComparer.Ordinal);
+            row[keyName] = results.Ids.LongIds is { } longIds ? longIds[i] : results.Ids.StringIds![i];
+            yield return (row, results.Scores[i]);
+        }
     }
 
     private static async ValueTask<ReadOnlyMemory<float>> GetSearchVectorAsync<TInput>(TInput searchValue, VectorPropertyModel vectorProperty, CancellationToken cancellationToken)
@@ -529,7 +518,7 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         parameters.Limit = top;
         parameters.Offset = options.Skip;
         var entries = await RunOperationAsync("Get",
-            () => _records.QueryRowsAsync(milvusFilter, parameters, cancellationToken)).ConfigureAwait(false);
+            () => QueryRowsAsync(milvusFilter, parameters, cancellationToken)).ConfigureAwait(false);
         foreach (var entry in entries)
         {
             yield return _mapper.MapFromStorageToDataModel(entry, options.IncludeVectors);
@@ -544,7 +533,7 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         return
             serviceKey is not null ? null :
             serviceType == typeof(VectorStoreCollectionMetadata) ? _collectionMetadata :
-            serviceType == typeof(MilvusClient) ? _clientWrapper.Client :
+            serviceType == typeof(MilvusClientV2) ? _clientWrapper.Client :
             serviceType == typeof(IKeywordHybridSearchable<TRecord>) ? (MilvusCollectionCreateMapping.GetFullTextProperties(_model).Any() ? this : null) :
             serviceType.IsInstanceOfType(this) ? this :
             null;
@@ -577,6 +566,21 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         }
         return parameters;
     }
+
+    private async Task<List<Dictionary<string, object?>>> QueryRowsAsync(string filter, QueryParameters parameters, CancellationToken cancellationToken)
+    {
+        var response = await _clientWrapper.Client.QueryAsync(
+            new QueryReq { CollectionName = Name, Expression = filter, Parameters = parameters }, cancellationToken).ConfigureAwait(false);
+        return MilvusFieldMapping.ReadRows(response.FieldsData);
+    }
+
+    private Task LoadAsync(CancellationToken cancellationToken)
+        => _clientWrapper.Client.LoadCollectionAsync(new LoadCollectionReq
+        {
+            CollectionName = Name,
+            Sync = true,
+            TimeoutMs = (long)_loadTimeout.TotalMilliseconds,
+        }, cancellationToken);
 
     /// <summary>
     /// Run the given operation and wrap any <see cref="MilvusException"/> with <see cref="VectorStoreException"/>.

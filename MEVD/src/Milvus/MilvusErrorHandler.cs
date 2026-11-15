@@ -3,11 +3,11 @@
 
 using Grpc.Core;
 using Microsoft.Extensions.VectorData;
-using Milvus.Client;
+using Milvus.Client.V2;
 
 namespace CommunityToolkit.VectorData.Milvus;
 
-// Milvus.Client reports server errors as MilvusException, gRPC errors as RpcException, and a wait that runs out of time,
+// Milvus.Client.V2 reports server and gRPC errors as MilvusException (keeping the gRPC status), and a wait that runs out of time,
 // such as the wait for a collection to load, as TimeoutException.
 internal static class MilvusErrorHandler
 {

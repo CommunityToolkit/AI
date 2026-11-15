@@ -11,7 +11,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Grpc.Net.Client;
 using Microsoft.Extensions.VectorData;
-using Milvus.Client;
+using Milvus.Client.V2;
+using Milvus.Client.V2.Types;
 using Xunit;
 
 namespace CommunityToolkit.VectorData.Milvus.UnitTests;
@@ -22,8 +23,7 @@ public sealed class MilvusEnsureCollectionTests
     public async Task CreatesTheIndexesWithTheCollection()
     {
         using var handler = new RecordingHandler { CollectionExists = false };
-        using var channel = GrpcChannel.ForAddress("http://localhost", new() { HttpHandler = handler, DisposeHttpClient = true });
-        using var client = new MilvusClient(channel);
+        using var client = TestClients.FromHandler(handler);
         using var collection = new MilvusCollection<string, MilvusHybridSearchTests.TextRecord>(client, "records", ownsClient: false);
 
         await collection.EnsureCollectionExistsAsync();
@@ -38,8 +38,7 @@ public sealed class MilvusEnsureCollectionTests
     public async Task LeavesTheIndexesOfAnExistingCollectionAsTheyAre()
     {
         using var handler = new RecordingHandler { CollectionExists = true };
-        using var channel = GrpcChannel.ForAddress("http://localhost", new() { HttpHandler = handler, DisposeHttpClient = true });
-        using var client = new MilvusClient(channel);
+        using var client = TestClients.FromHandler(handler);
         using var collection = new MilvusCollection<string, MilvusHybridSearchTests.TextRecord>(client, "records", ownsClient: false);
 
         await collection.EnsureCollectionExistsAsync();
@@ -54,8 +53,7 @@ public sealed class MilvusEnsureCollectionTests
     {
         // The server reports the load at 1% at each poll.
         using var handler = new RecordingHandler { CollectionExists = true, LoadingProgress = 1 };
-        using var channel = GrpcChannel.ForAddress("http://localhost", new() { HttpHandler = handler, DisposeHttpClient = true });
-        using var client = new MilvusClient(channel);
+        using var client = TestClients.FromHandler(handler);
         using var collection = new MilvusCollection<string, MilvusHybridSearchTests.TextRecord>(client, "records", ownsClient: false,
             options: new() { LoadTimeout = TimeSpan.FromMilliseconds(100) });
 
@@ -87,7 +85,7 @@ public sealed class MilvusEnsureCollectionTests
     [InlineData(-1)]
     public void RejectsNonPositiveLoadTimeout(int seconds)
     {
-        using var client = new MilvusClient("localhost", port: 1);
+        using var client = TestClients.Create(port: 1);
         var options = new MilvusCollectionOptions { LoadTimeout = TimeSpan.FromSeconds(seconds) };
 
         Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -113,7 +111,7 @@ public sealed class MilvusEnsureCollectionTests
     [InlineData(16, -1)]
     public void RejectsNonPositiveHnswSettings(int m, int efConstruction)
     {
-        using var client = new MilvusClient("localhost", port: 1);
+        using var client = TestClients.Create(port: 1);
         var options = new MilvusCollectionOptions { HnswM = m, HnswEfConstruction = efConstruction };
 
         Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -124,8 +122,7 @@ public sealed class MilvusEnsureCollectionTests
     public async Task SendsConfiguredHnswSettingsWhenCreatingIndex()
     {
         using var handler = new RecordingHandler();
-        using var channel = GrpcChannel.ForAddress("http://localhost", new() { HttpHandler = handler, DisposeHttpClient = true });
-        using var client = new MilvusClient(channel);
+        using var client = TestClients.FromHandler(handler);
         using var collection = new MilvusCollection<string, HnswRecord>(client, "records", ownsClient: false,
             options: new() { HnswM = 32, HnswEfConstruction = 300 });
 
@@ -147,7 +144,7 @@ public sealed class MilvusEnsureCollectionTests
         public ReadOnlyMemory<float> Vector { get; set; }
     }
 
-    // Answers each gRPC call of Milvus.Client with an empty status, and records the methods called.
+    // Answers each gRPC call of Milvus.Client.V2 with an empty status, and records the methods called.
     internal sealed class RecordingHandler : HttpMessageHandler
     {
         private readonly List<string> _methods = [];
@@ -189,6 +186,8 @@ public sealed class MilvusEnsureCollectionTests
             {
                 "HasCollection" => CollectionExists ? 1 : 0,
                 "GetLoadingProgress" => LoadingProgress,
+                // Milvus.Client.V2 polls the load state: 3 is Loaded, 2 is Loading.
+                "GetLoadState" => LoadingProgress == 100 ? 3 : 2,
                 _ => 1,
             };
             var response = new HttpResponseMessage(HttpStatusCode.OK)
