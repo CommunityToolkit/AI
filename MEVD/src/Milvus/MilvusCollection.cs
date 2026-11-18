@@ -469,9 +469,13 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
     {
         var rows = MilvusFieldMapping.ReadRows(results.FieldsData);
         var keyName = _model.KeyProperty.StorageName;
+        if (rows.Count != results.Scores.Count)
+        {
+            throw new InvalidOperationException($"Milvus returned {rows.Count} rows for {results.Scores.Count} search hits.");
+        }
         for (var i = 0; i < results.Scores.Count; i++)
         {
-            var row = i < rows.Count ? rows[i] : new Dictionary<string, object?>(StringComparer.Ordinal);
+            var row = rows[i];
             row[keyName] = results.Ids.LongIds is { } longIds ? longIds[i] : results.Ids.StringIds![i];
             yield return (row, results.Scores[i]);
         }
