@@ -19,11 +19,7 @@ public class SqlServerIndexKindTests(SqlServerIndexKindTests.Fixture fixture)
     [Fact]
     public virtual async Task DiskAnn()
     {
-        // This test should be conditional (https://github.com/dotnet/extensions/issues/7605)
-        if (!await AzureSqlHelper.GetIsAzureSqlAsync())
-        {
-            return;
-        }
+        await AzureSqlHelper.SkipUnlessAzureSqlAsync();
 
         const string CollectionName = "IndexKindTests_DiskAnn";
 
