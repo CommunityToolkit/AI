@@ -583,7 +583,7 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         {
             CollectionName = Name,
             Sync = true,
-            TimeoutMs = (long)_loadTimeout.TotalMilliseconds,
+            TimeoutMs = (long)Math.Ceiling(_loadTimeout.TotalMilliseconds),
         }, cancellationToken);
 
     /// <summary>
