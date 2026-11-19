@@ -578,13 +578,43 @@ public class MilvusCollection<TKey, TRecord> : VectorStoreCollection<TKey, TReco
         return MilvusFieldMapping.ReadRows(response.FieldsData);
     }
 
-    private Task LoadAsync(CancellationToken cancellationToken)
-        => _clientWrapper.Client.LoadCollectionAsync(new LoadCollectionReq
+    /// <summary>
+    /// Loads the collection and waits until Milvus reports it loaded, for at most <see cref="MilvusCollectionOptions.LoadTimeout"/>.
+    /// </summary>
+    /// <remarks>
+    /// The wait is timed here with a <see cref="Stopwatch"/>, as Milvus.Client did, rather than by the synchronous load of
+    /// Milvus.Client.V2: that one takes the timeout in whole milliseconds, where 0 means no timeout, and adds it to
+    /// <see cref="DateTime.UtcNow"/>, which throws for a timeout such as <see cref="TimeSpan.MaxValue"/>.
+    /// </remarks>
+    private async Task LoadAsync(CancellationToken cancellationToken)
+    {
+        await _clientWrapper.Client.LoadCollectionAsync(new LoadCollectionReq { CollectionName = Name, Sync = false }, cancellationToken)
+            .ConfigureAwait(false);
+
+        var stopwatch = Stopwatch.StartNew();
+        while (true)
         {
-            CollectionName = Name,
-            Sync = true,
-            TimeoutMs = (long)Math.Ceiling(_loadTimeout.TotalMilliseconds),
-        }, cancellationToken);
+            var state = (await _clientWrapper.Client.GetLoadStateAsync(new GetLoadStateReq { CollectionName = Name }, cancellationToken)
+                .ConfigureAwait(false)).State;
+            if (state == LoadState.Loaded)
+            {
+                return;
+            }
+            if (state == LoadState.NotExist)
+            {
+                throw new MilvusException(MilvusErrorCode.UnexpectedError, $"Collection '{Name}' does not exist; load did not complete.");
+            }
+
+            // NotLoad right after the load request is transient: Milvus registers the load asynchronously.
+            var remaining = _loadTimeout - stopwatch.Elapsed;
+            if (remaining <= TimeSpan.Zero)
+            {
+                throw new TimeoutException($"Timed out waiting for collection '{Name}' to load.");
+            }
+            await Task.Delay(remaining < MilvusConstants.LoadPollInterval ? remaining : MilvusConstants.LoadPollInterval, cancellationToken)
+                .ConfigureAwait(false);
+        }
+    }
 
     /// <summary>
     /// Run the given operation and wrap any <see cref="MilvusException"/> with <see cref="VectorStoreException"/>.

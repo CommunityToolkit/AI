@@ -64,6 +64,34 @@ public sealed class MilvusEnsureCollectionTests
         Assert.Equal("records", exception.CollectionName);
     }
 
+    [Fact(Timeout = 30000)]
+    public async Task AcceptsTheLargestLoadTimeout()
+    {
+        // Milvus.Client.V2 adds its load timeout to DateTime.UtcNow, which TimeSpan.MaxValue overflows.
+        using var handler = new RecordingHandler { CollectionExists = true };
+        using var client = TestClients.FromHandler(handler);
+        using var collection = new MilvusCollection<string, MilvusHybridSearchTests.TextRecord>(client, "records", ownsClient: false,
+            options: new() { LoadTimeout = TimeSpan.MaxValue });
+
+        await collection.EnsureCollectionExistsAsync(TestContext.Current.CancellationToken);
+
+        Assert.Contains("GetLoadState", handler.Methods);
+    }
+
+    [Fact(Timeout = 30000)]
+    public async Task TimesOutALoadTimeoutBelowAMillisecond()
+    {
+        // In whole milliseconds the timeout would be 0, which Milvus.Client.V2 takes as no timeout.
+        using var handler = new RecordingHandler { CollectionExists = true, LoadingProgress = 1 };
+        using var client = TestClients.FromHandler(handler);
+        using var collection = new MilvusCollection<string, MilvusHybridSearchTests.TextRecord>(client, "records", ownsClient: false,
+            options: new() { LoadTimeout = TimeSpan.FromTicks(1) });
+
+        var exception = await Assert.ThrowsAsync<VectorStoreException>(() => collection.EnsureCollectionExistsAsync(TestContext.Current.CancellationToken));
+
+        Assert.IsType<TimeoutException>(exception.InnerException);
+    }
+
     [Fact]
     public void WaitsForTheLoadLongerThanMilvusDoes()
     {
