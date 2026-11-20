@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Milvus.ConformanceTests.Support;
-using Milvus.Client;
+using Milvus.Client.V2;
+using Milvus.Client.V2.Types;
 using CommunityToolkit.VectorData.Milvus;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;

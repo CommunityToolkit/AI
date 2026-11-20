@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   
   <PropertyGroup>
-    <Version>1.0.0-preview</Version>
+    <Version>1.1.0-preview</Version>
     <AssemblyName>CommunityToolkit.VectorData.Milvus</AssemblyName>
     <RootNamespace>$(AssemblyName)</RootNamespace>
     <TargetFrameworks>net10.0;net8.0;netstandard2.0;net462</TargetFrameworks>
@@ -16,7 +16,7 @@
     <PackageReference Include="System.Linq.AsyncEnumerable" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.AI.Abstractions" />
-    <PackageReference Include="Milvus.Client" />
+    <PackageReference Include="Milvus.Client.V2" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'net462' ">

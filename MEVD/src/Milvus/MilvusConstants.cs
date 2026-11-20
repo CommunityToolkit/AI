@@ -19,6 +19,9 @@ internal static class MilvusConstants
 
     internal const int DefaultPort = 19530;
 
+    // How often EnsureCollectionExistsAsync asks whether the collection has loaded, as Milvus.Client.V2 does.
+    internal static readonly TimeSpan LoadPollInterval = TimeSpan.FromMilliseconds(500);
+
     internal const int DefaultHnswSearchEf = 64;
 
     internal const int MaxFieldNameLength = 255;

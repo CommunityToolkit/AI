@@ -7,7 +7,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.VectorData;
-using Milvus.Client;
+using Milvus.Client.V2;
+using Milvus.Client.V2.Types;
 using Xunit;
 
 namespace CommunityToolkit.VectorData.Milvus.UnitTests;
@@ -17,7 +18,7 @@ public sealed class MilvusCollectionTests
     [Fact]
     public async Task EmptyBatchesDoNotContactServer()
     {
-        using var client = new MilvusClient("localhost", port: 1);
+        using var client = TestClients.Create(port: 1);
         using var collection = new MilvusCollection<Guid, MilvusTestRecord>(client, "records", ownsClient: false);
         await collection.UpsertAsync(Array.Empty<MilvusTestRecord>());
         await collection.DeleteAsync(Array.Empty<Guid>());
@@ -27,20 +28,20 @@ public sealed class MilvusCollectionTests
     [Fact]
     public void StoreExposesUnderlyingClientAndMetadata()
     {
-        using var client = new MilvusClient("localhost");
+        using var client = TestClients.Create();
         using var store = new MilvusVectorStore(client, ownsClient: false);
-        Assert.Same(client, store.GetService(typeof(MilvusClient)));
+        Assert.Same(client, store.GetService(typeof(MilvusClientV2)));
         Assert.Equal("milvus", Assert.IsType<VectorStoreMetadata>(store.GetService(typeof(VectorStoreMetadata))).VectorStoreSystemName);
-        Assert.Null(store.GetService(typeof(MilvusClient), "key"));
+        Assert.Null(store.GetService(typeof(MilvusClientV2), "key"));
         using var collection = store.GetCollection<Guid, MilvusTestRecord>("records");
-        Assert.Same(client, collection.GetService(typeof(MilvusClient)));
+        Assert.Same(client, collection.GetService(typeof(MilvusClientV2)));
         Assert.Null(collection.GetService(typeof(IKeywordHybridSearchable<MilvusTestRecord>)));
     }
 
     [Fact]
     public void DependencyInjectionResolvesKeyedAndUnkeyedCollections()
     {
-        using var client = new MilvusClient("localhost");
+        using var client = TestClients.Create();
         var services = new ServiceCollection().AddSingleton(client)
             .AddMilvusVectorStore()
             .AddKeyedMilvusVectorStore("store")
@@ -56,7 +57,7 @@ public sealed class MilvusCollectionTests
     [Fact]
     public async Task RejectsInvalidSearchBeforeContactingServer()
     {
-        using var client = new MilvusClient("localhost", port: 1);
+        using var client = TestClients.Create(port: 1);
         using var collection = new MilvusCollection<Guid, MilvusTestRecord>(client, "records", ownsClient: false);
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await collection.SearchAsync(new float[] { 1, 2, 3 }, 0).ToListAsync());
         await Assert.ThrowsAsync<ArgumentException>(async () => await collection.SearchAsync(new float[] { 1 }, 1).ToListAsync());
@@ -65,7 +66,7 @@ public sealed class MilvusCollectionTests
     [Fact]
     public void DynamicCollectionRequiresDefinition()
     {
-        using var client = new MilvusClient("localhost");
+        using var client = TestClients.Create();
         Assert.Throws<ArgumentException>(() => new MilvusDynamicCollection(client, "records", ownsClient: false, new()));
         Assert.Throws<NotSupportedException>(() => new MilvusCollection<object, Dictionary<string, object?>>(client, "records", ownsClient: false));
     }

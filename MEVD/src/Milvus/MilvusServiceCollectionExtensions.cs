@@ -5,7 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.VectorData;
 using CommunityToolkit.VectorData.Milvus;
-using Milvus.Client;
+using Milvus.Client.V2;
+using Milvus.Client.V2.Types;
 using Microsoft.Shared.Diagnostics;
 
 namespace Microsoft.Extensions.DependencyInjection;
@@ -21,26 +22,26 @@ public static class MilvusServiceCollectionExtensions
 
     /// <summary>
     /// Registers a <see cref="MilvusVectorStore"/> as <see cref="VectorStore"/>
-    /// with <see cref="MilvusClient"/> returned by <paramref name="clientProvider"/>
+    /// with <see cref="MilvusClientV2"/> returned by <paramref name="clientProvider"/>
     /// or retrieved from the dependency injection container if <paramref name="clientProvider"/> was not provided.
     /// </summary>
-    /// <inheritdoc cref="AddKeyedMilvusVectorStore(IServiceCollection, object?, Func{IServiceProvider, MilvusClient}, Func{IServiceProvider, MilvusVectorStoreOptions}?, ServiceLifetime)"/>
+    /// <inheritdoc cref="AddKeyedMilvusVectorStore(IServiceCollection, object?, Func{IServiceProvider, MilvusClientV2}, Func{IServiceProvider, MilvusVectorStoreOptions}?, ServiceLifetime)"/>
     [RequiresUnreferencedCode(UnreferencedCodeMessage)]
     [RequiresDynamicCode(DynamicCodeMessage)]
     public static IServiceCollection AddMilvusVectorStore(
         this IServiceCollection services,
-        Func<IServiceProvider, MilvusClient>? clientProvider = default,
+        Func<IServiceProvider, MilvusClientV2>? clientProvider = default,
         Func<IServiceProvider, MilvusVectorStoreOptions>? optionsProvider = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
         => AddKeyedMilvusVectorStore(services, serviceKey: null, clientProvider, optionsProvider, lifetime);
 
     /// <summary>
     /// Registers a keyed <see cref="MilvusVectorStore"/> as <see cref="VectorStore"/>
-    /// with <see cref="MilvusClient"/> returned by <paramref name="clientProvider"/> or retrieved from the dependency injection container if <paramref name="clientProvider"/> was not provided.
+    /// with <see cref="MilvusClientV2"/> returned by <paramref name="clientProvider"/> or retrieved from the dependency injection container if <paramref name="clientProvider"/> was not provided.
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection"/> to register the <see cref="MilvusVectorStore"/> on.</param>
     /// <param name="serviceKey">The key with which to associate the vector store.</param>
-    /// <param name="clientProvider">The <see cref="MilvusClient"/> provider.</param>
+    /// <param name="clientProvider">The <see cref="MilvusClientV2"/> provider.</param>
     /// <param name="optionsProvider">Options provider to further configure the <see cref="MilvusVectorStore"/>.</param>
     /// <param name="lifetime">The service lifetime for the store. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
     /// <returns>Service collection.</returns>
@@ -49,7 +50,7 @@ public static class MilvusServiceCollectionExtensions
     public static IServiceCollection AddKeyedMilvusVectorStore(
         this IServiceCollection services,
         object? serviceKey,
-        Func<IServiceProvider, MilvusClient>? clientProvider = default,
+        Func<IServiceProvider, MilvusClientV2>? clientProvider = default,
         Func<IServiceProvider, MilvusVectorStoreOptions>? optionsProvider = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
         => AddKeyedMilvusVectorStoreCore(services, serviceKey, clientProvider, optionsProvider, lifetime, ownsClient: false);
@@ -57,7 +58,7 @@ public static class MilvusServiceCollectionExtensions
     private static IServiceCollection AddKeyedMilvusVectorStoreCore(
         this IServiceCollection services,
         object? serviceKey,
-        Func<IServiceProvider, MilvusClient>? clientProvider,
+        Func<IServiceProvider, MilvusClientV2>? clientProvider,
         Func<IServiceProvider, MilvusVectorStoreOptions?>? optionsProvider,
         ServiceLifetime lifetime, bool ownsClient, string? databaseName = null)
     {
@@ -65,7 +66,7 @@ public static class MilvusServiceCollectionExtensions
 
         services.Add(new ServiceDescriptor(typeof(MilvusVectorStore), serviceKey, (sp, _) =>
         {
-            var client = clientProvider is null ? sp.GetRequiredService<MilvusClient>() : clientProvider(sp);
+            var client = clientProvider is null ? sp.GetRequiredService<MilvusClientV2>() : clientProvider(sp);
             var options = GetStoreOptions(sp, optionsProvider);
 
             // Clients created by host overloads are owned, and their database is known; supplied clients remain caller-owned.
@@ -127,7 +128,7 @@ public static class MilvusServiceCollectionExtensions
     {
         Throw.IfNullOrWhitespace(host);
 
-        return AddKeyedMilvusVectorStoreCore(services, serviceKey, _ => new MilvusClient(host, port, https, database), _ => options,
+        return AddKeyedMilvusVectorStoreCore(services, serviceKey, _ => CreateClient(host, port, https, database), _ => options,
             lifetime, ownsClient: true, databaseName: database ?? "default");
     }
 
@@ -185,7 +186,7 @@ public static class MilvusServiceCollectionExtensions
         Throw.IfNullOrWhitespace(host);
         Throw.IfNullOrWhitespace(apiKey);
 
-        return AddKeyedMilvusVectorStoreCore(services, serviceKey, _ => new MilvusClient(host, apiKey, port, https, database), _ => options,
+        return AddKeyedMilvusVectorStoreCore(services, serviceKey, _ => CreateClient(host, port, https, database, apiKey: apiKey), _ => options,
             lifetime, ownsClient: true, databaseName: database ?? "default");
     }
 
@@ -248,20 +249,20 @@ public static class MilvusServiceCollectionExtensions
         Throw.IfNullOrWhitespace(username);
         Throw.IfNullOrWhitespace(password);
 
-        return AddKeyedMilvusVectorStoreCore(services, serviceKey, _ => new MilvusClient(host, username, password, port, https, database), _ => options,
+        return AddKeyedMilvusVectorStoreCore(services, serviceKey, _ => CreateClient(host, port, https, database, username: username, password: password), _ => options,
             lifetime, ownsClient: true, databaseName: database ?? "default");
     }
 
     /// <summary>
     /// Registers a <see cref="MilvusCollection{TKey, TRecord}"/> as <see cref="VectorStoreCollection{TKey, TRecord}"/>
-    /// with <see cref="MilvusClient"/> returned by <paramref name="clientProvider"/> or retrieved from the dependency injection container if <paramref name="clientProvider"/> was not provided.
+    /// with <see cref="MilvusClientV2"/> returned by <paramref name="clientProvider"/> or retrieved from the dependency injection container if <paramref name="clientProvider"/> was not provided.
     /// </summary>
     [RequiresUnreferencedCode(UnreferencedCodeMessage)]
     [RequiresDynamicCode(DynamicCodeMessage)]
     public static IServiceCollection AddMilvusCollection<TKey, TRecord>(
         this IServiceCollection services,
         string name,
-        Func<IServiceProvider, MilvusClient>? clientProvider = default,
+        Func<IServiceProvider, MilvusClientV2>? clientProvider = default,
         Func<IServiceProvider, MilvusCollectionOptions>? optionsProvider = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
         where TKey : notnull
@@ -270,12 +271,12 @@ public static class MilvusServiceCollectionExtensions
 
     /// <summary>
     /// Registers a keyed <see cref="MilvusCollection{TKey, TRecord}"/> as <see cref="VectorStoreCollection{TKey, TRecord}"/>
-    /// with <see cref="MilvusClient"/> returned by <paramref name="clientProvider"/> or retrieved from the dependency injection container if <paramref name="clientProvider"/> was not provided.
+    /// with <see cref="MilvusClientV2"/> returned by <paramref name="clientProvider"/> or retrieved from the dependency injection container if <paramref name="clientProvider"/> was not provided.
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection"/> to register the <see cref="MilvusCollection{TKey, TRecord}"/> on.</param>
     /// <param name="serviceKey">The key with which to associate the collection.</param>
     /// <param name="name">The name of the collection.</param>
-    /// <param name="clientProvider">The <see cref="MilvusClient"/> provider.</param>
+    /// <param name="clientProvider">The <see cref="MilvusClientV2"/> provider.</param>
     /// <param name="optionsProvider">Options provider to further configure the <see cref="MilvusCollection{TKey, TRecord}"/>.</param>
     /// <param name="lifetime">The service lifetime for the store. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
     /// <returns>Service collection.</returns>
@@ -285,7 +286,7 @@ public static class MilvusServiceCollectionExtensions
         this IServiceCollection services,
         object? serviceKey,
         string name,
-        Func<IServiceProvider, MilvusClient>? clientProvider = default,
+        Func<IServiceProvider, MilvusClientV2>? clientProvider = default,
         Func<IServiceProvider, MilvusCollectionOptions>? optionsProvider = default,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
         where TKey : notnull
@@ -298,7 +299,7 @@ public static class MilvusServiceCollectionExtensions
         this IServiceCollection services,
         object? serviceKey,
         string name,
-        Func<IServiceProvider, MilvusClient>? clientProvider,
+        Func<IServiceProvider, MilvusClientV2>? clientProvider,
         Func<IServiceProvider, MilvusCollectionOptions?>? optionsProvider,
         ServiceLifetime lifetime, bool ownsClient, string? databaseName = null)
         where TKey : notnull
@@ -309,7 +310,7 @@ public static class MilvusServiceCollectionExtensions
 
         services.Add(new ServiceDescriptor(typeof(MilvusCollection<TKey, TRecord>), serviceKey, (sp, _) =>
         {
-            var client = clientProvider is null ? sp.GetRequiredService<MilvusClient>() : clientProvider(sp);
+            var client = clientProvider is null ? sp.GetRequiredService<MilvusClientV2>() : clientProvider(sp);
             var options = GetCollectionOptions(sp, optionsProvider);
 
             // Clients created by host overloads are owned, and their database is known; supplied clients remain caller-owned.
@@ -385,7 +386,7 @@ public static class MilvusServiceCollectionExtensions
     {
         Throw.IfNullOrWhitespace(host);
 
-        return AddKeyedMilvusCollectionCore<TKey, TRecord>(services, serviceKey, name, _ => new MilvusClient(host, port, https, database), _ => options,
+        return AddKeyedMilvusCollectionCore<TKey, TRecord>(services, serviceKey, name, _ => CreateClient(host, port, https, database), _ => options,
             lifetime, ownsClient: true, databaseName: database ?? "default");
     }
 
@@ -451,7 +452,7 @@ public static class MilvusServiceCollectionExtensions
         Throw.IfNullOrWhitespace(host);
         Throw.IfNullOrWhitespace(apiKey);
 
-        return AddKeyedMilvusCollectionCore<TKey, TRecord>(services, serviceKey, name, _ => new MilvusClient(host, apiKey, port, https, database), _ => options,
+        return AddKeyedMilvusCollectionCore<TKey, TRecord>(services, serviceKey, name, _ => CreateClient(host, port, https, database, apiKey: apiKey), _ => options,
             lifetime, ownsClient: true, databaseName: database ?? "default");
     }
 
@@ -522,7 +523,7 @@ public static class MilvusServiceCollectionExtensions
         Throw.IfNullOrWhitespace(username);
         Throw.IfNullOrWhitespace(password);
 
-        return AddKeyedMilvusCollectionCore<TKey, TRecord>(services, serviceKey, name, _ => new MilvusClient(host, username, password, port, https, database), _ => options,
+        return AddKeyedMilvusCollectionCore<TKey, TRecord>(services, serviceKey, name, _ => CreateClient(host, port, https, database, username: username, password: password), _ => options,
             lifetime, ownsClient: true, databaseName: database ?? "default");
     }
 
@@ -553,4 +554,15 @@ public static class MilvusServiceCollectionExtensions
             ? options // There is nothing to change.
             : new(options) { EmbeddingGenerator = embeddingGenerator }; // Create a brand new copy in order to avoid modifying the original options.
     }
+
+    private static MilvusClientV2 CreateClient(string host, int port, bool https, string? database,
+        string? apiKey = null, string? username = null, string? password = null)
+        => new(new ConnectConfig
+        {
+            Uri = new UriBuilder(https ? "https" : "http", host, port).Uri.ToString(),
+            Database = database,
+            ApiKey = apiKey,
+            Username = username,
+            Password = password,
+        });
 }

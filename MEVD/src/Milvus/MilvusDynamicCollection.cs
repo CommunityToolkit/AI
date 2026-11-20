@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Milvus.Client;
+using Milvus.Client.V2;
 
 namespace CommunityToolkit.VectorData.Milvus;
 
@@ -19,7 +19,7 @@ public sealed class MilvusDynamicCollection : MilvusCollection<object, Dictionar
     /// <param name="name">The name of the collection.</param>
     /// <param name="ownsClient">A value indicating whether <paramref name="milvusClient"/> is disposed when the collection is disposed.</param>
     /// <param name="options">Optional configuration options for this class.</param>
-    public MilvusDynamicCollection(MilvusClient milvusClient, string name, bool ownsClient, MilvusCollectionOptions options)
+    public MilvusDynamicCollection(MilvusClientV2 milvusClient, string name, bool ownsClient, MilvusCollectionOptions options)
         : this(() => new ClientWrapper(milvusClient, ownsClient), name, options)
     {
     }

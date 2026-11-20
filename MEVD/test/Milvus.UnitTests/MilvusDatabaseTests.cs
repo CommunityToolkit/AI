@@ -4,7 +4,8 @@ using System;
 using CommunityToolkit.VectorData.UnitTests;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.VectorData;
-using Milvus.Client;
+using Milvus.Client.V2;
+using Milvus.Client.V2.Types;
 using Xunit;
 
 namespace CommunityToolkit.VectorData.Milvus.UnitTests;
@@ -23,7 +24,7 @@ public sealed class MilvusDatabaseTests
     public void SuppliedClientLeavesTheDatabaseOutOfTheMetadata()
     {
         // Milvus.Client does not expose the database it is configured with.
-        using var client = new MilvusClient("localhost", database: "catalog");
+        using var client = TestClients.Create(database: "catalog");
         using var store = new MilvusVectorStore(client, ownsClient: false);
         Assert.Null(Assert.IsType<VectorStoreMetadata>(store.GetService(typeof(VectorStoreMetadata))).VectorStoreName);
         using var typed = store.GetCollection<Guid, MilvusTestRecord>("records");

@@ -3,7 +3,10 @@
 
 using CommunityToolkit.VectorData.Milvus;
 using Microsoft.Extensions.VectorData;
-using Milvus.Client;
+using Milvus.Client.V2;
+using Milvus.Client.V2.Types;
+using Milvus.Client.V2.Requests.Collection;
+using Milvus.Client.V2.Requests.Index;
 using Milvus.ConformanceTests.Support;
 using Xunit;
 
@@ -17,11 +20,15 @@ public sealed class MilvusEnsureCollectionTests : IClassFixture<MilvusFixture>
         // The collection exists with an HNSW index, where the model asks for a Flat one: as another tool could create it.
         var client = MilvusTestStore.Instance.Client;
         var name = "ct_existing_index_" + Guid.NewGuid().ToString("N");
-        await client.CreateCollectionAsync(name,
-            [FieldSchema.CreateVarchar("Id", 65535, isPrimaryKey: true), FieldSchema.CreateVarchar("Text", 65535, nullable: true), FieldSchema.CreateFloatVector("Vector", 3)]);
-        var records = client.GetCollection(name);
-        await records.CreateIndexAsync("Vector", IndexType.Hnsw, SimilarityMetricType.Cosine,
-            extraParams: new Dictionary<string, string> { ["M"] = "8", ["efConstruction"] = "64" });
+        var schema = new CollectionSchema();
+        schema.Fields.Add(FieldSchema.CreateVarchar("Id", 65535, isPrimaryKey: true));
+        schema.Fields.Add(FieldSchema.CreateVarchar("Text", 65535, nullable: true));
+        schema.Fields.Add(FieldSchema.CreateFloatVector("Vector", 3));
+        await client.CreateCollectionAsync(new CreateCollectionReq { CollectionName = name, Schema = schema });
+        var index = new IndexParam("Vector", indexType: IndexType.Hnsw, metricType: MetricType.Cosine);
+        index.ExtraParams["M"] = "8";
+        index.ExtraParams["efConstruction"] = "64";
+        await client.CreateIndexAsync(new CreateIndexReq { CollectionName = name, Indexes = [index] });
         using var collection = new MilvusCollection<string, Record>(client, name, ownsClient: false);
         try
         {
@@ -29,7 +36,7 @@ public sealed class MilvusEnsureCollectionTests : IClassFixture<MilvusFixture>
             await collection.UpsertAsync(new Record { Id = "a", Text = "apples", Vector = new float[] { 1, 0, 0 } });
 
             Assert.Equal("a", Assert.Single(await collection.SearchAsync(new float[] { 1, 0, 0 }, 1).ToListAsync()).Record.Id);
-            Assert.Contains(Assert.Single(await records.DescribeIndexAsync("Vector")).Params, p => p.Value == "HNSW");
+            Assert.Equal(IndexType.Hnsw, Assert.Single((await client.DescribeIndexAsync(new DescribeIndexReq { CollectionName = name, FieldName = "Vector" })).Indexes).IndexType);
         }
         finally
         {

@@ -10,7 +10,8 @@ using System.Threading.Tasks;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.Extensions.VectorData;
-using Milvus.Client;
+using Milvus.Client.V2;
+using Milvus.Client.V2.Requests.Collection;
 using Xunit;
 
 namespace CommunityToolkit.VectorData.Milvus.UnitTests;
@@ -18,11 +19,12 @@ namespace CommunityToolkit.VectorData.Milvus.UnitTests;
 public sealed class MilvusClientLifetimeTests
 {
     [Fact]
-    public async Task CollectionsPreserveCallerOwnedGrpcChannel()
+    public async Task OwnedClientIsDisposedWithTheLastCollection()
     {
+        // Milvus.Client.V2 has no constructor taking a caller-owned GrpcChannel: the client owns its channel, so
+        // disposing the owned client disposes the handler too.
         using var handler = new MilvusHandler();
-        using var channel = GrpcChannel.ForAddress("http://localhost", new() { HttpHandler = handler, DisposeHttpClient = true });
-        using var client = new MilvusClient(channel);
+        using var client = TestClients.FromHandler(handler);
         var store = new MilvusVectorStore(client, ownsClient: true);
         using var collection = store.GetCollection<Guid, MilvusTestRecord>("records");
         store.Dispose();
@@ -30,8 +32,6 @@ public sealed class MilvusClientLifetimeTests
         Assert.True(await collection.CollectionExistsAsync());
         Assert.False(handler.Disposed);
         collection.Dispose();
-        Assert.False(handler.Disposed);
-        channel.Dispose();
         Assert.True(handler.Disposed);
     }
 
@@ -39,13 +39,12 @@ public sealed class MilvusClientLifetimeTests
     public async Task BorrowedClientSurvivesDisposalOfStoreAndCollection()
     {
         using var handler = new MilvusHandler();
-        using var channel = GrpcChannel.ForAddress("http://localhost", new() { HttpHandler = handler, DisposeHttpClient = true });
-        using var client = new MilvusClient(channel);
+        using var client = TestClients.FromHandler(handler);
         using var store = new MilvusVectorStore(client, ownsClient: false);
         using var collection = store.GetCollection<Guid, MilvusTestRecord>("records");
         collection.Dispose();
         store.Dispose();
-        Assert.True(await client.HasCollectionAsync("records"));
+        Assert.True((await client.HasCollectionAsync(new HasCollectionReq { CollectionName = "records" })).Has);
         Assert.False(handler.Disposed);
     }
 
@@ -54,7 +53,7 @@ public sealed class MilvusClientLifetimeTests
     [InlineData(true)]
     public async Task DisposingCollectionRepeatedlyDoesNotReleaseSiblingShare(bool concurrently)
     {
-        using var client = new MilvusClient("localhost", port: 1);
+        using var client = TestClients.Create(port: 1);
         using var store = new MilvusVectorStore(client, ownsClient: true);
         using var first = store.GetCollection<Guid, MilvusTestRecord>("first");
         using var second = store.GetCollection<Guid, MilvusTestRecord>("second");
@@ -78,7 +77,7 @@ public sealed class MilvusClientLifetimeTests
     [Fact]
     public async Task DisposingStoreRepeatedlyDoesNotReleaseCollectionShares()
     {
-        using var client = new MilvusClient("localhost", port: 1);
+        using var client = TestClients.Create(port: 1);
         using var store = new MilvusVectorStore(client, ownsClient: true);
         using var first = store.GetCollection<Guid, MilvusTestRecord>("first");
         using var second = store.GetCollection<Guid, MilvusTestRecord>("second");
@@ -96,11 +95,12 @@ public sealed class MilvusClientLifetimeTests
     public async Task WrapsGrpcFailuresWithCollectionMetadata()
     {
         using var handler = new MilvusHandler { GrpcStatus = "14" };
-        using var channel = GrpcChannel.ForAddress("http://localhost", new() { HttpHandler = handler, DisposeHttpClient = true });
-        using var client = new MilvusClient(channel);
+        using var client = TestClients.FromHandler(handler);
         using var collection = new MilvusCollection<Guid, MilvusTestRecord>(client, "records", ownsClient: false);
         var exception = await Assert.ThrowsAsync<VectorStoreException>(() => collection.CollectionExistsAsync());
-        Assert.IsType<RpcException>(exception.InnerException);
+        // Milvus.Client.V2 wraps gRPC failures in MilvusException, keeping the gRPC status.
+        var inner = Assert.IsType<MilvusException>(exception.InnerException);
+        Assert.Equal(StatusCode.Unavailable, inner.GrpcStatusCode);
         Assert.Equal("milvus", exception.VectorStoreSystemName);
         Assert.Equal("records", exception.CollectionName);
         Assert.Equal("CollectionExists", exception.OperationName);
@@ -119,9 +119,9 @@ public sealed class MilvusClientLifetimeTests
     [Fact]
     public async Task OwnedClientIsDisposedWhenTheCollectionCannotBeCreated()
     {
-        var unsupportedKey = new MilvusClient("localhost", port: 1);
-        var invalidModel = new MilvusClient("localhost", port: 1);
-        var noDefinition = new MilvusClient("localhost", port: 1);
+        var unsupportedKey = TestClients.Create(port: 1);
+        var invalidModel = TestClients.Create(port: 1);
+        var noDefinition = TestClients.Create(port: 1);
 
         Assert.Throws<NotSupportedException>(() => new MilvusCollection<int, MilvusTestRecord>(unsupportedKey, "records", ownsClient: true));
         Assert.Throws<InvalidOperationException>(() => new MilvusCollection<string, InvalidRecord>(invalidModel, "records", ownsClient: true));
@@ -135,7 +135,7 @@ public sealed class MilvusClientLifetimeTests
     [Fact]
     public async Task BorrowedClientSurvivesACollectionThatCannotBeCreated()
     {
-        using var client = new MilvusClient("localhost", port: 1);
+        using var client = TestClients.Create(port: 1);
 
         Assert.Throws<NotSupportedException>(() => new MilvusCollection<int, MilvusTestRecord>(client, "records", ownsClient: false));
 
@@ -145,7 +145,7 @@ public sealed class MilvusClientLifetimeTests
     [Fact]
     public async Task StoreKeepsItsClientWhenOneOfItsCollectionsCannotBeCreated()
     {
-        var client = new MilvusClient("localhost", port: 1);
+        var client = TestClients.Create(port: 1);
         var store = new MilvusVectorStore(client, ownsClient: true);
 
         Assert.Throws<NotSupportedException>(() => store.GetCollection<int, MilvusTestRecord>("records"));
@@ -157,11 +157,11 @@ public sealed class MilvusClientLifetimeTests
 
     // Calls the client with a canceled token: a disposed client throws ObjectDisposedException, another the cancellation,
     // without contacting a server.
-    private static async Task<Exception?> CallAsync(MilvusClient client)
+    private static async Task<Exception?> CallAsync(MilvusClientV2 client)
     {
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
-        return await Record.ExceptionAsync(() => client.HasCollectionAsync("records", cancellationToken: canceled.Token));
+        return await Record.ExceptionAsync(() => client.HasCollectionAsync(new HasCollectionReq { CollectionName = "records" }, canceled.Token));
     }
 
     public sealed class InvalidRecord

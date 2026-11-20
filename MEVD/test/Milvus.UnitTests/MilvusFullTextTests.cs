@@ -7,7 +7,8 @@ using System.Linq;
 using CommunityToolkit.VectorData.UnitTests;
 using Microsoft.Extensions.VectorData;
 using Microsoft.Extensions.VectorData.ProviderServices;
-using Milvus.Client;
+using Milvus.Client.V2;
+using Milvus.Client.V2.Types;
 using Xunit;
 
 namespace CommunityToolkit.VectorData.Milvus.UnitTests;
@@ -28,11 +29,11 @@ public sealed class MilvusFullTextTests
             new VectorStoreDataProperty("Title", typeof(string))));
 
         var text = Assert.Single(schema.Fields, f => f.Name == "body");
-        Assert.Equal(MilvusDataType.VarChar, text.DataType);
+        Assert.Equal(DataType.VarChar, text.DataType);
         Assert.True(text.EnableAnalyzer);
         Assert.True(text.Nullable);
         Assert.False(Assert.Single(schema.Fields, f => f.Name == "Title").EnableAnalyzer);
-        Assert.Equal(MilvusDataType.SparseFloatVector, Assert.Single(schema.Fields, f => f.Name == "body_bm25").DataType);
+        Assert.Equal(DataType.SparseFloatVector, Assert.Single(schema.Fields, f => f.Name == "body_bm25").DataType);
         var function = Assert.Single(schema.Functions);
         Assert.Equal(FunctionType.Bm25, function.Type);
         Assert.Equal("body_bm25", function.Name);
@@ -47,7 +48,7 @@ public sealed class MilvusFullTextTests
             new VectorStoreDataProperty("Text1", typeof(string)) { IsFullTextIndexed = true },
             new VectorStoreDataProperty("Text2", typeof(string)) { IsFullTextIndexed = true }));
 
-        Assert.Equal(["Text1_bm25", "Text2_bm25"], schema.Fields.Where(f => f.DataType == MilvusDataType.SparseFloatVector).Select(f => f.Name));
+        Assert.Equal(["Text1_bm25", "Text2_bm25"], schema.Fields.Where(f => f.DataType == DataType.SparseFloatVector).Select(f => f.Name));
         Assert.Equal(["Text1", "Text2"], schema.Functions.SelectMany(f => f.InputFieldNames));
     }
 
@@ -56,7 +57,7 @@ public sealed class MilvusFullTextTests
     {
         var schema = MilvusCollectionCreateMapping.MapCollectionSchema(Build(new VectorStoreDataProperty("Text", typeof(string)) { IsIndexed = true }));
 
-        Assert.DoesNotContain(schema.Fields, f => f.DataType == MilvusDataType.SparseFloatVector || f.EnableAnalyzer);
+        Assert.DoesNotContain(schema.Fields, f => f.DataType == DataType.SparseFloatVector || f.EnableAnalyzer);
         Assert.Empty(schema.Functions);
     }
 
@@ -136,7 +137,7 @@ public sealed class MilvusFullTextTests
                 new VectorStoreVectorProperty("ContentEmbedding", typeof(string), 3),
             ],
         };
-        using var client = new MilvusClient("localhost", port: 1);
+        using var client = TestClients.Create(port: 1);
         using var store = new MilvusVectorStore(client, ownsClient: false, new() { EmbeddingGenerator = new FakeEmbeddingGenerator() });
 
         using var collection = store.GetDynamicCollection("chat_history", definition);
@@ -150,7 +151,7 @@ public sealed class MilvusFullTextTests
     public void SupportsTheDefinitionOfTheTextSearchStoreOfSemanticKernel()
     {
         // TextSearchStore<string> of Microsoft.SemanticKernel.Core 1.80.1 creates a typed collection with this definition.
-        using var client = new MilvusClient("localhost", port: 1);
+        using var client = TestClients.Create(port: 1);
         using var store = new MilvusVectorStore(client, ownsClient: false, new() { EmbeddingGenerator = new FakeEmbeddingGenerator() });
 
         using var collection = store.GetCollection<string, TextSearchStoreDocument>("docs", TextSearchStoreDocument.Definition(3));

@@ -4,7 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.VectorData;
-using Milvus.Client;
+using Milvus.Client.V2;
+using Milvus.Client.V2.Types;
 using Xunit;
 
 namespace CommunityToolkit.VectorData.Milvus.UnitTests;
@@ -25,7 +26,7 @@ public sealed class MilvusArrayTests
              new VectorStoreVectorProperty("Vector", typeof(float[]), 3)] };
         var model = new MilvusModelBuilder().BuildDynamic(definition, null);
         var field = Assert.Single(MilvusCollectionCreateMapping.MapCollectionDefinition(model), f => f.Name == "Values");
-        Assert.Equal(MilvusDataType.Array, field.DataType);
+        Assert.Equal(DataType.Array, field.DataType);
         Assert.Equal(MilvusFieldMapping.GetDataType(element), field.ElementDataType);
         Assert.True(field.Nullable);
         Assert.Equal(4096, field.MaxCapacity);
