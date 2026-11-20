@@ -15,49 +15,13 @@ public class SqlServerHybridSearchTests(
     SqlServerHybridSearchTests.MultiTextFixture multiTextFixture)
     : HybridSearchTests<int>(vectorAndStringFixture, multiTextFixture),
         IClassFixture<SqlServerHybridSearchTests.VectorAndStringFixture>,
-        IClassFixture<SqlServerHybridSearchTests.MultiTextFixture>
+        IClassFixture<SqlServerHybridSearchTests.MultiTextFixture>,
+        IAsyncLifetime
 {
-    public override async Task HybridSearchAsync()
-    {
-        await AzureSqlHelper.SkipUnlessAzureSqlAsync();
-        await base.HybridSearchAsync();
-    }
+    async ValueTask IAsyncLifetime.InitializeAsync()
+        => await AzureSqlHelper.SkipUnlessAzureSqlAsync();
 
-    public override async Task HybridSearchAsync_with_filter()
-    {
-        await AzureSqlHelper.SkipUnlessAzureSqlAsync();
-        await base.HybridSearchAsync_with_filter();
-    }
-
-    public override async Task HybridSearchAsync_with_top()
-    {
-        await AzureSqlHelper.SkipUnlessAzureSqlAsync();
-        await base.HybridSearchAsync_with_top();
-    }
-
-    public override async Task HybridSearchAsync_with_Skip()
-    {
-        await AzureSqlHelper.SkipUnlessAzureSqlAsync();
-        await base.HybridSearchAsync_with_Skip();
-    }
-
-    public override async Task HybridSearchAsync_with_multiple_keywords_ranks_matched_keywords_higher()
-    {
-        await AzureSqlHelper.SkipUnlessAzureSqlAsync();
-        await base.HybridSearchAsync_with_multiple_keywords_ranks_matched_keywords_higher();
-    }
-
-    public override async Task HybridSearchAsync_with_multiple_text_properties()
-    {
-        await AzureSqlHelper.SkipUnlessAzureSqlAsync();
-        await base.HybridSearchAsync_with_multiple_text_properties();
-    }
-
-    public override async Task HybridSearchAsync_without_explicitly_specified_property_fails()
-    {
-        await AzureSqlHelper.SkipUnlessAzureSqlAsync();
-        await base.HybridSearchAsync_without_explicitly_specified_property_fails();
-    }
+    ValueTask IAsyncDisposable.DisposeAsync() => default;
 
     public new class VectorAndStringFixture : HybridSearchTests<int>.VectorAndStringFixture
     {
