@@ -13,13 +13,23 @@ internal static class AzureSqlHelper
 {
     private static bool? s_isAzureSql;
 
+    public static async Task SkipUnlessAzureSqlAsync()
+        => Assert.SkipUnless(
+            await GetIsAzureSqlAsync(),
+            "This test requires Azure SQL Database or SQL database in Microsoft Fabric.");
+
     public static async Task<bool> GetIsAzureSqlAsync()
     {
         if (s_isAzureSql is null)
         {
-            var connectionString = SqlServerTestStore.Instance.ConnectionString;
+            // Without a connection string the tests run against the SQL Server testcontainer.
+            if (!SqlServerTestEnvironment.IsConnectionStringDefined)
+            {
+                s_isAzureSql = false;
+                return false;
+            }
 
-            using SqlConnection connection = new(connectionString);
+            using SqlConnection connection = new(SqlServerTestEnvironment.ConnectionString);
             await connection.OpenAsync();
 
             using var command = connection.CreateCommand();

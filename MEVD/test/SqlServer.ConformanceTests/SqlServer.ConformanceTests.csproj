@@ -12,11 +12,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- The HybridSearch tests require running against Azure SQL -->
-    <Compile Remove="SqlServerHybridSearchTests.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Testcontainers.MsSql" />
     <PackageReference Include="Microsoft.Extensions.Configuration" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
