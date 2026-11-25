@@ -6,4 +6,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/PdfPig/PdfPig.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="../Corpus/ParseBench-2/corpus.json" Link="Corpus/ParseBench-2/corpus.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

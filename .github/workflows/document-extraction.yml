@@ -55,7 +55,14 @@ jobs:
         run: dotnet restore DocumentExtraction/DocumentExtraction.slnf --configfile nuget.config
       - name: Build
         run: dotnet build DocumentExtraction/DocumentExtraction.slnf --no-restore -c Release
+      - name: Cache ParseBench-2 corpus
+        uses: actions/cache@v5
+        with:
+          path: ${{ runner.temp }}/parsebench-2
+          key: parsebench-2-${{ hashFiles('DocumentExtraction/test/Corpus/ParseBench-2/corpus.json') }}
       - name: Test
+        env:
+          DOCUMENT_EXTRACTION_CORPUS_DIR: ${{ runner.temp }}/parsebench-2
         run: dotnet test DocumentExtraction/DocumentExtraction.slnf --no-build --no-restore -c Release
 
   package:
