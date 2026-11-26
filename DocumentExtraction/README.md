@@ -13,7 +13,7 @@ All packages include **.NET Standard 2.0 and .NET 10** assets. Package IDs start
 
 | Package | Client type | Use when you need | Processing and input |
 |---|---|---|---|
-| [PdfPig](src/PdfPig/README.md) | `PdfPigDocumentExtractionClient` | Existing PDF text and block geometry without a service | Local; searchable PDFs, no OCR |
+| [PdfPig](src/PdfPig/README.md) | `PdfPigDocumentExtractionClient` | Existing PDF text, native tables and block geometry without a service | Local; searchable PDFs, no OCR |
 | [AzureContentUnderstanding](src/AzureContentUnderstanding/README.md) | `ContentUnderstandingExtractionClient` | Document text, tables and layout from a Content Understanding analyzer | Azure; analyzer-supported document formats |
 | [AzureDocumentIntelligence](src/AzureDocumentIntelligence/README.md) | `DocumentIntelligenceExtractionClient` | OCR, layout, tables and optional figure downloads | Azure; model-supported document formats |
 | [Mistral](src/Mistral/README.md) | `MistralDocumentExtractionClient` | Native Mistral OCR page text, tables and images, directly or through Microsoft Foundry | Hosted; endpoint-supported documents and images |
@@ -23,14 +23,16 @@ Azure and Mistral providers upload document content to the configured service an
 can incur charges. Vision Language Model sends original PDF/image bytes to your chosen backend
 in one chat request; it does not parse or render PDFs locally. PDF support must
 be provided by the configured adapter, API and model, not inferred from image
-support. PdfPig reads existing PDF text locally and does not recognize
+support. PdfPig reads existing PDF text and tables locally and does not recognize
 scanned text. Choose based on document format, required fidelity, latency,
 privacy and cost.
 
 This component contains **five providers**. Local model-driven layout, PDF
-rasterization and local OCR/table inference are deferred together to a separate
-advanced companion; none of those dependencies or model downloads are included
-here. The lightweight PdfPig provider remains a native-text parser, not OCR.
+rasterization and local OCR or image-based table recognition are deferred
+together to a separate advanced companion; none of those dependencies or model
+downloads are included here. The lightweight PdfPig provider remains a
+native-text parser, not OCR; it detects tables from the PDF's native lines and
+text positions.
 
 These are preview packages using experimental contracts. Their core
 dependencies are available from NuGet.org.
@@ -318,7 +320,7 @@ void PrintElement(ExtractionDocumentElement element)
 }
 ```
 
-Source capabilities vary: PdfPig supplies PDF block geometry; Azure services
+Source capabilities vary: PdfPig supplies PDF block, table and cell geometry; Azure services
 supply their reported regions; Vision Language Model supplies model-reported source associations rather than
 measured paragraph polygons. Check for data instead of assuming every provider
 supplies the same level of detail.

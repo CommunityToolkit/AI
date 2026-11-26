@@ -33,8 +33,8 @@ The following NuGet packages have been published:
 
 The [document extraction providers](DocumentExtraction/README.md) extract text,
 tables, images and source locations into a common `ExtractionDocument` graph.
-Choose lightweight PdfPig for existing PDF text. Local model-driven layout,
-rendering and OCR/table inference are deferred to a separate advanced companion;
+Choose lightweight PdfPig for existing PDF text and native tables. Local model-driven layout,
+rendering and OCR or image-based table recognition are deferred to a separate advanced companion;
 they are not dependencies of these five providers. Azure
 Content Understanding and Document Intelligence provide hosted document analysis;
 their native SDK clients expose `AsDocumentExtractionClient()` through the

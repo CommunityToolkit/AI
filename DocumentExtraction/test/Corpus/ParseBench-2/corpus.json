@@ -1,0 +1,332 @@
+{
+  "dataset": "llamaindex/ParseBench-2",
+  "revision": "c300dcf475574f027dbaad0e15f64f6c9b73b830",
+  "license": "Apache-2.0",
+  "citation": "Doulcet et al., ParseBench-2: Severity-Aware Evaluation of Document Parsing, arXiv:2611.17400",
+  "urlTemplate": "https://huggingface.co/datasets/llamaindex/ParseBench-2/resolve/{revision}/{path}.pdf",
+  "notes": [
+    "Test fixtures, not a benchmark. PDFs are downloaded from the pinned revision and verified by SHA-256; they are never committed.",
+    "Table dimensions are listed per mode in output order as rows x columns.",
+    "Facts compare whitespace-collapsed, lower-case cell text. Anchors must match exactly one cell across all tables of the page.",
+    "noneTextSha256 is the SHA-256 of the None-mode text elements joined by newlines, captured with the 1.0.0-preview provider."
+  ],
+  "pages": [
+    {
+      "id": "T1",
+      "path": "complex_table_headers/complex_header_006",
+      "sha256": "9b67a116160853167a847a35f4d43a4692de5ba41f5cddb089be2274af7bb5ce",
+      "source": "IPCC AR6 WGII Chapter 13 Supplementary Material, p. 13",
+      "set": "tables",
+      "ruling": "ruled",
+      "reason": "Eight tables with multi-level headers; only the ruled header bands form complete cell grids.",
+      "noneTextSha256": "e045869d68f9c50eeec3116386058f9cfd62610fc123a8d66a973b494d3aa790",
+      "tables": {
+        "Lattice": [ "3x27", "3x27", "3x27", "3x27", "3x27", "3x27", "2x6" ],
+        "LatticeThenStream": [ "3x27", "3x27", "3x27", "3x27", "3x27", "3x27", "2x6" ]
+      },
+      "factMode": "Lattice",
+      "facts": [
+        { "kind": "right", "anchor": "impact/risk", "expected": "supporting references of assessment", "source": "reference HTML" },
+        { "kind": "down", "anchor": "impact/risk", "expected": "loss of habitat availability", "source": "reference HTML" }
+      ],
+      "knownGaps": [
+        { "rule": "complex_header_colspan_bcf4359f4674", "reason": "Only the ruled header bands are detected; the Insects cell has a column span of 1 rather than 11." },
+        { "rule": null, "reason": "The unruled data rows remain text blocks." },
+        { "rule": null, "reason": "Letters from a rotated watermark fall inside header cells." }
+      ]
+    },
+    {
+      "id": "T2",
+      "path": "complex_table_headers/complex_header_023",
+      "sha256": "8f21e2a78e096deaf635e392ced53365ded61ae6031e99b02cc505cedbabf1db",
+      "source": "Financial report a6a468dd5ca52b8f3bc078e9f255659368e59993d288a71c249bb54e18c6ae7d.pdf, p. 184",
+      "set": "tables",
+      "ruling": "rules-only",
+      "reason": "Four tables with three-level headers and horizontal rules only.",
+      "noneTextSha256": "6869fc9125b55cd76a9524b19d4a961b97a26c83ae829d1ce745be3dc5770996",
+      "tables": {
+        "Lattice": [],
+        "LatticeThenStream": [ "27x8" ]
+      },
+      "factMode": "LatticeThenStream",
+      "facts": [
+        { "kind": "right", "anchor": "¥4,012.5", "expected": "75.00%", "source": "reference HTML" },
+        { "kind": "right", "anchor": "0.07%", "expected": "35.32%", "source": "reference HTML" },
+        { "kind": "right", "anchor": "1.63", "expected": "31.40", "source": "reference HTML" }
+      ],
+      "knownGaps": [
+        { "rule": "complex_header_colspan_5352273c9f49", "reason": "Stream mode does not infer merged cells." },
+        { "rule": "complex_header_colspan_0b9b5c05d38b", "reason": "Stream mode does not infer merged cells." },
+        { "rule": "complex_header_rowspan_34531da930eb", "reason": "Multi-line headers are split across rows." },
+        { "rule": "complex_header_rowspan_b8b4ba7f2c12", "reason": "Multi-line headers are split across rows." },
+        { "rule": "complex_header_rowspan_4bb53a17796f", "reason": "Multi-line headers are split across rows." },
+        { "rule": "complex_header_rowspan_fac41b1ab17e", "reason": "Multi-line headers are split across rows." },
+        { "rule": "complex_header_rowspan_da6f3d911d0e", "reason": "Multi-line headers are split across rows." },
+        { "rule": "header_v06_2220be26004eb8d8", "reason": "Header text is split across rows and dot leaders merge label cells." },
+        { "rule": "header_v06_efe05a38ed48dd22", "reason": "Header text is split across rows and dot leaders merge label cells." },
+        { "rule": "header_v06_e7e3737471bbc33c", "reason": "Header text is split across rows and dot leaders merge label cells." }
+      ]
+    },
+    {
+      "id": "T3",
+      "path": "dense_tables/dense_table_236",
+      "sha256": "7ac24a94d01ca519e54ecb1fff120e5f653daad31d54feca82df2250d07c816d",
+      "source": "SERFF CA Rating Plan ARCH-20-129",
+      "set": "tables",
+      "ruling": "ruled",
+      "reason": "About 1,075 cells with 61 merged cells, fully ruled.",
+      "noneTextSha256": "3014b7b8a26e0c26d6706df1edf16a384567e3cd977937da2ed99b17d65edaf7",
+      "tables": {
+        "Lattice": [ "82x13" ],
+        "LatticeThenStream": [ "82x13" ]
+      },
+      "factMode": "Lattice",
+      "facts": [
+        { "kind": "down", "anchor": "ren207", "expected": "ren208", "source": "ParseBench rule dense_v01_4643671a371802af" },
+        { "kind": "right", "anchor": "ren018", "expected": "field processing of crude oil (not by well operator)", "source": "ParseBench rule dense_v01_fa224f8dccc3e57f" },
+        { "kind": "right", "anchor": "ren038", "expected": "machinery or machinery parts manufacturing - pressure control equipment", "source": "ParseBench rule dense_v01_b678711b008cc48d" },
+        { "kind": "right", "anchor": "ren058", "expected": "mobile well-drilling, workover or servicing rigs", "source": "ParseBench rule dense_v01_e4c37bcb1c124c90" },
+        { "kind": "sameColumn", "anchor": "arch class code", "expected": "ren058", "source": "ParseBench rule dense_v01_c6f9c79208e6d550" }
+      ],
+      "knownGaps": [
+        { "rule": "dense_v01_6d4f9301500b172b", "reason": "The ruled grid has 13 columns, so the title cell cannot span the expected 14." }
+      ]
+    },
+    {
+      "id": "T4",
+      "path": "dense_tables/dense_table_427",
+      "sha256": "44dc2eaa7d2414debefe56b83e973a1b5725dad91b07ebcf63f44cdbf69fefa5",
+      "source": "Half-year financial report, 30 June 2025",
+      "set": "tables",
+      "ruling": "rules-only",
+      "reason": "152 merged cells with horizontal rules only.",
+      "noneTextSha256": "8f9c18f37bcb0b16d2a6878f7322a0ae5552d4edcc319c761814c252daca5080",
+      "tables": {
+        "Lattice": [],
+        "LatticeThenStream": [ "97x11" ]
+      },
+      "factMode": "LatticeThenStream",
+      "facts": [
+        { "kind": "headerChain", "anchor": "142,786,606.48", "headers": [ "share capital" ], "source": "ParseBench rule dense_v01_b8bd00298a66b803" },
+        { "kind": "right", "anchor": "company name", "expected": "headquarters", "source": "reference HTML" },
+        { "kind": "down", "anchor": "headquarters", "expected": "teresina", "source": "reference HTML" }
+      ],
+      "knownGaps": [
+        { "rule": "dense_v01_1ed7efe0248771e2", "reason": "Stream mode splits multi-line company names across rows." },
+        { "rule": "dense_v01_eafbce2bfafb8648", "reason": "Stream mode splits multi-line company names across rows." },
+        { "rule": "dense_v01_fc4e1af14a3b907d", "reason": "Stream mode splits multi-line company names across rows." },
+        { "rule": "dense_v01_6a784682eb543901", "reason": "Stream mode splits multi-line company names across rows." }
+      ]
+    },
+    {
+      "id": "T5",
+      "path": "financial_tables/en-allianz-group-annual-report-2025-2026-08-21_page227",
+      "sha256": "c78327940ad910257fde16e88d0c0a5a92b4f1813973b99aa1b324d4a5e488ef",
+      "source": "Allianz Group Annual Report 2025",
+      "set": "tables",
+      "ruling": "ruled",
+      "reason": "Four-level ruled header.",
+      "noneTextSha256": "52e06fac54dffa620e8259eaa204f11f4f15bb3ee160b4afe54e22930a020c6f",
+      "tables": {
+        "Lattice": [ "38x25" ],
+        "LatticeThenStream": [ "38x25" ]
+      },
+      "factMode": "Lattice",
+      "facts": [
+        { "kind": "right", "anchor": "2025", "expected": "2024", "source": "reference HTML" },
+        { "kind": "down", "anchor": "2025", "expected": "liability for remaining coverage", "source": "reference HTML" },
+        { "kind": "right", "anchor": "705,869", "expected": "671,770", "source": "reference HTML" }
+      ],
+      "knownGaps": []
+    },
+    {
+      "id": "T6",
+      "path": "financial_tables/jpmorgan-2026-08-14_page1",
+      "sha256": "816ff3b3a9e408ef36884f177f0d9cd9eaf1b782f8452e2d91313455ced67ec7",
+      "source": "jpmorgan.pdf",
+      "set": "tables",
+      "ruling": "borderless",
+      "reason": "Borderless table with 32 merged cells; only stream detection can find it.",
+      "noneTextSha256": "59a166d09c29912f0de4a80d543ed51b59b8355aaf888f4c04ebf2634e636c18",
+      "tables": {
+        "Lattice": [],
+        "LatticeThenStream": [ "31x7" ]
+      },
+      "factMode": "LatticeThenStream",
+      "facts": [
+        { "kind": "down", "anchor": "total net revenue", "expected": "total noninterest expense", "source": "reference HTML" },
+        { "kind": "down", "anchor": "total noninterest expense", "expected": "pre-provision profit (a)", "source": "reference HTML" },
+        { "kind": "down", "anchor": "market capitalization", "expected": "common shares at period-end", "source": "reference HTML" }
+      ],
+      "knownGaps": [
+        { "rule": null, "reason": "Stream mode does not infer merged header cells." }
+      ]
+    },
+    {
+      "id": "T7",
+      "path": "insurance_filing_tables/c488daa79f798376_p21",
+      "sha256": "18deef598445bbbe9ee9fd62817ee2ea12ae2220a41be8e17dc292bd972fca1b",
+      "source": "SERFF PERR-134857705 D&O exhibits",
+      "set": "tables",
+      "ruling": "ruled",
+      "reason": "Ruled table with 26 merged cells.",
+      "noneTextSha256": "b0029686c8f813f4b250af5c67af98a9b3d977a9a1026db23d3301b5f8daa7d2",
+      "tables": {
+        "Lattice": [ "10x8" ],
+        "LatticeThenStream": [ "10x8" ]
+      },
+      "factMode": "Lattice",
+      "facts": [
+        { "kind": "right", "anchor": "current modification (1)", "expected": "proposed rating modification (1)", "source": "reference HTML" },
+        { "kind": "down", "anchor": "current modification (1)", "expected": "claims modification factor", "source": "reference HTML" },
+        { "kind": "right", "anchor": "merger/acquisitions", "expected": "merger and acquisition activity", "source": "reference HTML" }
+      ],
+      "knownGaps": []
+    },
+    {
+      "id": "T8",
+      "path": "insurance_filing_tables/31cb3bc5575396c3_p8",
+      "sha256": "c9061e66bb5b808602e2ca0c60221a905adf02db752bbbf6ac9338f58b67b90c",
+      "source": "SERFF WESA-132463423 rate package",
+      "set": "tables",
+      "ruling": "ruled",
+      "reason": "Four partially ruled tables with three-level headers.",
+      "noneTextSha256": "ead050c21956df604a555f7c61fdfe74a5e202c31031efaee3158fd6da278d78",
+      "tables": {
+        "Lattice": [ "7x3", "20x8", "6x8" ],
+        "LatticeThenStream": [ "7x3", "20x8", "6x8" ]
+      },
+      "factMode": "Lattice",
+      "facts": [
+        { "kind": "right", "anchor": "total excessive", "expected": "1,230,811", "source": "reference HTML" },
+        { "kind": "right", "anchor": "97,530,096", "expected": "103,550,000", "source": "reference HTML" },
+        { "kind": "right", "anchor": "480,641", "expected": "444,562", "source": "reference HTML" }
+      ],
+      "knownGaps": [
+        { "rule": null, "reason": "Three of the four reference tables are detected." }
+      ]
+    },
+    {
+      "id": "T9",
+      "path": "tables/637951191e7b35ae07dbd4c76a2e6690c370_pg2_pg1_page1",
+      "sha256": "afdd22019f9484a8a4a60175f2acab4ec2ea1d3ca3edfa4ecc592df77ebe4e50",
+      "source": "Not recorded in the dataset",
+      "set": "tables",
+      "ruling": "ruled",
+      "reason": "Heavily ruled table with 80 merged cells.",
+      "noneTextSha256": "7aa96a6feb326b3d5f6f929e38661f4f2bae1ee53136d7fd05ecee400c6d82a8",
+      "tables": {
+        "Lattice": [ "19x11" ],
+        "LatticeThenStream": [ "19x11" ]
+      },
+      "factMode": "Lattice",
+      "facts": [
+        { "kind": "span", "anchor": "volunteer alfalfa", "rowSpan": 1, "columnSpan": 6, "source": "reference HTML" },
+        { "kind": "span", "anchor": "percent control (%)", "rowSpan": 1, "columnSpan": 6, "source": "reference HTML" },
+        { "kind": "right", "anchor": "pest name", "expected": "volunteer alfalfa", "source": "reference HTML" },
+        { "kind": "down", "anchor": "pest name", "expected": "rating date", "source": "reference HTML" }
+      ],
+      "knownGaps": []
+    },
+    {
+      "id": "T10",
+      "path": "tables/SERFF_CA_random_pages 1_page1423",
+      "sha256": "abe65e073f02606a598a9f75fd936a59b55e2079695108f379a044ee272621de",
+      "source": "Not recorded in the dataset",
+      "set": "tables",
+      "ruling": "borderless",
+      "reason": "Two borderless tables with about 2,100 cells; only stream detection can find them.",
+      "noneTextSha256": "85af4aecfbe8873f9db870d53fadc0818bad9bec29cc0c425dfa4801c7f4b045",
+      "tables": {
+        "Lattice": [],
+        "LatticeThenStream": [ "75x31" ]
+      },
+      "factMode": "LatticeThenStream",
+      "facts": [
+        { "kind": "down", "anchor": "maximum", "expected": "minimum", "source": "reference HTML" },
+        { "kind": "down", "anchor": "minimum", "expected": "median", "source": "reference HTML" },
+        { "kind": "down", "anchor": "selected ldf", "expected": "cumulative ldf", "source": "reference HTML" }
+      ],
+      "knownGaps": [
+        { "rule": null, "reason": "The two reference tables are detected as one stream table." }
+      ]
+    },
+    {
+      "id": "N1",
+      "path": "charts/(Web_version)_E-Government_Survey_2024_1392024_p101",
+      "sha256": "b08f4611234bd26437aa015e10c52c57fc95d63ddc3a7224156e97d1d30b91c6",
+      "source": "E-Government Survey 2024 (web version), p. 101",
+      "set": "negative",
+      "ruling": "none",
+      "reason": "Chart whose axes and gridlines are lattice bait.",
+      "noneTextSha256": "c620e8f189fbcbcbcb4e262f73325c1bfd27f41108cc135c6558df3018b408d2",
+      "tables": {
+        "Lattice": [],
+        "LatticeThenStream": [ "5x13", "6x12", "5x13" ]
+      },
+      "streamJustification": "Aligned chart axis and data labels look like whitespace tables. Stream detection is opt-in and documented to report charts as tables.",
+      "knownGaps": []
+    },
+    {
+      "id": "N2",
+      "path": "forms/blank__australia--02_WA-DLA1--p2__blank",
+      "sha256": "c1aa0a764073697f26814f5344d85e5818b28f4ad979e0a366a0b34de5b7c966",
+      "source": "Western Australia form WA-DLA1, p. 2 (blank)",
+      "set": "negative",
+      "ruling": "none",
+      "reason": "Form boxes are lattice bait.",
+      "noneTextSha256": "3a936a38c8adf735acc7ed7f472302dbbb9b116e7ec61a4ed5522de3f482b7fc",
+      "tables": {
+        "Lattice": [],
+        "LatticeThenStream": [ "68x2" ]
+      },
+      "streamJustification": "The form's labels and fields are whitespace aligned, so stream detection returns the whole form as one two-column table. Stream detection is opt-in and documented to report forms as tables.",
+      "knownGaps": []
+    },
+    {
+      "id": "N3",
+      "path": "headings/case-0001-6bba8f14b5f6",
+      "sha256": "0be8cdf727bc807cd27e08722be6f59cb23aa4056c0831837140216332675da2",
+      "source": "Not recorded in the dataset",
+      "set": "negative",
+      "ruling": "none",
+      "reason": "Heading hierarchy without tables.",
+      "noneTextSha256": "bc82548403551b752ea78cb9e3c70303a42dac26c2ae00ddba0efd3f5fad267c",
+      "tables": {
+        "Lattice": [],
+        "LatticeThenStream": []
+      },
+      "knownGaps": []
+    },
+    {
+      "id": "N4",
+      "path": "layout/annotated__02775267_p3",
+      "sha256": "42b6f69c9d3bf5bd0735fd2cf8636b227b7cf32c1ee45bf81c3d63721690ea08",
+      "source": "Not recorded in the dataset",
+      "set": "negative",
+      "ruling": "none",
+      "reason": "Multi-column layout without tables.",
+      "noneTextSha256": "d0473ce5aa5226ac189e2319d7ba58a9984a37a17892eff8e3a85ae49b5f7fe4",
+      "tables": {
+        "Lattice": [],
+        "LatticeThenStream": []
+      },
+      "knownGaps": []
+    },
+    {
+      "id": "N5",
+      "path": "text/text_dense__baoutou",
+      "sha256": "d0877a509d1fd7446c14e769c1519da4a9e0c1a6fe7b6df849b8591d1c5ccda2",
+      "source": "Not recorded in the dataset",
+      "set": "negative",
+      "ruling": "none",
+      "reason": "No text layer; extraction must succeed and return no text or tables.",
+      "noneTextSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tables": {
+        "Lattice": [],
+        "LatticeThenStream": []
+      },
+      "knownGaps": []
+    }
+  ]
+}
