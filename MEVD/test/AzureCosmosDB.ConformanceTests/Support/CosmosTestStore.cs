@@ -66,7 +66,8 @@ internal sealed class CosmosTestStore(string uniqueDatabaseName) : TestStore
         }
         else
         {
-            _container ??= new CosmosDbBuilder("mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-latest")
+            // Pin the emulator version to retain working dot-product vector search.
+            _container ??= new CosmosDbBuilder("mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator@sha256:54d7bc334494c50cea867c270880671a7db080626a9732832b34c0d69342f9b0")
                 .WithEnvironment("QUERY_BUFFER_SIZE_KB", "65536")
                 .Build();
 
